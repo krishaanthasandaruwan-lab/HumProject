@@ -8,7 +8,8 @@ import { demoProject } from '../model/demo';
 import { getTrack, type TrackKind } from '../model/project';
 import { navigate, type Params } from '../router';
 import { edit, getProject, setProject } from '../state';
-import { append, h, segmented, toast } from './dom';
+import { append, ask, h, segmented, toast } from './dom';
+import { openExport } from './export';
 import { openMixer } from './mixer';
 import { drumsCard, melodicCard, type TrackCard } from './tracks';
 
@@ -42,6 +43,14 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
 
   const chordsBtn = (): HTMLElement =>
     h('button', { class: 'mini primary', onClick: () => doChords() }, getTrack(p(), 'chords')?.notes?.length ? '↻ Redo' : '✨ Add chords');
+  const title = h('h1', { class: 'tap', onClick: () => void rename() }, p().name);
+  async function rename(): Promise<void> {
+    const name = await ask('Rename song', p().name);
+    if (!name) return;
+    edit((pp) => { pp.name = name; });
+    title.textContent = name;
+  }
+
   const cards: TrackCard[] = [drumsCard(), melodicCard('bass'), melodicCard('lead'), melodicCard('chords', chordsBtn)];
   const cardKinds: TrackKind[] = ['drums', 'bass', 'lead', 'chords'];
   const isEmpty = !p().tracks.some((t) => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0);
@@ -49,7 +58,8 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
 
   append(root, [
     h('header', { class: 'topbar' },
-      h('h1', null, p().name),
+      h('button', { class: 'icon ghost', 'aria-label': 'My songs', onClick: () => navigate('projects') }, '‹'),
+      title,
       h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => navigate('settings') }, '⚙︎')),
     h('div', { class: 'card' },
       h('div', { class: 'transport' },
@@ -71,7 +81,8 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
     cards.map((c) => c.el),
     h('div', { class: 'actionbar' },
       h('button', { class: 'mix big', 'aria-label': 'Mixer', onClick: () => openMixer(() => renderMeta()) }, '🎚'),
-      h('button', { class: 'rec big', onClick: () => navigate('record', { kind: nextKind() }) }, '🎙  Record')),
+      h('button', { class: 'rec big', onClick: () => navigate('record', { kind: nextKind() }) }, '🎙  Record'),
+      h('button', { class: 'share big', 'aria-label': 'Share', onClick: () => openExport() }, '📤')),
   ]);
 
   if (params.focus) {

@@ -103,3 +103,11 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); }
 
 .spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
+button.danger { background: #d8334f; border-color: #d8334f; font-weight: 700; }
+.song { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; margin: 8px 0; }
+.song.current { border-color: var(--accent); }
+.song-main { flex: 1; min-width: 0; background: none; border: 0; text-align: left; padding: 8px 0; display: block; }
+.song-name { font-weight: 800; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu { display: flex; flex-direction: column; gap: 8px; }
+.menu button { text-align: left; }
+.tap { cursor: pointer; }

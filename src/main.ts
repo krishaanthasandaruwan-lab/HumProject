@@ -9,12 +9,14 @@ import { mountRecord } from './ui/record';
 import { mountStudio } from './ui/studio';
 import { mountCalibrate } from './ui/calibrate';
 import { mountSettings } from './ui/settings';
+import { mountProjects } from './ui/projects';
 import { loadProfile } from './profile';
 
 registerScreen('studio', mountStudio);
 registerScreen('record', mountRecord);
 registerScreen('calibrate', mountCalibrate);
 registerScreen('settings', mountSettings);
+registerScreen('projects', mountProjects);
 
 async function boot(): Promise<void> {
   installUnlock();

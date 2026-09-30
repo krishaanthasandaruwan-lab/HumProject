@@ -6,6 +6,19 @@ let master: GainNode | undefined;
 let limiter: DynamicsCompressorNode | undefined;
 let streamDest: MediaStreamAudioDestinationNode | undefined;
 
+export const MASTER_GAIN = 0.85;
+
+/** Gentle bus limiter shared by live playback and offline renders. */
+export function makeLimiter(c: BaseAudioContext): DynamicsCompressorNode {
+  const l = c.createDynamicsCompressor();
+  l.threshold.value = -8;
+  l.knee.value = 4;
+  l.ratio.value = 12;
+  l.attack.value = 0.002;
+  l.release.value = 0.12;
+  return l;
+}
+
 export function isIOS(): boolean {
   const ua = navigator.userAgent;
   return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -23,13 +36,8 @@ export function getCtx(): AudioContext {
       ctx = new Ctor();
     }
     master = ctx.createGain();
-    master.gain.value = 0.85;
-    limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -8;
-    limiter.knee.value = 4;
-    limiter.ratio.value = 12;
-    limiter.attack.value = 0.002;
-    limiter.release.value = 0.12;
+    master.gain.value = MASTER_GAIN;
+    limiter = makeLimiter(ctx);
     master.connect(limiter).connect(ctx.destination);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') {

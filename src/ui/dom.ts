@@ -75,3 +75,46 @@ export function sheet(content: HTMLElement, onClose?: () => void): () => void {
 }
 
 export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Text prompt in a bottom sheet. Resolves null when dismissed. */
+export function ask(title: string, value: string, ok = 'Save'): Promise<string | null> {
+  return new Promise((resolve) => {
+    let done = false;
+    const input = h('input', { type: 'text', value, maxlength: 60 });
+    const finish = (v: string | null): void => {
+      if (done) return;
+      done = true;
+      close();
+      resolve(v);
+    };
+    const form = h('form', { class: 'stack' }, h('h2', null, title), input,
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'grow', onClick: () => finish(null) }, 'Cancel'),
+        h('button', { type: 'submit', class: 'primary grow' }, ok)));
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      finish(v || null);
+    });
+    const close = sheet(form, () => { if (!done) { done = true; resolve(null); } });
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  });
+}
+
+/** Yes/no in a bottom sheet. */
+export function confirmSheet(message: string, ok: string, danger = false): Promise<boolean> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v: boolean): void => {
+      if (done) return;
+      done = true;
+      close();
+      resolve(v);
+    };
+    const close = sheet(h('div', { class: 'stack' }, h('h2', null, message),
+      h('div', { class: 'row' },
+        h('button', { class: 'grow', onClick: () => finish(false) }, 'Cancel'),
+        h('button', { class: `grow ${danger ? 'danger' : 'primary'}`, onClick: () => finish(true) }, ok))),
+    () => { if (!done) { done = true; resolve(false); } });
+  });
+}

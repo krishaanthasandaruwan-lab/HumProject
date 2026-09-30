@@ -66,3 +66,8 @@
 .chord-names span { font-weight: 800; padding: 4px 10px; border-radius: 8px; background: rgba(61,220,151,.14); color: var(--chords); }
 .actionbar .mix { flex: 0 0 56px; font-size: 20px; }
 .gen-tag { font-size: 11px; color: var(--muted); font-weight: 600; margin-left: 6px; }
+
+.video-wrap { display: flex; justify-content: center; }
+.video-canvas { width: 46%; max-width: 230px; aspect-ratio: 9 / 16; border-radius: 14px; background: #0b0c12; box-shadow: 0 8px 30px rgba(0,0,0,.45); }
+.video-preview { width: 60%; max-width: 280px; margin: 0 auto; display: block; border-radius: 14px; background: #000; aspect-ratio: 9 / 16; }
+.actionbar .share { flex: 0 0 56px; font-size: 20px; }
