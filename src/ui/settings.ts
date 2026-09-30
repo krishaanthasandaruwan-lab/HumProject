@@ -1,13 +1,18 @@
 // Settings: latency correction, recording options, calibration, privacy.
 import { outputLatency } from '../audio/context';
+import { refreshKey } from '../model/music';
 import { clearProfile, getProfile } from '../profile';
+import { edit } from '../state';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
 import { h, toast } from './dom';
 
-function toggle(key: keyof Settings, label: string): HTMLLabelElement {
+function toggle(key: keyof Settings, label: string, onChange?: (on: boolean) => void): HTMLLabelElement {
   const box = h('input', { type: 'checkbox', checked: Boolean(settings()[key]) });
-  box.addEventListener('change', () => updateSettings({ [key]: box.checked } as Partial<Settings>));
+  box.addEventListener('change', () => {
+    updateSettings({ [key]: box.checked } as Partial<Settings>);
+    onChange?.(box.checked);
+  });
   return h('label', { class: 'check' }, box, label);
 }
 
@@ -53,7 +58,7 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
     h('section', { class: 'card stack' }, h('h2', null, 'Beatbox calibration'), calibBox),
     h('section', { class: 'card stack' },
       h('h2', null, 'Melody'),
-      toggle('snapToScale', 'Snap hummed notes to the key (gentle auto-tune)'),
+      toggle('snapToScale', 'Snap hummed notes to the key (gentle auto-tune)', (on) => edit((p) => refreshKey(p, on))),
     ),
     h('section', { class: 'card stack' },
       h('h2', null, 'Privacy'),

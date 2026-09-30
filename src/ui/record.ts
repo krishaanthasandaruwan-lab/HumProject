@@ -6,6 +6,7 @@ import type { MicRecorder } from '../audio/recorder';
 import { Player } from '../audio/scheduler';
 import { captureTake, loopAudio, type Take } from '../audio/take';
 import { runDsp } from '../dsp/client';
+import { refreshKey } from '../model/music';
 import { getTrack, newTrack, putTrack, type Project, type Track, type TrackKind } from '../model/project';
 import { getProfile } from '../profile';
 import { navigate, type Params } from '../router';
@@ -18,7 +19,7 @@ const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 
 export function mountRecord(root: HTMLElement, params: Params): () => void {
-  const kind: TrackKind = (params.kind as TrackKind) || 'drums';
+  let kind: TrackKind = (['drums', 'bass', 'lead'] as const).includes(params.kind as 'drums') ? (params.kind as TrackKind) : 'drums';
   let abort: AbortController | null = null;
   let plan: TakePlan | null = null;
   let mic: MicRecorder | null = null;
@@ -43,6 +44,24 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     },
   );
 
+  const KINDS: { kind: TrackKind; em: string; label: string; sub: string; hint: string; verb: string }[] = [
+    { kind: 'drums', em: '🥁', label: 'Drums', sub: 'beatbox', hint: 'Beatbox your loop: B = kick, K = snare, ts = hi-hat.', verb: 'Listening to your beatbox…' },
+    { kind: 'bass', em: '🎸', label: 'Bass', sub: 'hum', hint: 'Hum a low, simple bassline — one note at a time.', verb: 'Finding your bass notes…' },
+    { kind: 'lead', em: '🎹', label: 'Lead', sub: 'hum or whistle', hint: 'Hum or whistle your melody. Short breaks between notes help.', verb: 'Finding your melody…' },
+  ];
+  const info = (): (typeof KINDS)[number] => KINDS.find((k) => k.kind === kind) ?? KINDS[0];
+  const title = h('h1', null);
+  const pickButtons = KINDS.map((k) =>
+    h('button', { type: 'button', onClick: () => setKind(k.kind) },
+      h('span', { class: 'em' }, k.em), h('span', null, k.label), h('span', { class: 'sub' }, k.sub)));
+  function setKind(k: TrackKind): void {
+    kind = k;
+    pickButtons.forEach((b, i) => b.classList.toggle('on', KINDS[i].kind === k));
+    title.textContent = `Record ${info().label.toLowerCase()}`;
+    if (!abort) status.textContent = `Tap REC. 1-bar count-in, then go. ${info().hint}`;
+    renderCalib();
+  }
+
   const calib = h('div', { class: 'card row calib' });
   const renderCalib = (): void => {
     const has = !!getProfile();
@@ -53,10 +72,8 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       h('button', { class: has ? '' : 'primary', onClick: () => navigate('calibrate', { back: 'record' }) }, has ? 'Redo' : 'Calibrate'),
     );
   };
-  renderCalib();
-
   const countin = h('div', { class: 'countin' });
-  const status = h('div', { class: 'status muted' }, 'Tap REC. You get a 1-bar count-in, then beatbox your loop.');
+  const status = h('div', { class: 'status muted' });
   const dots = [0, 1, 2, 3].map((i) => h('i', { class: i === 0 ? 'down' : '' }));
   const bar = h('div');
   const canvas = h('canvas', { class: 'wave' });
@@ -70,8 +87,9 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   root.append(
     h('header', { class: 'topbar' },
       h('button', { class: 'icon ghost', 'aria-label': 'Back', onClick: () => navigate('studio') }, '←'),
-      h('h1', null, 'Record drums'),
+      title,
       h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => navigate('settings', { back: 'record' }) }, '⚙︎')),
+    h('div', { class: 'picker' }, pickButtons),
     h('div', { class: 'card stack' },
       h('div', { class: 'row between' }, h('h2', null, 'Tempo'),
         h('div', { class: 'stepper' },
@@ -87,6 +105,8 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       h('label', { class: 'check' }, bandBox, 'Play my other tracks while recording'),
       h('p', { class: 'tiny muted' }, 'Wear headphones so the speaker does not leak into the mic.')),
   );
+
+  setKind(kind);
 
   function frame(): void {
     if (mic && plan) {
@@ -161,23 +181,34 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   async function processTake(take: Take): Promise<void> {
     recBtn.disabled = true;
     spinner.classList.remove('hidden');
-    status.textContent = 'Listening to your beatbox…';
+    status.textContent = info().verb;
     try {
       const p = getProject();
-      const res = await runDsp('beatbox', {
-        audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll,
-        bpm: p.bpm, bars: p.bars, swing: p.swing, profile: getProfile(),
-      });
-      if (!alive) return;
-      if (res.hits.length === 0) {
-        status.textContent = 'I could not hear any hits. Try again a little louder or closer to the mic.';
-        return;
-      }
-      const track = newTrack('drums', getTrack(p, 'drums')?.preset);
-      track.hits = res.hits;
+      const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
+      const track = newTrack(kind, getTrack(p, kind)?.preset);
       track.rawVoice = loopAudio(take);
       track.rawRate = take.sampleRate;
-      commit(track, `🥁 ${res.hits.length} drum hits added`);
+      if (kind === 'drums') {
+        const res = await runDsp('beatbox', { ...common, profile: getProfile() });
+        if (!alive) return;
+        if (res.hits.length === 0) {
+          status.textContent = 'I could not hear any hits. Try again a little louder or closer to the mic.';
+          return;
+        }
+        track.hits = res.hits;
+        commit(track, `🥁 ${res.hits.length} drum hits added`);
+      } else {
+        const res = await runDsp('melody', { ...common, mode: kind === 'bass' ? 'bass' : 'lead' });
+        if (!alive) return;
+        if (res.notes.length === 0) {
+          status.textContent = res.voiced < 0.05
+            ? 'I did not hear any humming. Try again a bit louder.'
+            : 'I could not find clear notes. Hum steadier notes with short breaks.';
+          return;
+        }
+        track.notes = res.notes;
+        commit(track, `${kind === 'bass' ? '🎸' : '🎹'} ${res.notes.length} notes added`, (p) => refreshKey(p, settings().snapToScale));
+      }
     } catch (err) {
       status.textContent = `Analysis failed: ${(err as Error).message}`;
     } finally {
@@ -186,16 +217,20 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     }
   }
 
-  function commit(track: Track, message: string): void {
+  function commit(track: Track, message: string, after?: (p: Project) => void): void {
     let old: Track | undefined;
-    edit((p) => { old = putTrack(p, track); });
-    navigate('studio');
+    edit((p) => {
+      old = putTrack(p, track);
+      after?.(p);
+    });
+    navigate('studio', { focus: track.kind });
     toast(message, {
       label: 'Undo',
       run: () => {
         edit((p) => {
           if (old) putTrack(p, old);
           else p.tracks = p.tracks.filter((t) => t.id !== track.id);
+          after?.(p);
         });
         navigate('studio');
       },

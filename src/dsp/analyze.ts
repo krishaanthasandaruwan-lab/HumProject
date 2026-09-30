@@ -1,8 +1,10 @@
 // High-level, pure analysis pipelines (run inside the DSP worker).
-import type { DrumHit, DrumType } from '../model/project';
+import type { DrumHit, DrumType, Note } from '../model/project';
 import { classify, type Profile } from './drumClassifier';
 import { extractFeatures } from './features';
 import { detectOnsets } from './onsets';
+import { notesToGrid, segmentNotes, transposeToRange } from './notes';
+import { fixOctaves, medianSmooth, trackPitch } from './pitch';
 import { hitsToGrid } from './quantize';
 
 export interface BeatboxInput {
@@ -61,4 +63,30 @@ export function analyzeCalibration(i: CalibrationInput): CalibrationHit[] {
     out.push({ cue: idx, time: best.time, x: extractFeatures(i.audio, i.sampleRate, best.time) });
   });
   return out;
+}
+
+export interface MelodyInput {
+  audio: Float32Array;
+  sampleRate: number;
+  preroll: number;
+  bpm: number;
+  bars: number;
+  swing: number;
+  mode: 'bass' | 'lead';
+}
+
+export interface MelodyResult {
+  notes: Note[];
+  voiced: number; // share of voiced frames, to tell "silence" from "no clear pitch"
+}
+
+export function analyzeMelody(i: MelodyInput): MelodyResult {
+  const hop = 256;
+  const raw = trackPitch(i.audio, i.sampleRate, { hop, maxHz: i.mode === 'bass' ? 900 : 2600 });
+  const frames = fixOctaves(medianSmooth(raw));
+  const segs = segmentNotes(frames, hop / i.sampleRate).map((n) => ({ ...n, start: n.start - i.preroll, end: n.end - i.preroll }));
+  let notes = notesToGrid(segs, i.bpm, i.bars * 16, i.swing);
+  if (i.mode === 'bass') notes = transposeToRange(notes, 28, 52);
+  const voiced = frames.length ? frames.filter((f) => f.midi !== null).length / frames.length : 0;
+  return { notes, voiced };
 }
