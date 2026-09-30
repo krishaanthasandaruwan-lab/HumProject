@@ -7,12 +7,14 @@ import { phaseAt, type TakePlan } from '../audio/metronome';
 import type { MicRecorder } from '../audio/recorder';
 import { drawScope, drawWave } from './waveform';
 import { settings, updateSettings } from '../settings';
+import { edit, getProject } from '../state';
+import { navigate } from '../router';
 
 const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
 
 export function mountRecord(root: HTMLElement): () => void {
-  let bpm = settings().lastBpm;
-  let bars = settings().lastBars;
+  let bpm = getProject().bpm;
+  let bars = getProject().bars;
   let take: Take | null = null;
   let loop: Float32Array | null = null;
   let abort: AbortController | null = null;
@@ -31,6 +33,7 @@ export function mountRecord(root: HTMLElement): () => void {
     bpmVal.textContent = `${bpm}`;
     bpmSlider.value = String(bpm);
     updateSettings({ lastBpm: bpm });
+    edit((p) => { p.bpm = bpm; });
   }
   const barsSeg = segmented<2 | 4 | 8>(
     [{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }],
@@ -39,6 +42,7 @@ export function mountRecord(root: HTMLElement): () => void {
       bars = v;
       barsSeg.set(v);
       updateSettings({ lastBars: v });
+      edit((p) => { p.bars = v; });
     },
   );
 
@@ -71,7 +75,8 @@ export function mountRecord(root: HTMLElement): () => void {
 
   root.append(
     h('header', { class: 'topbar' },
-      h('h1', null, h('span', { class: 'brand' }, 'MouthBand')),
+      h('button', { class: 'icon ghost', 'aria-label': 'Back', onClick: () => navigate('studio') }, '←'),
+      h('h1', null, 'Record'),
       h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => { settingsCard.classList.toggle('hidden'); updateLatLabel(); } }, '⚙︎'),
     ),
     h('div', { class: 'card stack' },

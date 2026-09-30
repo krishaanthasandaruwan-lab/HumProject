@@ -10,6 +10,7 @@ export interface Settings {
   onboarded: boolean;
   lastBpm: number;
   lastBars: 2 | 4 | 8;
+  lastProjectId?: string;
 }
 
 const DEFAULTS: Settings = {
