@@ -141,6 +141,8 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       abort.abort();
       return;
     }
+    const takeKind = kind; // the picker is locked during the take, but be explicit
+    pickButtons.forEach((b) => { b.disabled = true; });
     abort = new AbortController();
     recBtn.classList.add('live');
     recBtn.textContent = 'STOP';
@@ -175,20 +177,21 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       recBtn.classList.remove('live');
       recBtn.textContent = 'REC';
     }
-    if (take && alive) await processTake(take);
+    if (take && alive) await processTake(take, takeKind);
+    pickButtons.forEach((b) => { b.disabled = false; });
   }
 
-  async function processTake(take: Take): Promise<void> {
+  async function processTake(take: Take, k: TrackKind): Promise<void> {
     recBtn.disabled = true;
     spinner.classList.remove('hidden');
     status.textContent = info().verb;
     try {
       const p = getProject();
       const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
-      const track = newTrack(kind, getTrack(p, kind)?.preset);
+      const track = newTrack(k, getTrack(p, k)?.preset);
       track.rawVoice = loopAudio(take);
       track.rawRate = take.sampleRate;
-      if (kind === 'drums') {
+      if (k === 'drums') {
         const res = await runDsp('beatbox', { ...common, profile: getProfile() });
         if (!alive) return;
         if (res.hits.length === 0) {
@@ -198,7 +201,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
         track.hits = res.hits;
         commit(track, `🥁 ${res.hits.length} drum hits added`);
       } else {
-        const res = await runDsp('melody', { ...common, mode: kind === 'bass' ? 'bass' : 'lead' });
+        const res = await runDsp('melody', { ...common, mode: k === 'bass' ? 'bass' : 'lead' });
         if (!alive) return;
         if (res.notes.length === 0) {
           status.textContent = res.voiced < 0.05
@@ -207,7 +210,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
           return;
         }
         track.notes = res.notes;
-        commit(track, `${kind === 'bass' ? '🎸' : '🎹'} ${res.notes.length} notes added`, (p) => refreshKey(p, settings().snapToScale));
+        commit(track, `${k === 'bass' ? '🎸' : '🎹'} ${res.notes.length} notes added`, (p) => refreshKey(p, settings().snapToScale));
       }
     } catch (err) {
       status.textContent = `Analysis failed: ${(err as Error).message}`;
@@ -220,6 +223,13 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   function commit(track: Track, message: string, after?: (p: Project) => void): void {
     let old: Track | undefined;
     edit((p) => {
+      const prev = getTrack(p, track.kind);
+      if (prev) {
+        // A re-take keeps the mixer settings of the part it replaces.
+        track.volume = prev.volume;
+        track.muted = prev.muted;
+        track.solo = prev.solo;
+      }
       old = putTrack(p, track);
       after?.(p);
     });

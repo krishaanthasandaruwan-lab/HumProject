@@ -3,9 +3,12 @@ import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { clearProfile, getProfile } from '../profile';
 import { edit } from '../state';
+import { canBuy, restorePro } from '../pro/billing';
+import { DEV_PRO, isPro, setDevPro } from '../pro/pro';
+import { openPaywall } from './paywall';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
-import { h, toast } from './dom';
+import { append, h, toast } from './dom';
 
 function toggle(key: keyof Settings, label: string, onChange?: (on: boolean) => void): HTMLLabelElement {
   const box = h('input', { type: 'checkbox', checked: Boolean(settings()[key]) });
@@ -14,6 +17,26 @@ function toggle(key: keyof Settings, label: string, onChange?: (on: boolean) => 
     onChange?.(box.checked);
   });
   return h('label', { class: 'check' }, box, label);
+}
+
+function proSection(): HTMLElement {
+  const box = h('section', { class: 'card stack' });
+  const render = (): void => {
+    const dev = import.meta.env.DEV ? h('input', { type: 'checkbox', checked: isPro() }) : null;
+    dev?.addEventListener('change', () => { setDevPro(dev.checked); render(); });
+    box.replaceChildren();
+    append(box, [
+      h('h2', null, 'MouthBand Pro', isPro() ? h('span', { class: 'pro-chip' }, 'ON') : null),
+      h('p', { class: 'small muted' }, isPro()
+        ? DEV_PRO ? 'Unlocked by the DEV_PRO test build flag.' : 'Thank you! No watermark, all kits, WAV + MIDI, unlimited songs.'
+        : 'Free: watermark on videos, 2 drum kits, 3 saved songs.'),
+      isPro() ? null : h('button', { class: 'primary', onClick: () => openPaywall() }, 'Unlock Pro — $0.99 once'),
+      canBuy() && !isPro() ? h('button', { onClick: async () => { toast((await restorePro()) ? 'Pro restored 🎉' : 'No purchase found'); render(); } }, 'Restore purchase') : null,
+      dev ? h('label', { class: 'check' }, dev, 'Developer: pretend I bought Pro') : null,
+    ]);
+  };
+  render();
+  return box;
 }
 
 export function mountSettings(root: HTMLElement, params: Params): () => void {
@@ -60,6 +83,7 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
       h('h2', null, 'Melody'),
       toggle('snapToScale', 'Snap hummed notes to the key (gentle auto-tune)', (on) => edit((p) => refreshKey(p, on))),
     ),
+    proSection(),
     h('section', { class: 'card stack' },
       h('h2', null, 'Privacy'),
       h('p', { class: 'small muted' }, 'Audio never leaves your device. All listening, analysis and sound making happens on your phone. No account, no tracking.'),

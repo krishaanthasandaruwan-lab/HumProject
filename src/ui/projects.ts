@@ -4,7 +4,9 @@ import { navigate } from '../router';
 import { settings } from '../settings';
 import { edit, flushSave, getProject, setProject } from '../state';
 import { deleteProject, listProjects, loadProject, saveProject, type ProjectMeta } from '../storage';
+import { FREE_SONG_LIMIT, isPro } from '../pro/pro';
 import { ask, confirmSheet, h, sheet, toast } from './dom';
+import { openPaywall } from './paywall';
 
 function ago(ts: number): string {
   const s = (Date.now() - ts) / 1000;
@@ -20,7 +22,18 @@ export async function openProject(p: Project): Promise<void> {
   navigate('studio');
 }
 
+/** Free version keeps FREE_SONG_LIMIT songs; returns false (and shows the paywall) when full. */
+async function roomForAnother(): Promise<boolean> {
+  if (isPro()) return true;
+  await flushSave();
+  const count = (await listProjects().catch(() => [])).length;
+  if (count < FREE_SONG_LIMIT) return true;
+  openPaywall(`The free version keeps ${FREE_SONG_LIMIT} songs. Delete one, or go Pro for unlimited songs.`);
+  return false;
+}
+
 export async function createSong(): Promise<void> {
+  if (!(await roomForAnother())) return;
   const s = settings();
   await openProject(newProject(`Song ${new Date().toLocaleDateString()}`, s.lastBpm, s.lastBars));
 }
@@ -84,7 +97,7 @@ export function mountProjects(root: HTMLElement): () => void {
   }
 
   async function duplicate(m: ProjectMeta): Promise<void> {
-    await flushSave();
+    if (!(await roomForAnother())) return;
     const src = m.id === getProject().id ? getProject() : await loadProject(m.id);
     if (!src) return;
     const copy: Project = structuredClone(src);

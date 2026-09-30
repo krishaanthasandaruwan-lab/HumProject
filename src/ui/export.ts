@@ -2,9 +2,11 @@
 import { player } from '../app';
 import { unlockAudio } from '../audio/context';
 import { exportMidi, exportWav, prepareVideo, recordVideo } from '../audio/export';
+import { isPro } from '../pro/pro';
 import { download, safeName, shareFile } from '../share';
 import { getProject } from '../state';
 import { h, sheet, toast } from './dom';
+import { openPaywall } from './paywall';
 import { createScene, sceneEvents } from './videoScene';
 
 export function openExport(): void {
@@ -17,20 +19,26 @@ export function openExport(): void {
   const progress = h('div', { class: 'progress hidden' }, bar);
   const makeBtn = h('button', { class: 'primary big wide', onClick: () => void makeVideo() }, '🎬 Make my before → after video');
   const result = h('div', { class: 'stack hidden' });
-  const wavBtn = h('button', { class: 'grow', onClick: () => void doWav() }, '🎵 WAV audio');
-  const midiBtn = h('button', { class: 'grow', onClick: () => void doMidi() }, '🎹 MIDI file');
+  const lock = isPro() ? '' : ' 🔒';
+  const wavBtn = h('button', { class: 'grow', onClick: () => void doWav() }, `🎵 WAV audio${lock}`);
+  const midiBtn = h('button', { class: 'grow', onClick: () => void doMidi() }, `🎹 MIDI file${lock}`);
+  const proNote = isPro()
+    ? null
+    : h('p', { class: 'tiny muted center' }, 'Free videos carry a small “Made with MouthBand” watermark. ',
+      h('button', { class: 'link', onClick: () => openPaywall() }, 'Remove it — $0.99'));
 
   const content = h('div', { class: 'stack' },
     h('h2', null, 'Share your song'),
     h('div', { class: 'video-wrap' }, canvas),
     status, progress, makeBtn, result,
     h('div', { class: 'row' }, wavBtn, midiBtn),
+    proNote,
   );
   const close = sheet(content, () => abort?.abort());
   void close;
 
   // Poster frame so the sheet never shows an empty box.
-  const poster = createScene(canvas, { project: p, bars: Math.min(p.bars, 4), rawDur: 0, wave: new Float32Array(0), sampleRate: 48000, events: [], watermark: true });
+  const poster = createScene(canvas, { project: p, bars: Math.min(p.bars, 4), rawDur: 0, wave: new Float32Array(0), sampleRate: 48000, events: [], watermark: !isPro() });
   poster.draw(0.01);
 
   async function makeVideo(): Promise<void> {
@@ -46,7 +54,7 @@ export function openExport(): void {
       const plan = await prepareVideo(p);
       const scene = createScene(canvas, {
         project: p, bars: plan.bars, rawDur: plan.rawDur, wave: plan.wave, sampleRate: plan.audio.sampleRate,
-        events: sceneEvents(p, plan.bars, plan.rawDur), watermark: true,
+        events: sceneEvents(p, plan.bars, plan.rawDur), watermark: !isPro(),
       });
       status.textContent = 'Recording the video — keep this screen open…';
       const { blob, ext } = await recordVideo({
@@ -58,8 +66,8 @@ export function openExport(): void {
       result.replaceChildren(
         h('video', { class: 'video-preview', src: url, controls: true, playsinline: true }),
         h('div', { class: 'row' },
-          h('button', { class: 'primary big grow', onClick: () => void shareFile(blob, file, p.name).then(report) }, '📤 Share'),
-          h('button', { class: 'big', onClick: () => { download(blob, file); toast('Saved to your downloads'); } }, '⬇ Save')),
+          h('button', { class: 'primary big grow', onClick: () => void shareFile(blob, file, p.name).then(report, fail) }, '📤 Share'),
+          h('button', { class: 'big', onClick: () => void download(blob, file, p.name).then(report, fail) }, '⬇ Save')),
       );
       result.classList.remove('hidden');
       status.textContent = `Done — ${(blob.size / 1e6).toFixed(1)} MB ${ext.toUpperCase()}. Share it straight to TikTok, Reels or WhatsApp.`;
@@ -77,7 +85,12 @@ export function openExport(): void {
     if (outcome === 'downloaded') toast('Saved to your downloads');
   }
 
+  function fail(err: unknown): void {
+    toast(`Could not share: ${(err as Error)?.message ?? err}`);
+  }
+
   async function doWav(): Promise<void> {
+    if (!isPro()) return openPaywall('WAV export is part of Pro.');
     wavBtn.disabled = true;
     try {
       const blob = await exportWav(p);
@@ -90,6 +103,7 @@ export function openExport(): void {
   }
 
   async function doMidi(): Promise<void> {
-    report(await shareFile(exportMidi(p), `${name}.mid`, p.name));
+    if (!isPro()) return openPaywall('MIDI export is part of Pro.');
+    await shareFile(exportMidi(p), `${name}.mid`, p.name).then(report, fail);
   }
 }

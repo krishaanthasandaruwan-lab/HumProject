@@ -121,9 +121,14 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
     else player.start();
   }
 
+  let shownPlaying: boolean | null = null;
   function frame(): void {
-    playBtn.classList.toggle('on', player.playing);
-    playBtn.textContent = player.playing ? '■' : '▶';
+    if (shownPlaying !== player.playing) {
+      shownPlaying = player.playing;
+      playBtn.classList.toggle('on', shownPlaying);
+      playBtn.textContent = shownPlaying ? '■' : '▶';
+      playBtn.setAttribute('aria-label', shownPlaying ? 'Stop' : 'Play');
+    }
     const step = player.currentStep();
     cards.forEach((c) => c.setPlayhead(step));
     raf = requestAnimationFrame(frame);

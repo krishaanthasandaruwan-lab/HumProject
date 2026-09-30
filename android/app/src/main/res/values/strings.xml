@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MouthBand</string>
+    <string name="title_activity_main">MouthBand</string>
+    <string name="package_name">com.mouthband.app</string>
+    <string name="custom_url_scheme">com.mouthband.app</string>
+</resources>

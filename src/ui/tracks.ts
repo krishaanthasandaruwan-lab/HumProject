@@ -3,9 +3,11 @@ import { auditionDrum, auditionNote } from '../app';
 import { getTrack, newTrack, putTrack, totalSteps, TRACK_META, type Track, type TrackKind } from '../model/project';
 import { navigate } from '../router';
 import { edit, getProject } from '../state';
+import { kitLocked } from '../pro/pro';
 import { INSTRUMENTS, KITS } from '../synth/kits';
 import { h } from './dom';
 import { drumGrid } from './grid';
+import { openPaywall } from './paywall';
 import { pianoRoll, type RollApi } from './pianoroll';
 
 export interface TrackCard {
@@ -55,7 +57,12 @@ export function drumsCard(): TrackCard {
     edit: (fn) => edit(() => fn((ensure().hits ??= []))),
     audition: (type, v) => auditionDrum(type, track()?.preset ?? '808', v),
   });
-  const kitChips = chips(KITS, () => track()?.preset ?? '808', (id) => {
+  const kitChips = chips(KITS.map((k) => ({ id: k.id, name: k.name, locked: kitLocked(k.id) })), () => track()?.preset ?? '808', (id) => {
+    if (kitLocked(id)) {
+      auditionDrum('kick', id); // a taste of the sound
+      openPaywall('Lo-fi and Techno kits are part of Pro.');
+      return;
+    }
     edit(() => { ensure().preset = id; });
     auditionDrum('kick', id);
   });

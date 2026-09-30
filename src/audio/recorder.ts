@@ -2,7 +2,8 @@
 // audio-clock frame it was captured on, so takes can be cut exactly on the beat grid.
 import { getCtx } from './context';
 
-const WORKLET_SRC = `
+/** Same code as public/recorder-worklet.js (a test keeps them identical); used if that file can't load. */
+export const WORKLET_SRC = `
 class MBRecorder extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -55,9 +56,12 @@ const loaded = new WeakMap<BaseAudioContext, Promise<void>>();
 function loadWorklet(ctx: AudioContext): Promise<void> {
   let p = loaded.get(ctx);
   if (!p) {
-    const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: 'application/javascript' }));
-    p = ctx.audioWorklet.addModule(url);
-    p.catch(() => loaded.delete(ctx)).finally(() => URL.revokeObjectURL(url));
+    // A real same-origin file is the most compatible (older Safari is picky about blob: modules).
+    p = ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}recorder-worklet.js`).catch(() => {
+      const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: 'application/javascript' }));
+      return ctx.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url));
+    });
+    p.catch(() => loaded.delete(ctx));
     loaded.set(ctx, p);
   }
   return p;

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { stitch } from '../src/audio/recorder';
+import { WORKLET_SRC, stitch } from '../src/audio/recorder';
+import workletFile from '../public/recorder-worklet.js?raw';
 import { phaseAt, planTake } from '../src/audio/metronome';
+
+describe('recorder worklet', () => {
+  it('ships the same code as a file and as the inline fallback', () => {
+    expect(workletFile.trim()).toBe(WORKLET_SRC.trim());
+  });
+});
 
 describe('recorder stitching', () => {
   it('places chunks by frame stamp and zero-fills gaps', () => {
