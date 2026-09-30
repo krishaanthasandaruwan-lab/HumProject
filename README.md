@@ -10,7 +10,7 @@ It is a Vite + TypeScript PWA with no framework and no server. All audio analysi
 ```bash
 npm install
 npm run dev          # https://localhost:5173 (self-signed certificate; accept the warning)
-npm test             # 50 unit tests on synthetic signals
+npm test             # 49 unit tests on synthetic signals
 npm run typecheck
 npm run build        # production PWA in dist/
 ```
@@ -54,14 +54,16 @@ npm run dev:phone    # same as: npm run dev -- --host
 
 ## Android (Capacitor 8)
 
-Requirements are Android Studio (SDK 36) and **JDK 17 or 21**. The Gradle version Capacitor ships (8.14) cannot run on Java 25.
+Requirements are Android Studio (SDK 36) and about 3 GB of free disk space for Gradle's caches.
+
+Capacitor 8 compiles with **JDK 21**. The project pins Gradle's daemon to JDK 21 and downloads one automatically if missing (`android/gradle/gradle-daemon-jvm.properties` and the foojay resolver in `android/settings.gradle`). The Gradle version Capacitor ships (8.14) cannot run on Java 25. If Android Studio reports an incompatible Gradle JDK, go to Settings → Build → Gradle → Gradle JDK and pick a JDK 21.
 
 ```bash
 cp .env.example .env.local        # add your RevenueCat key (see STORE_LISTING.md)
 npm run android:sync              # build web + copy into android/
 npm run android:open              # open in Android Studio, then Run ▶ on a device
 # or a debug APK from the command line:
-JAVA_HOME=/path/to/jdk-17 npm run android:apk   # -> android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:apk              # -> android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 - **Permissions.** `RECORD_AUDIO` and `MODIFY_AUDIO_SETTINGS` are in the manifest. Capacitor's WebView client turns `getUserMedia` into the Android runtime permission prompt.
