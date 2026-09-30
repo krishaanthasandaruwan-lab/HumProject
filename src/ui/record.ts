@@ -1,105 +1,98 @@
-// Record screen (Phase 1): tempo, bars, count-in, live waveform, playback.
+// Record screen: count-in, capture your voice, then turn it into a track.
 import '../styles/record.css';
-import { h, segmented, toast } from './dom';
-import { getCtx, getMaster, outputLatency, unlockAudio } from '../audio/context';
-import { captureTake, loopAudio, type Take } from '../audio/take';
+import { getCtx } from '../audio/context';
 import { phaseAt, type TakePlan } from '../audio/metronome';
 import type { MicRecorder } from '../audio/recorder';
-import { drawScope, drawWave } from './waveform';
+import { Player } from '../audio/scheduler';
+import { captureTake, loopAudio, type Take } from '../audio/take';
+import { runDsp } from '../dsp/client';
+import { getTrack, newTrack, putTrack, type Project, type Track, type TrackKind } from '../model/project';
+import { getProfile } from '../profile';
+import { navigate, type Params } from '../router';
 import { settings, updateSettings } from '../settings';
 import { edit, getProject } from '../state';
-import { navigate } from '../router';
+import { h, segmented, toast } from './dom';
+import { drawScope } from './waveform';
 
 const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
+const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 
-export function mountRecord(root: HTMLElement): () => void {
-  let bpm = getProject().bpm;
-  let bars = getProject().bars;
-  let take: Take | null = null;
-  let loop: Float32Array | null = null;
+export function mountRecord(root: HTMLElement, params: Params): () => void {
+  const kind: TrackKind = (params.kind as TrackKind) || 'drums';
   let abort: AbortController | null = null;
   let plan: TakePlan | null = null;
   let mic: MicRecorder | null = null;
-  let player: AudioBufferSourceNode | null = null;
-  let playStart = 0;
+  let band: Player | null = null;
   let raf = 0;
+  let alive = true;
   const scope = new Float32Array(2048);
 
-  const bpmVal = h('div', { class: 'val' }, `${bpm}`);
-  const bpmSlider = h('input', { type: 'range', min: 70, max: 140, step: 1, value: String(bpm) });
-  bpmSlider.addEventListener('input', () => setBpm(Number(bpmSlider.value)));
-  function setBpm(v: number): void {
-    bpm = clampBpm(v);
-    bpmVal.textContent = `${bpm}`;
-    bpmSlider.value = String(bpm);
-    updateSettings({ lastBpm: bpm });
-    edit((p) => { p.bpm = bpm; });
-  }
+  const bpmVal = h('div', { class: 'val' }, String(getProject().bpm));
+  const setBpm = (v: number): void => {
+    edit((p) => { p.bpm = clampBpm(v); });
+    updateSettings({ lastBpm: getProject().bpm });
+    bpmVal.textContent = String(getProject().bpm);
+  };
   const barsSeg = segmented<2 | 4 | 8>(
     [{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }],
-    bars,
+    getProject().bars,
     (v) => {
-      bars = v;
-      barsSeg.set(v);
-      updateSettings({ lastBars: v });
       edit((p) => { p.bars = v; });
+      updateSettings({ lastBars: v });
+      barsSeg.set(v);
     },
   );
 
+  const calib = h('div', { class: 'card row calib' });
+  const renderCalib = (): void => {
+    const has = !!getProfile();
+    calib.classList.toggle('hidden', kind !== 'drums');
+    calib.replaceChildren(
+      h('span', { class: 'em' }, has ? '✅' : '🎯'),
+      h('div', { class: 'grow small' }, has ? 'Using your personal beatbox sounds.' : 'Teach MouthBand your B, K and ts in 20 seconds. Much better accuracy.'),
+      h('button', { class: has ? '' : 'primary', onClick: () => navigate('calibrate', { back: 'record' }) }, has ? 'Redo' : 'Calibrate'),
+    );
+  };
+  renderCalib();
+
   const countin = h('div', { class: 'countin' });
-  const status = h('div', { class: 'status muted' }, 'Tap REC. You get a 1-bar count-in, then sing or beatbox.');
+  const status = h('div', { class: 'status muted' }, 'Tap REC. You get a 1-bar count-in, then beatbox your loop.');
   const dots = [0, 1, 2, 3].map((i) => h('i', { class: i === 0 ? 'down' : '' }));
   const bar = h('div');
   const canvas = h('canvas', { class: 'wave' });
+  const spinner = h('div', { class: 'spinner hidden' });
   const recBtn = h('button', { class: 'recbtn', 'aria-label': 'Record', onClick: () => void toggleRecord() }, 'REC');
-  const playBtn = h('button', { class: 'wide big', disabled: true, onClick: () => togglePlay() }, '▶  Play take');
-
-  const latLabel = h('span', { class: 'small muted' });
-  const latSlider = h('input', { type: 'range', min: -100, max: 300, step: 5, value: String(settings().latencyMs) });
-  const updateLatLabel = (): void => {
-    const auto = Math.round(outputLatency() * 1000);
-    latLabel.textContent = `auto ${auto} ms + manual ${settings().latencyMs} ms`;
-  };
-  latSlider.addEventListener('input', () => {
-    updateSettings({ latencyMs: Number(latSlider.value) });
-    updateLatLabel();
-  });
   const clickBox = h('input', { type: 'checkbox', checked: settings().clickDuringTake });
   clickBox.addEventListener('change', () => updateSettings({ clickDuringTake: clickBox.checked }));
-  const settingsCard = h('div', { class: 'card stack hidden' },
-    h('h2', null, 'Settings'),
-    h('div', null, h('div', { class: 'row between' }, h('span', null, 'Latency correction'), latLabel), latSlider,
-      h('p', { class: 'tiny muted' }, 'If your hits land late on the grid, drag right. Early? Drag left.')),
-    h('label', { class: 'check' }, clickBox, 'Click while recording (use headphones)'),
-  );
+  const bandBox = h('input', { type: 'checkbox', checked: settings().bandDuringTake });
+  bandBox.addEventListener('change', () => updateSettings({ bandDuringTake: bandBox.checked }));
 
   root.append(
     h('header', { class: 'topbar' },
       h('button', { class: 'icon ghost', 'aria-label': 'Back', onClick: () => navigate('studio') }, '←'),
-      h('h1', null, 'Record'),
-      h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => { settingsCard.classList.toggle('hidden'); updateLatLabel(); } }, '⚙︎'),
-    ),
+      h('h1', null, 'Record drums'),
+      h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => navigate('settings', { back: 'record' }) }, '⚙︎')),
     h('div', { class: 'card stack' },
       h('div', { class: 'row between' }, h('h2', null, 'Tempo'),
         h('div', { class: 'stepper' },
-          h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(bpm - 1) }, '−'),
+          h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(getProject().bpm - 1) }, '−'),
           bpmVal,
-          h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(bpm + 1) }, '+'))),
-      bpmSlider,
-      barsSeg.el,
-    ),
-    settingsCard,
-    h('div', { class: 'rec-stage' }, countin, h('div', { class: 'beats' }, dots), recBtn, status,
+          h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(getProject().bpm + 1) }, '+'))),
+      barsSeg.el),
+    calib,
+    h('div', { class: 'rec-stage' }, countin, h('div', { class: 'beats' }, dots), recBtn, spinner, status,
       h('div', { class: 'progress' }, bar), canvas),
-    playBtn,
+    h('div', { class: 'card' },
+      h('label', { class: 'check' }, clickBox, 'Metronome click while recording'),
+      h('label', { class: 'check' }, bandBox, 'Play my other tracks while recording'),
+      h('p', { class: 'tiny muted' }, 'Wear headphones so the speaker does not leak into the mic.')),
   );
 
   function frame(): void {
-    const ctx = getCtx();
     if (mic && plan) {
       mic.analyser.getFloatTimeDomainData(scope);
       drawScope(canvas, scope);
-      const p = phaseAt(plan, ctx.currentTime);
+      const p = phaseAt(plan, getCtx().currentTime);
       if (p.phase === 'countin') {
         countin.textContent = String(p.beat + 1);
         dots.forEach((d, i) => d.classList.toggle('on', i === p.beat));
@@ -107,46 +100,53 @@ export function mountRecord(root: HTMLElement): () => void {
       } else if (p.phase === 'rec') {
         countin.textContent = '';
         dots.forEach((d, i) => d.classList.toggle('on', i === p.beat));
-        status.textContent = `Recording · bar ${p.bar + 1} of ${bars}`;
+        status.textContent = `Recording · bar ${p.bar + 1} of ${getProject().bars}`;
         bar.style.width = `${(p.progress * 100).toFixed(1)}%`;
       } else if (p.phase === 'done') {
-        status.textContent = 'Finishing…';
         dots.forEach((d) => d.classList.remove('on'));
       }
-    } else if (loop) {
-      const ph = player ? ((ctx.currentTime - playStart) * take!.sampleRate % loop.length) / loop.length : -1;
-      drawWave(canvas, loop, '#9b7bff', ph);
     }
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);
+
+  /** The project minus the track being re-recorded — what plays along during the take. */
+  const bandView = (): Project => {
+    const p = getProject();
+    return { ...p, tracks: p.tracks.filter((t) => t.kind !== kind) };
+  };
 
   async function toggleRecord(): Promise<void> {
     if (abort) {
       abort.abort();
       return;
     }
-    stopPlay();
     abort = new AbortController();
     recBtn.classList.add('live');
     recBtn.textContent = 'STOP';
     bar.style.width = '0';
+    const p = getProject();
+    band = settings().bandDuringTake && p.tracks.some((t) => t.kind !== kind && hasContent(t)) ? new Player(bandView) : null;
+    let take: Take | null = null;
     try {
       take = await captureTake({
-        bpm, bars,
+        bpm: p.bpm,
+        bars: p.bars,
         clickDuringTake: settings().clickDuringTake,
         manualLatencyMs: settings().latencyMs,
         signal: abort.signal,
-        onPlan: (p, m) => { plan = p; mic = m; },
+        onPlan: (pl, m) => {
+          plan = pl;
+          mic = m;
+          band?.start(pl.recStart);
+        },
       });
-      loop = loopAudio(take);
-      status.textContent = `Got it — ${(loop.length / take.sampleRate).toFixed(1)} s. Tap play to hear it.`;
-      playBtn.disabled = false;
     } catch (err) {
       const e = err as Error;
       status.textContent = e.name === 'AbortError' ? 'Cancelled.' : e.name === 'NotAllowedError' ? 'Microphone permission was denied.' : e.message;
-      if (e.name !== 'AbortError') toast(status.textContent ?? 'Recording failed');
     } finally {
+      band?.stop();
+      band = null;
       abort = null;
       plan = null;
       mic = null;
@@ -155,42 +155,57 @@ export function mountRecord(root: HTMLElement): () => void {
       recBtn.classList.remove('live');
       recBtn.textContent = 'REC';
     }
+    if (take && alive) await processTake(take);
   }
 
-  function togglePlay(): void {
-    if (player) {
-      stopPlay();
-      return;
-    }
-    if (!take || !loop) return;
-    void unlockAudio();
-    const ctx = getCtx();
-    const buf = ctx.createBuffer(1, loop.length, take.sampleRate);
-    buf.getChannelData(0).set(loop);
-    player = ctx.createBufferSource();
-    player.buffer = buf;
-    player.loop = true;
-    player.connect(getMaster());
-    playStart = ctx.currentTime + 0.05;
-    player.start(playStart);
-    playBtn.textContent = '■  Stop';
-  }
-
-  function stopPlay(): void {
-    if (!player) return;
+  async function processTake(take: Take): Promise<void> {
+    recBtn.disabled = true;
+    spinner.classList.remove('hidden');
+    status.textContent = 'Listening to your beatbox…';
     try {
-      player.stop();
-    } catch {
-      /* not started */
+      const p = getProject();
+      const res = await runDsp('beatbox', {
+        audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll,
+        bpm: p.bpm, bars: p.bars, swing: p.swing, profile: getProfile(),
+      });
+      if (!alive) return;
+      if (res.hits.length === 0) {
+        status.textContent = 'I could not hear any hits. Try again a little louder or closer to the mic.';
+        return;
+      }
+      const track = newTrack('drums', getTrack(p, 'drums')?.preset);
+      track.hits = res.hits;
+      track.rawVoice = loopAudio(take);
+      track.rawRate = take.sampleRate;
+      commit(track, `🥁 ${res.hits.length} drum hits added`);
+    } catch (err) {
+      status.textContent = `Analysis failed: ${(err as Error).message}`;
+    } finally {
+      recBtn.disabled = false;
+      spinner.classList.add('hidden');
     }
-    player.disconnect();
-    player = null;
-    playBtn.textContent = '▶  Play take';
+  }
+
+  function commit(track: Track, message: string): void {
+    let old: Track | undefined;
+    edit((p) => { old = putTrack(p, track); });
+    navigate('studio');
+    toast(message, {
+      label: 'Undo',
+      run: () => {
+        edit((p) => {
+          if (old) putTrack(p, old);
+          else p.tracks = p.tracks.filter((t) => t.id !== track.id);
+        });
+        navigate('studio');
+      },
+    });
   }
 
   return () => {
+    alive = false;
     cancelAnimationFrame(raf);
     abort?.abort();
-    stopPlay();
+    band?.stop();
   };
 }

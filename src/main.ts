@@ -7,15 +7,20 @@ import { loadSettings } from './settings';
 import { openInitialProject } from './state';
 import { mountRecord } from './ui/record';
 import { mountStudio } from './ui/studio';
+import { mountCalibrate } from './ui/calibrate';
+import { mountSettings } from './ui/settings';
+import { loadProfile } from './profile';
 
 registerScreen('studio', mountStudio);
 registerScreen('record', mountRecord);
+registerScreen('calibrate', mountCalibrate);
+registerScreen('settings', mountSettings);
 
 async function boot(): Promise<void> {
   installUnlock();
   setAudioSession('playback'); // iOS: play through the speaker even when the ring switch is on silent
   await loadSettings();
-  await openInitialProject();
+  await Promise.all([openInitialProject(), loadProfile()]);
   navigate('studio');
   if (import.meta.env.PROD) registerSW({ immediate: true });
 }

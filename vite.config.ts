@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json' with { type: 'json' };
 
 // HTTPS is required for microphone access on phones (getUserMedia needs a secure context).
 export default defineConfig({
@@ -29,6 +30,7 @@ export default defineConfig({
       },
     }),
   ],
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   build: { target: 'es2022' },
   worker: { format: 'es' },
   test: {

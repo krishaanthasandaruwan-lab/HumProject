@@ -64,7 +64,8 @@ export function mountStudio(root: HTMLElement): () => void {
 
   const title = h('h1', null, p().name);
   root.append(
-    h('header', { class: 'topbar' }, title),
+    h('header', { class: 'topbar' }, title,
+      h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => navigate('settings') }, '⚙︎')),
     h('div', { class: 'card' },
       h('div', { class: 'transport' },
         playBtn,
@@ -87,7 +88,7 @@ export function mountStudio(root: HTMLElement): () => void {
       h('button', { onClick: () => loadDemo() }, 'Load the demo song'),
     ),
     h('div', { class: 'actionbar' },
-      h('button', { class: 'rec big', onClick: () => navigate('record') }, '🎙  Record'),
+      h('button', { class: 'rec big', onClick: () => navigate('record', { kind: 'drums' }) }, '🎙  Record'),
     ),
   );
 
