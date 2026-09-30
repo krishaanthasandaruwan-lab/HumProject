@@ -34,6 +34,7 @@ export interface Track {
   muted: boolean;
   solo?: boolean;
   generated?: boolean; // made by auto-chords rather than recorded
+  labels?: string[]; // chord names per bar (chords track)
 }
 
 export interface Key {

@@ -3,11 +3,13 @@ import '../styles/studio.css';
 import { player } from '../app';
 import { unlockAudio } from '../audio/context';
 import { keyName } from '../dsp/key';
+import { addChords } from '../model/arrange';
 import { demoProject } from '../model/demo';
 import { getTrack, type TrackKind } from '../model/project';
 import { navigate, type Params } from '../router';
 import { edit, getProject, setProject } from '../state';
 import { append, h, segmented, toast } from './dom';
+import { openMixer } from './mixer';
 import { drumsCard, melodicCard, type TrackCard } from './tracks';
 
 const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
@@ -38,8 +40,10 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
   };
   renderMeta();
 
-  const cards: TrackCard[] = [drumsCard(), melodicCard('bass'), melodicCard('lead')];
-  const cardKinds: TrackKind[] = ['drums', 'bass', 'lead'];
+  const chordsBtn = (): HTMLElement =>
+    h('button', { class: 'mini primary', onClick: () => doChords() }, getTrack(p(), 'chords')?.notes?.length ? '↻ Redo' : '✨ Add chords');
+  const cards: TrackCard[] = [drumsCard(), melodicCard('bass'), melodicCard('lead'), melodicCard('chords', chordsBtn)];
+  const cardKinds: TrackKind[] = ['drums', 'bass', 'lead', 'chords'];
   const isEmpty = !p().tracks.some((t) => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0);
   const nextKind = (): TrackKind => (['drums', 'bass', 'lead'] as TrackKind[]).find((k) => !getTrack(p(), k)?.hits?.length && !getTrack(p(), k)?.notes?.length) ?? 'drums';
 
@@ -66,12 +70,31 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
       : null,
     cards.map((c) => c.el),
     h('div', { class: 'actionbar' },
+      h('button', { class: 'mix big', 'aria-label': 'Mixer', onClick: () => openMixer(() => renderMeta()) }, '🎚'),
       h('button', { class: 'rec big', onClick: () => navigate('record', { kind: nextKind() }) }, '🎙  Record')),
   ]);
 
   if (params.focus) {
     const i = cardKinds.indexOf(params.focus as TrackKind);
     if (i >= 0) requestAnimationFrame(() => cards[i].el.scrollIntoView({ block: 'center' }));
+  }
+
+  function doChords(): void {
+    let res: ReturnType<typeof addChords> | undefined;
+    edit((pp) => { res = addChords(pp); });
+    if (!res) return;
+    const done = res;
+    cards.forEach((c) => c.refresh());
+    renderMeta();
+    cards[3].el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    toast(`✨ ${done.names.join(' – ')}${done.addedBass ? ' + bass' : ''}`, {
+      label: 'Undo',
+      run: () => {
+        edit((pp) => done.undo(pp));
+        cards.forEach((c) => c.refresh());
+      },
+    });
+    if (!player.playing) void togglePlay();
   }
 
   function loadDemo(): void {

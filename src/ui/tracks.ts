@@ -28,10 +28,10 @@ export function chips(items: readonly ChipItem[], active: () => string, pick: (i
   return h('div', { class: 'presets' }, buttons);
 }
 
-function head(kind: TrackKind, extra?: HTMLElement | null): HTMLElement {
+function head(kind: TrackKind, extra?: HTMLElement | null, auto = false): HTMLElement {
   const m = TRACK_META[kind];
   return h('div', { class: 'track-head' },
-    h('h2', null, h('span', { class: 'swatch', style: `background:${m.color}` }), m.label),
+    h('h2', null, h('span', { class: 'swatch', style: `background:${m.color}` }), m.label, auto ? h('span', { class: 'gen-tag' }, 'auto') : null),
     extra ?? null,
     kind !== 'chords'
       ? h('button', { class: 'mini', onClick: () => navigate('record', { kind }) }, kind === 'drums' ? '🎙 Beatbox' : '🎙 Hum')
@@ -73,7 +73,7 @@ const EMPTY: Record<'bass' | 'lead' | 'chords', string> = {
   chords: 'Record a melody, then tap ✨ Add chords to harmonize it.',
 };
 
-export function melodicCard(kind: 'bass' | 'lead' | 'chords', extraHead?: () => HTMLElement | null): TrackCard {
+export function melodicCard(kind: 'bass' | 'lead' | 'chords', action?: () => HTMLElement | null): TrackCard {
   const p = getProject;
   const track = (): Track | undefined => getTrack(p(), kind);
   const body = h('div');
@@ -81,8 +81,8 @@ export function melodicCard(kind: 'bass' | 'lead' | 'chords', extraHead?: () => 
   const headWrap = h('div');
 
   function build(): void {
-    headWrap.replaceChildren(head(kind, extraHead?.() ?? null));
     const t = track();
+    headWrap.replaceChildren(head(kind, action?.() ?? null, !!t?.generated && kind !== 'chords'));
     if (!t || !t.notes?.length) {
       roll = null;
       body.replaceChildren(h('div', { class: 'track-empty' },
@@ -105,7 +105,8 @@ export function melodicCard(kind: 'bass' | 'lead' | 'chords', extraHead?: () => 
       });
       auditionNote(id, kind === 'bass' ? 40 : 64);
     });
-    body.replaceChildren(presets, roll.el);
+    const labels = t.labels?.length ? h('div', { class: 'chord-names' }, t.labels.map((l) => h('span', null, l))) : null;
+    body.replaceChildren(...(labels ? [labels] : []), presets, roll.el);
   }
   build();
   const el = h('section', { class: 'card' }, headWrap, body);
