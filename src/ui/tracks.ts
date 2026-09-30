@@ -1,5 +1,5 @@
 // One card per track kind: header, preset chips, and the editor (drum grid or piano roll).
-import { auditionDrum, auditionNote } from '../app';
+import { auditionDrum, auditionNote, toggleVoice } from '../app';
 import { getTrack, newTrack, putTrack, totalSteps, TRACK_META, type Track, type TrackKind } from '../model/project';
 import { navigate } from '../router';
 import { edit, getProject } from '../state';
@@ -30,10 +30,22 @@ export function chips(items: readonly ChipItem[], active: () => string, pick: (i
   return h('div', { class: 'presets' }, buttons);
 }
 
+/** 🎤 button that plays the raw take behind a recorded track. */
+function voiceButton(track: Track | undefined): HTMLElement | null {
+  if (!track?.rawVoice?.length) return null;
+  const btn = h('button', { class: 'mini', 'aria-label': 'Hear my recording', title: 'Hear my recording' }, '🎤');
+  btn.addEventListener('click', () => {
+    const on = toggleVoice(track, () => btn.classList.remove('on'));
+    btn.classList.toggle('on', on);
+  });
+  return btn;
+}
+
 function head(kind: TrackKind, extra?: HTMLElement | null, auto = false): HTMLElement {
   const m = TRACK_META[kind];
   return h('div', { class: 'track-head' },
     h('h2', null, h('span', { class: 'swatch', style: `background:${m.color}` }), m.label, auto ? h('span', { class: 'gen-tag' }, 'auto') : null),
+    voiceButton(getTrack(getProject(), kind)),
     extra ?? null,
     kind !== 'chords'
       ? h('button', { class: 'mini', onClick: () => navigate('record', { kind }) }, kind === 'drums' ? '🎙 Beatbox' : '🎙 Hum')

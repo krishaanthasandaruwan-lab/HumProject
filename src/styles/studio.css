@@ -71,3 +71,5 @@
 .video-canvas { width: 46%; max-width: 230px; aspect-ratio: 9 / 16; border-radius: 14px; background: #0b0c12; box-shadow: 0 8px 30px rgba(0,0,0,.45); }
 .video-preview { width: 60%; max-width: 280px; margin: 0 auto; display: block; border-radius: 14px; background: #000; aspect-ratio: 9 / 16; }
 .actionbar .share { flex: 0 0 56px; font-size: 20px; }
+
+.track-head .mini.on { background: var(--accent); border-color: var(--accent); }
