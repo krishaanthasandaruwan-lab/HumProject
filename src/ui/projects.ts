@@ -11,6 +11,7 @@ import { icon, type IconName } from './icons';
 import { art, backBtn, iconBtn, link, mainBtn, titleBlock } from './kit';
 import { openPaywall } from './paywall';
 import { trashRow } from './trash';
+import { swipeToDelete } from './swipe';
 
 function ago(ts: number): string {
   const s = (Date.now() - ts) / 1000;
@@ -72,7 +73,7 @@ export function mountProjects(root: HTMLElement): () => void {
     await flushSave();
     const items = await listProjects().catch(() => [] as ProjectMeta[]);
     if (!alive) return;
-    list.replaceChildren(...items.map(row));
+    list.replaceChildren(...items.map((m) => swipeToDelete(row(m), () => void remove(m, true), `Delete ${m.name}`)));
     if (!items.length) list.append(h('div', { class: 'songs-empty' }, art('ill-08-no-songs'), h('p', { class: 'body muted' }, 'No songs yet')));
     const bin = await trashRow(() => void refresh());
     if (!alive) return;
@@ -149,8 +150,9 @@ export function mountProjects(root: HTMLElement): () => void {
     await refresh();
   }
 
-  async function remove(m: ProjectMeta): Promise<void> {
-    if (!(await confirmSheet(`Delete “${m.name}”?`, 'Delete', true))) return;
+  /** Delete (to Recently deleted, with Undo). A swipe is already a clear choice, so it skips the question. */
+  async function remove(m: ProjectMeta, swiped = false): Promise<void> {
+    if (!swiped && !(await confirmSheet(`Delete “${m.name}”?`, 'Delete', true))) return;
     await flushSave();
     await trashProject(m.id);
     if (m.id === getProject().id) {

@@ -85,9 +85,11 @@ export function mountChoices(root: HTMLElement): () => void {
     if (player.playing) play(current);
   }, { icon: 'voice', pressed: true }) : null;
   const moreChip = chip('More', () => void more(), { icon: 'add' }) as HTMLButtonElement;
-  const status = h('p', { class: 'small muted choices-status', 'aria-live': 'polite' }, 'Building…');
+  const status = h('p', { class: 'small muted choices-status playing', 'aria-live': 'polite' },
+    h('span', { class: 'eqbars', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')), 'Building your songs…');
   const bar = pairBtn('Hum again', () => navigate('hum'), 'Use this', () => void use());
   bar.main.disabled = true;
+  bar.main.classList.add('busy');
 
   root.append(h('div', { class: 'screen choices' },
     h('header', { class: 'top' }, iconBtn('again', 'Hum again', () => navigate('hum')), null),
@@ -102,7 +104,8 @@ export function mountChoices(root: HTMLElement): () => void {
     void unlockAudio().then(() => {
       if (!alive) return;
       player.start();
-      status.textContent = '';
+      status.replaceChildren();
+      status.classList.remove('playing');
     });
   }
 
@@ -128,7 +131,6 @@ export function mountChoices(root: HTMLElement): () => void {
       btn.setAttribute('aria-pressed', 'false');
       await trashProject(p.id);
       p.id = uid(); // a later "Use this" makes a fresh song, not a clash with the deleted one
-      toast('Moved to Recently deleted');
       return;
     }
     if (!(await roomForAnother())) return;
@@ -139,7 +141,6 @@ export function mountChoices(root: HTMLElement): () => void {
     kept.add(i);
     btn.setAttribute('aria-pressed', 'true');
     navigator.vibrate?.(10);
-    toast(`${p.name} kept in My songs`);
   }
 
   async function use(): Promise<void> {
@@ -156,6 +157,7 @@ export function mountChoices(root: HTMLElement): () => void {
   void add(pickVariants(t.bpm, t.key, likes)).then(() => {
     if (!alive) return;
     bar.main.disabled = false;
+    bar.main.classList.remove('busy');
     play(0);
   });
 

@@ -1,43 +1,48 @@
-/* The Studio's tracks view: a sticky name column on the left, lanes across the bars, one playhead. */
-.tl { --head-w: 140px; --row-h: 72px; position: relative; flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain;
-  background: var(--white); border: var(--border-soft); border-radius: var(--r-card); -webkit-overflow-scrolling: touch; }
-.tl-content { position: relative; min-width: 100%; }
-.tl-ruler { position: sticky; top: 0; z-index: 4; display: flex; height: 26px; background: var(--white); border-bottom: 1px solid var(--stone); }
-.tl-corner { position: sticky; left: 0; z-index: 5; width: var(--head-w); flex: none; background: var(--white); border-right: 1.5px solid var(--stone); }
-.tl-bars { display: flex; }
-.tl-bars > span { flex: none; padding: 7px 0 0 5px; border-left: 1px solid var(--stone); color: var(--graphite);
-  font: 700 .6875rem/1 var(--font-label); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
-.tl-row { display: flex; height: var(--row-h); border-bottom: 1px solid var(--stone); }
-.tl-head { position: sticky; left: 0; z-index: 3; width: var(--head-w); flex: none; display: flex; flex-direction: column; justify-content: center; gap: 4px;
-  padding: 6px 2px 6px 8px; background: var(--white); border-right: 1.5px solid var(--stone); transition: background var(--t-ui); }
-.tl-line { display: flex; align-items: center; gap: 2px; min-width: 0; }
-.tl-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; text-align: left; color: var(--ink); -webkit-touch-callout: none; }
-.tl-name .ico { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border: var(--border); background: var(--white); }
+/* The Tracks screen: a landscape table that matches the Studio's parts list — same icon tiles, names
+   and white card — with lanes across the whole song and one playhead. */
+.tl { --head-w: 168px; position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--white); border: var(--border-soft); border-radius: var(--r-card); }
+.tl-ruler { flex: none; display: flex; height: 26px; border-bottom: 1px solid var(--stone); }
+.tl-ruler > span { flex: none; overflow: hidden; padding: 7px 0 0 4px; border-left: 1px solid var(--stone); color: var(--graphite);
+  font: 700 .6875rem/1 var(--font-label); letter-spacing: .04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tl-ruler > .tl-corner { width: calc(var(--head-w) + 2px); border-left: 0; padding: 0; }
+.tl-rows { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.tl-row { display: flex; width: 100%; border-bottom: 1px solid var(--stone); text-align: left; }
+.tl-row:last-child { border-bottom: 0; }
+.tl-head { width: var(--head-w); flex: none; display: flex; align-items: center; gap: 2px; padding: 0 2px 0 8px;
+  border-right: 1.5px solid var(--stone); background: var(--white); }
+.tl-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 40px; color: var(--ink); text-align: left; -webkit-touch-callout: none; }
+.tl-name .ico { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border: var(--border); background: var(--white); }
 .tl-name .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 .875rem/1.15 var(--font-body); }
-.tl-mute { width: 36px; height: 36px; }
-.tl-mute[aria-pressed="true"] { background: transparent; color: var(--graphite); }
-.tl-tools { display: flex; gap: 4px; min-width: 0; overflow: hidden; }
-.tl-tools .chip { height: 24px; padding: 0 6px; gap: 3px; font-size: .6875rem; min-width: 0; overflow: hidden; }
-.tl-tools .chip.icon-chip { flex: none; width: 30px; padding: 0; justify-content: center; }
-.tl-lane { display: block; flex: none; padding: 0; cursor: pointer; }
+.tl-ic { width: 26px; height: 40px; flex: none; display: grid; place-items: center; color: var(--ink); }
+.tl-ic.fix { color: var(--red-ink); }
+.tl-mute[aria-pressed="true"] { color: var(--graphite); }
+.tl-lane { flex: 1; min-width: 0; display: block; padding: 0; cursor: pointer; overflow: hidden; }
 .tl-lane canvas { display: block; }
 .tl-row.muted .tl-name { color: var(--graphite); }
 .tl-row.muted .tl-name .ico { background: var(--mist); border-color: var(--stone); color: var(--graphite); }
 .tl-row.solo .tl-name .ico { background: var(--red); }
-.tl-row.flash .tl-head { background: var(--red-tint); }
+.tl-suggest { align-items: center; color: var(--ink); }
+.tl-suggest .ico { border-style: dashed; }
+.tl-hint { padding-left: 12px; }
 .tl-playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px; background: var(--red); z-index: 2; pointer-events: none; display: none; }
 .tl-playhead::before { content: ""; position: absolute; top: 0; left: -3px; width: 8px; height: 8px; background: var(--red); border: 1.5px solid var(--ink); }
-.tl-suggest { position: sticky; left: 0; display: flex; align-items: center; gap: 10px; width: min(100%, 360px); min-height: 56px; padding: 8px 12px;
-  text-align: left; color: var(--ink); border-bottom: 1px dashed var(--stone); }
-.tl-suggest b { display: block; font: 600 .875rem/1.2 var(--font-body); }
-.tl-suggest small { display: block; font: 400 .75rem/1.3 var(--font-body); color: var(--graphite); }
-.tl-suggest > svg { width: 30px; height: 30px; padding: 5px; border: 2px dashed var(--ink); flex: none; }
 
-/* The full-screen Tracks screen */
-.tracks { gap: 10px; }
-.tracks .top { gap: 10px; }
+/* The Tracks screen itself. On a phone held upright (and only where the app can't turn the screen
+   itself) the whole page is turned a quarter, so it always reads as landscape. */
+.tracks { gap: 8px; }
+.tracks .top { gap: 10px; min-height: 44px; }
 .tracks-title { flex: 1; min-width: 0; }
 .tracks-title .h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tracks .playsq { width: 52px; height: 52px; margin: 0; box-shadow: 3px 3px 0 var(--ink); }
-.tracks .tl { margin-bottom: 4px; }
-.tl-name .nm { font-size: .9375rem; }
+.tracks .playsq { width: 48px; height: 48px; margin: 0; box-shadow: 3px 3px 0 var(--ink); }
+.tracks-loading { flex: 1; display: grid; place-items: center; }
+.screen.tracks.turned {
+  position: fixed; top: 0; left: 0; z-index: 30; margin: 0; background: var(--paper);
+  width: 100vh; height: 100vw; width: 100dvh; height: 100dvw;
+  transform-origin: top left; transform: translateX(100vw) rotate(90deg); transform: translateX(100dvw) rotate(90deg);
+  padding: calc(var(--safe-right) + 8px) calc(var(--safe-bottom) + 12px) calc(var(--safe-left) + 8px) calc(var(--safe-top) + 12px);
+}
+body.ui-turned .sheet-wrap { inset: auto; top: 0; left: 0; width: 100vh; height: 100vw; width: 100dvh; height: 100dvw;
+  transform-origin: top left; transform: translateX(100vw) rotate(90deg); transform: translateX(100dvw) rotate(90deg); }
+body.ui-turned .sheet { max-height: 92vw; max-height: 92dvw; }
+body.ui-turned .toast { top: 50%; bottom: auto; left: calc(var(--safe-left) + 44px); width: min(520px, 90vh); transform: translate(-50%, -50%) rotate(90deg); animation: none; }

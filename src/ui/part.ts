@@ -36,7 +36,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
 
   root.append(h('div', { class: 'screen part' },
     h('header', { class: 'top' },
-      backBtn(() => navigate('studio', { focus: id }), 'Studio'),
+      backBtn(() => navigate(params.back === 'tracks' ? 'tracks' : 'studio', { focus: id }), params.back === 'tracks' ? 'Tracks' : 'Studio'),
       id === 'voice' ? null : iconBtn('more', 'More', () => more(), { ghost: true })),
     h('div', { class: 'titleblock' }, h('h1', { class: 'h2' }, title), head),
     editor,
@@ -119,7 +119,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
     });
     const undo = (): void => {
       edit((pp) => { pp.tracks = before.map((t) => (t === old ? copy : t)); });
-      if (fn) navigate('part', { id });
+      if (fn) navigate('part', params.back ? { id, back: params.back } : { id });
       else navigate('studio');
     };
     if (!fn) {

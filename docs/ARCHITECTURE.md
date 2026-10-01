@@ -7,7 +7,7 @@ TypeScript web app (Vite, no UI framework) wrapped as an iPhone/iPad and Android
 
 | Layer | Folder | Job | Depends on |
 |---|---|---|---|
-| Screens | `src/ui` | One function per screen (`mountX(root, params)`), sheets, the component kit. The Studio is the simple main screen (parts list); `tracks.ts` is the full-screen tracks table for detail | everything below |
+| Screens | `src/ui` | One function per screen (`mountX(root, params)`), sheets, the component kit. The Studio is the simple main screen (parts list, swipe to remove); `tracks.ts` is the landscape-only tracks table (orientation locked in the apps, the page turned on an upright phone elsewhere) | everything below |
 | Styles | `src/styles` | Tokens (`base.css`), components (`ui.css`), per-screen CSS; `landscape.css` last | — |
 | State | `src/state.ts`, `src/settings.ts`, `src/storage.ts`, `src/songName.ts` | The open song, autosave, settings, songs + Recently deleted in IndexedDB | model |
 | Model | `src/model` | Song data (`project.ts`), arrangement styles, auto-arrange, variety, Fix | — |
@@ -39,7 +39,8 @@ and `tracks[]`. A track has a `kind` (drums / bass / lead / chords), a `preset`,
 the 16th grid, mixer state, and for hummed parts the raw take (`rawVoice`) with `anchors` that map
 where each note was sung to where it sits. Any number of tracks per kind ("Drums 2").
 
-Songs live in IndexedDB (`project:<id>` + an index). Hearted songs (`favorite`) are listed first; a heart on
+Songs live in IndexedDB (`project:<id>` + an index). Settings › Clear cache (`cache.ts`) forgets rendered sounds
+and deletes shared videos/audio from the app's cache folder; it never touches songs. Hearted songs (`favorite`) are listed first; a heart on
 a generated version saves it straight to My songs. Deleted songs move to `trash:<id>` for 30 days.
 An empty new song is not saved until something is in it.
 

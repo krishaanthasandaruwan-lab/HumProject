@@ -74,7 +74,10 @@ svg { flex: none; }
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin: 0 calc(-1 * var(--side)); padding: 0 var(--side) 4px; }
 .screen.fixed { overflow: hidden; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
-.screen > .top { position: sticky; top: 0; z-index: 6; background: var(--paper); flex: none; }
+.screen > .top { flex: none; }
+/* No scroll lines anywhere (iOS shows a thin dark bar while scrolling). */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
 .top .grow { flex: 1; min-width: 0; }
 .titleblock { position: relative; display: flex; flex-direction: column; gap: 8px; padding-right: 40px; }
 .titleblock .deco, .titleblock .grille { position: absolute; top: 4px; right: 0; }

@@ -4,7 +4,8 @@ import { prepareProject } from '../audio/prepare';
 import type { Track } from '../model/project';
 import { navigate } from '../router';
 import { edit, getProject } from '../state';
-import { h } from './dom';
+import { h, toast } from './dom';
+import { swipeToDelete } from './swipe';
 import { makeChords } from './chords';
 import { canFix, runFix } from './fix';
 import { icon, type IconName } from './icons';
@@ -47,6 +48,10 @@ export function partList(onChange: () => void): { el: HTMLElement; refresh: () =
         }, 450);
       });
       const cancel = (): void => clearTimeout(timer);
+      let x0 = 0;
+      let y0 = 0;
+      r.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; });
+      r.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 8) cancel(); }); // a swipe or scroll is not a hold
       r.addEventListener('pointerup', cancel);
       r.addEventListener('pointerleave', cancel);
       r.addEventListener('pointercancel', cancel);
@@ -55,9 +60,24 @@ export function partList(onChange: () => void): { el: HTMLElement; refresh: () =
     return r;
   }
 
+  /** Swipe a part away: it leaves the song, with Undo. */
+  function removePart(t: Track): void {
+    const p = getProject();
+    const at = p.tracks.indexOf(t);
+    const name = partLabel(p, t);
+    edit((pp) => { pp.tracks = pp.tracks.filter((x) => x !== t); });
+    refresh();
+    onChange();
+    toast(`${name} removed`, { label: 'Undo', run: () => {
+      edit((pp) => { pp.tracks.splice(Math.min(at, pp.tracks.length), 0, t); });
+      refresh();
+      onChange();
+    } });
+  }
+
   function trackRow(t: Track): HTMLElement {
     const changed = (): void => { refresh(); onChange(); };
-    return row(t.id, PARTS[t.kind].icon, partLabel(getProject(), t), {
+    return swipeToDelete(row(t.id, PARTS[t.kind].icon, partLabel(getProject(), t), {
       muted: t.muted,
       solo: !!t.solo,
       soloable: t,
@@ -67,7 +87,7 @@ export function partList(onChange: () => void): { el: HTMLElement; refresh: () =
         edit(() => { t.muted = !t.muted; });
         changed();
       },
-    });
+    }), () => removePart(t), `Remove ${partLabel(getProject(), t)}`);
   }
 
   function voiceRow(list: Track[]): HTMLElement {

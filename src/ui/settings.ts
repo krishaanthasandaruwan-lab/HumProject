@@ -14,6 +14,7 @@ import { backBtn, group, listRow, range, titleBlock, toggle } from './kit';
 import { openTaste, tasteSummary } from './taste';
 import { openAbout, openPrivacy } from './about';
 import { rateApp } from '../native/review';
+import { clearCaches } from '../cache';
 
 function switchRow(key: keyof Settings, title: string, sub?: string, onChange?: (on: boolean) => void): HTMLElement {
   return listRow(title, toggle(Boolean(settings()[key]), (on) => {
@@ -69,7 +70,11 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
     group('HUMM',
       listRow('Rate HUMM', icon('open', 20), { sub: 'Tell others what you think', onClick: () => void rateApp() }),
       listRow('Privacy', icon('open', 20), { sub: 'Your audio never leaves your phone', onClick: () => openPrivacy() }),
-      listRow('About HUMM', icon('open', 20), { sub: `Version ${__APP_VERSION__}`, onClick: () => openAbout() })),
+      listRow('About HUMM', icon('open', 20), { sub: `Version ${__APP_VERSION__}`, onClick: () => openAbout() }),
+      listRow('Clear cache', icon('delete', 20), { sub: 'Frees space. Your songs stay.', onClick: async () => {
+        const n = await clearCaches();
+        toast(n ? `Cache cleared · ${n} ${n === 1 ? 'file' : 'files'}` : 'Cache cleared');
+      } })),
     h('details', { class: 'advanced' },
       h('summary', { class: 'label' }, 'Advanced', icon('down', 16)),
       group('While recording a part',

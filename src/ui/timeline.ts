@@ -1,7 +1,7 @@
-// The tracks table (like GarageBand), full screen from the Studio's Tracks button: one row per part —
-// its name, sound, Fix and mute on the left (they stay put), and a lane across the bars on the right,
-// with one playhead over all lanes. Long songs scroll sideways; many parts scroll down. Tap a part to
-// edit it, hold its name to solo.
+// The tracks table (Tracks screen, landscape): one row per part — icon, the same name as in the Studio,
+// a small ▾ for its sound, Fix when it can help, and mute — then a lane across the whole song with one
+// playhead over all lanes. The song always fits the width (no sideways scrolling); up to 8 parts fit
+// the height, more scroll down. Tap a lane to edit that part; hold a name to solo it.
 import { prepareProject } from '../audio/prepare';
 import { STEPS_PER_BAR, type Track } from '../model/project';
 import { navigate } from '../router';
@@ -9,33 +9,37 @@ import { edit, getProject } from '../state';
 import { h } from './dom';
 import { canFix, runFix } from './fix';
 import { icon } from './icons';
-import { chip } from './kit';
 import { drawLane } from './laneDraw';
 import { makeChords } from './chords';
 import { PARTS, partLabel } from './parts';
-import { openSounds, soundName } from './soundsSheet';
+import { openSounds } from './soundsSheet';
 
-const ROW_H = 84;
-const MIN_BAR = 48;
+const MAX_ROWS = 8; // fit this many parts on screen; more scroll down
+const MIN_ROW = 40;
+const RULER = 26;
 
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 const voiceTracks = (): Track[] => getProject().tracks.filter((t) => (t.kind === 'bass' || t.kind === 'lead') && t.rawVoice?.length && t.anchors?.length);
+const needsChords = (): boolean => {
+  const p = getProject();
+  return p.tracks.some((t) => (t.kind === 'lead' || t.kind === 'bass') && t.notes?.length) && !p.tracks.some((t) => t.kind === 'chords' && t.notes?.length);
+};
 
 export interface Timeline {
   el: HTMLElement;
   refresh(): void;
-  setPlayhead(step: number, follow: boolean): void;
+  setPlayhead(step: number): void;
   empty(): boolean;
-  focus(id: string): void;
   dispose(): void;
 }
 
 export function timeline(onChange: () => void): Timeline {
-  const content = h('div', { class: 'tl-content' });
-  const el = h('div', { class: 'tl', role: 'list', 'aria-label': 'Parts' }, content);
+  const ruler = h('div', { class: 'tl-ruler', 'aria-hidden': 'true' });
+  const rows = h('div', { class: 'tl-rows', role: 'list', 'aria-label': 'Parts' });
   const playhead = h('div', { class: 'tl-playhead', 'aria-hidden': 'true' });
-  let barW = MIN_BAR;
-  let headW = 140;
+  const el = h('div', { class: 'tl' }, ruler, rows, playhead);
+  let headW = 168;
+  let laneW = 0;
 
   function holdToSolo(target: HTMLElement, t: Track): () => boolean {
     let held = false;
@@ -58,101 +62,83 @@ export function timeline(onChange: () => void): Timeline {
     return () => held;
   }
 
-  function row(t: Track, asVoice: boolean): HTMLElement {
+  function row(t: Track, asVoice: boolean, rowH: number): HTMLElement {
     const p = getProject();
     const id = asVoice ? 'voice' : t.id;
     const name = asVoice ? PARTS.voice.label : partLabel(p, t);
     const muted = asVoice ? !voiceTracks().some((v) => v.voice?.on) : t.muted;
-    const open = (): void => navigate('part', { id });
+    const open = (): void => navigate('part', { id, back: 'tracks' });
+    const changed = (): void => { refresh(); onChange(); };
+    let wasHeld = (): boolean => false;
     const nameBtn = h('button', { type: 'button', class: 'tl-name', onClick: () => { if (!wasHeld()) open(); } },
-      h('span', { class: 'ico', 'aria-hidden': 'true' }, icon(PARTS[asVoice ? 'voice' : t.kind].icon, 20)),
-      h('span', { class: 'nm' }, name, t.solo && !asVoice ? h('span', { class: 'sr-only' }, ' (solo)') : null));
-    const wasHeld = asVoice ? (): boolean => false : holdToSolo(nameBtn, t);
-    const mute = h('button', { type: 'button', class: 'icon-btn ghost tl-mute', 'aria-pressed': String(muted), 'aria-label': `Mute ${name}`, onClick: () => {
+      h('span', { class: 'ico', 'aria-hidden': 'true' }, icon(PARTS[asVoice ? 'voice' : t.kind].icon, 18)),
+      h('span', { class: 'nm' }, name));
+    if (!asVoice) wasHeld = holdToSolo(nameBtn, t);
+    const sound = h('button', { type: 'button', class: 'tl-ic', 'aria-label': asVoice ? `${name} settings` : `${name} sound`,
+      onClick: () => (asVoice ? open() : openSounds(t.id, changed)) }, icon('down', 16));
+    const fix = !asVoice && canFix(t.id)
+      ? h('button', { type: 'button', class: 'tl-ic fix', 'aria-label': `Fix ${name}`, onClick: () => runFix(t.id, changed) }, icon('fix', 16))
+      : null;
+    const mute = h('button', { type: 'button', class: 'tl-ic tl-mute', 'aria-pressed': String(muted), 'aria-label': `Mute ${name}`, onClick: () => {
       if (asVoice) {
         const list = voiceTracks();
         const on = list.some((v) => v.voice?.on);
         edit(() => { for (const v of list) v.voice = { ...(v.voice ?? { tune: true, level: 0.8 }), on: !on }; });
         void prepareProject(getProject()).catch(() => undefined);
       } else edit(() => { t.muted = !t.muted; });
-      refresh();
-      onChange();
-    } }, icon(muted ? 'mute' : 'unmute', 20));
-    const tools = asVoice
-      ? [chip(t.voice?.tune ?? true ? 'Tuned' : 'Natural', open)]
-      : [chip([soundName(t), icon('down', 12)], () => openSounds(t.id, () => { refresh(); onChange(); })),
-        canFix(t.id) ? fixChip(t) : null];
+      changed();
+    } }, icon(muted ? 'mute' : 'unmute', 18));
     const canvas = h('canvas', { 'aria-hidden': 'true' });
     const lane = h('button', { type: 'button', class: 'tl-lane', 'aria-label': `Edit ${name}`, onClick: open }, canvas);
-    drawLane(canvas, t, { bars: p.bars, barW, height: ROW_H - 1 }, asVoice);
-    return h('div', { class: `tl-row${muted ? ' muted' : ''}${t.solo && !asVoice ? ' solo' : ''}`, role: 'listitem', 'data-id': id },
-      h('div', { class: 'tl-head' }, h('div', { class: 'tl-line' }, nameBtn, mute), h('div', { class: 'tl-tools' }, tools)),
-      lane);
-  }
-
-  /** Fix as a small red icon chip: it only shows when it can help. */
-  function fixChip(t: Track): HTMLElement {
-    const c = chip('', () => runFix(t.id, () => { refresh(); onChange(); }), { icon: 'fix', attn: true });
-    c.setAttribute('aria-label', 'Fix');
-    c.classList.add('icon-chip');
-    return c;
-  }
-
-  function ruler(bars: number): HTMLElement {
-    return h('div', { class: 'tl-ruler', 'aria-hidden': 'true' }, h('div', { class: 'tl-corner' }),
-      h('div', { class: 'tl-bars' }, Array.from({ length: bars }, (_, b) => h('span', { style: `width:${barW}px` }, String(b + 1)))));
+    drawLane(canvas, t, { bars: p.bars, barW: laneW / p.bars, height: rowH - 1 }, asVoice);
+    return h('div', { class: `tl-row${muted ? ' muted' : ''}${t.solo && !asVoice ? ' solo' : ''}`, role: 'listitem', style: `height:${rowH}px` },
+      h('div', { class: 'tl-head' }, nameBtn, fix, sound, mute), lane);
   }
 
   /** Chords made from the melody, offered where the song has a tune but no chords yet. */
-  function suggestion(): HTMLElement | null {
-    const p = getProject();
-    const tune = p.tracks.some((t) => (t.kind === 'lead' || t.kind === 'bass') && t.notes?.length);
-    if (!tune || p.tracks.some((t) => t.kind === 'chords' && t.notes?.length)) return null;
-    return h('button', { type: 'button', class: 'tl-suggest', onClick: () => makeChords(() => { refresh(); onChange(); }) },
-      icon('add', 18), h('span', null, h('b', null, 'Add chords'), h('small', null, 'Made from your melody')));
+  function suggestion(rowH: number): HTMLElement {
+    return h('button', { type: 'button', class: 'tl-row tl-suggest', style: `height:${rowH}px`, onClick: () => makeChords(() => { refresh(); onChange(); }) },
+      h('span', { class: 'tl-head' }, h('span', { class: 'tl-name' }, h('span', { class: 'ico', 'aria-hidden': 'true' }, icon('add', 18)), h('span', { class: 'nm' }, 'Add chords'))),
+      h('span', { class: 'small muted tl-hint' }, 'Made from your melody'));
   }
 
   function refresh(): void {
     const p = getProject();
-    headW = el.clientWidth > 600 ? 210 : 164;
-    const avail = Math.max(0, (el.clientWidth || 360) - headW);
-    barW = Math.max(MIN_BAR, Math.floor(avail / p.bars));
-    el.style.setProperty('--head-w', `${headW}px`);
-    el.style.setProperty('--row-h', `${ROW_H}px`);
-    const rows = p.tracks.filter(hasContent).map((t) => row(t, false));
+    const width = el.clientWidth || 640;
+    headW = width < 560 ? 160 : 196;
+    laneW = Math.max(40, width - headW - 4);
+    const parts = p.tracks.filter(hasContent);
     const voices = voiceTracks();
-    if (voices.length) rows.push(row(voices[0], true));
-    content.style.width = `${headW + p.bars * barW}px`;
-    content.replaceChildren(ruler(p.bars), ...rows, ...[suggestion()].filter((x): x is HTMLElement => !!x), playhead);
+    const chordsRow = needsChords();
+    const count = parts.length + (voices.length ? 1 : 0) + (chordsRow ? 1 : 0);
+    const avail = Math.max(MIN_ROW, (el.clientHeight || 320) - RULER - 4);
+    const rowH = Math.max(MIN_ROW, Math.floor(avail / Math.max(1, Math.min(count, MAX_ROWS))));
+    el.style.setProperty('--head-w', `${headW}px`);
+    ruler.replaceChildren(h('span', { class: 'tl-corner' }),
+      ...Array.from({ length: p.bars }, (_, b) => h('span', { style: `width:${laneW / p.bars}px` }, p.bars <= 32 || b % 4 === 0 ? String(b + 1) : '')));
+    const list = parts.map((t) => row(t, false, rowH));
+    if (voices.length) list.push(row(voices[0], true, rowH));
+    if (chordsRow) list.push(suggestion(rowH));
+    rows.replaceChildren(...list);
   }
 
-  function setPlayhead(step: number, follow: boolean): void {
+  function setPlayhead(step: number): void {
     playhead.style.display = step < 0 ? 'none' : 'block';
     if (step < 0) return;
-    const x = headW + (step / STEPS_PER_BAR) * barW;
-    playhead.style.transform = `translateX(${x}px)`;
-    // Long songs: keep the playhead in view while playing.
-    if (follow && (x < el.scrollLeft + headW || x > el.scrollLeft + el.clientWidth - 24)) el.scrollLeft = Math.max(0, x - headW - 12);
-    if (step === 0 && follow) el.scrollLeft = 0;
-  }
-
-  function focus(id: string): void {
-    const r = content.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`);
-    if (!r) return;
-    r.scrollIntoView({ block: 'nearest' });
-    r.classList.add('flash');
-    setTimeout(() => r.classList.remove('flash'), 900);
+    const bars = getProject().bars;
+    playhead.style.transform = `translateX(${headW + 2 + (step / (bars * STEPS_PER_BAR)) * laneW}px)`;
   }
 
   // Re-measure when the screen turns or the window changes size.
-  let lastW = 0;
+  let last = '';
   const ro = new ResizeObserver(() => {
-    if (Math.abs(el.clientWidth - lastW) > 4) {
-      lastW = el.clientWidth;
+    const now = `${Math.round(el.clientWidth)}x${Math.round(el.clientHeight)}`;
+    if (now !== last) {
+      last = now;
       refresh();
     }
   });
   ro.observe(el);
 
-  return { el, refresh, setPlayhead, empty: () => !getProject().tracks.some(hasContent), focus, dispose: () => ro.disconnect() };
+  return { el, refresh, setPlayhead, empty: () => !getProject().tracks.some(hasContent), dispose: () => ro.disconnect() };
 }

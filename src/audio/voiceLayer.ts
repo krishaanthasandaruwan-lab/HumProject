@@ -21,6 +21,11 @@ function signature(p: Project, t: Track): string {
 }
 
 /** The processed voice if it is ready for the project as it is now (else starts processing it). */
+/** Forget the processed voice layers (they are made again when needed). */
+export function clearVoiceCache(): void {
+  cache.clear();
+}
+
 export function voiceBuffer(p: Project, t: Track): AudioBuffer | null {
   if (!voiceOn(t)) return null;
   const e = cache.get(t.id);

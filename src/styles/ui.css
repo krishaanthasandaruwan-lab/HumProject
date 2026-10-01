@@ -21,6 +21,9 @@
 .btn-pair > .main > span { display: grid; place-items: center; }
 .btn-pair > .main > .btn-arrow { background: var(--ink); color: var(--white); }
 .btn-pair > button:disabled { background: var(--mist); color: var(--graphite); }
+.btn-pair > .main.busy > .btn-arrow { display: grid; place-items: center; }
+.btn-pair > .main.busy > .btn-arrow > svg { display: none; }
+.btn-pair > .main.busy > .btn-arrow::after { content: ""; width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgb(255 255 255 / .3); border-top-color: var(--white); animation: spin .8s linear infinite; }
 .btn-pair > button:active:not(:disabled) { filter: brightness(.94); }
 
 /* ---- secondary, delete, link, icon button ---- */
@@ -138,3 +141,9 @@
 .mark > i:nth-child(1) { height: 30%; } .mark > i:nth-child(2) { height: 52%; } .mark > i:nth-child(3) { height: 70%; }
 .mark > i:nth-child(4) { height: 48%; } .mark > i:nth-child(5) { height: 26%; }
 .art { margin: 0 auto; object-fit: contain; }
+
+/* Swipe left to delete (swipe.ts) */
+.swipe { position: relative; overflow: hidden; }
+.swipe > :last-child { position: relative; z-index: 1; background: var(--white); }
+.swipe-del { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; z-index: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: var(--red); color: var(--ink); font: 700 .75rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; }

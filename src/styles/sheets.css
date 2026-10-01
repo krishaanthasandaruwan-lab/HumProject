@@ -26,3 +26,4 @@
 .advanced > summary::-webkit-details-marker { display: none; }
 .advanced[open] > summary svg { transform: rotate(180deg); }
 .prose h3 { margin-bottom: 4px; }
+.songs .swipe { border-radius: var(--r-card); }

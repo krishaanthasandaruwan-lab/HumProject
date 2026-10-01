@@ -7,19 +7,16 @@
   .h1 { font-size: 1.875rem; }
   .titleblock { gap: 4px; }
 
-  /* Studio: the bar becomes a slim rail on the right — as thick as the bar is tall in portrait */
-  #app.with-bar { padding-bottom: calc(var(--safe-bottom) + 8px); padding-right: calc(var(--safe-right) + 84px); }
-  .actionbar { left: auto; top: 0; right: 0; bottom: 0; width: calc(var(--safe-right) + 72px); max-width: none; margin: 0;
-    grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr); align-items: center;
-    padding: calc(var(--safe-top) + 4px) var(--safe-right) calc(var(--safe-bottom) + 4px) 0;
-    border-top: 0; border-left: var(--border); }
-  .actionbar .slot { justify-content: center; min-height: 0; gap: 2px; }
-  .actionbar .playsq { margin: 0; width: 48px; height: 48px; box-shadow: 3px 3px 0 var(--ink); }
+  /* Studio: the same bar as in portrait, at the bottom, but thin — each icon with its name beside it */
+  #app.with-bar { padding-bottom: calc(var(--safe-bottom) + 46px); }
+  .actionbar { max-width: none; padding: 2px calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 2px) calc(var(--safe-left) + 16px); align-items: center; }
+  .actionbar .slot { flex-direction: row; justify-content: center; gap: 6px; min-height: 40px; }
+  .actionbar .caption { font-size: .75rem; }
+  .actionbar .playsq { width: 44px; height: 44px; margin-top: -14px; box-shadow: 3px 3px 0 var(--ink); }
   .studio { gap: 8px; }
   .studio .songname { font-size: 1.375rem; padding: 2px 0; }
   .studio-empty { flex-direction: row; flex-wrap: wrap; justify-content: center; }
   .studio-empty .art { height: 120px; width: auto; }
-  .toast.lifted { bottom: calc(var(--safe-bottom) + 12px); }
 
   /* Mic: title and tiles on the left, the mic on the right */
   .hum { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr; column-gap: 32px; row-gap: 8px; }
@@ -65,7 +62,7 @@
 /* iPad (and any big window): a wider frame, readable columns, floating sheets */
 @media (min-width: 768px) and (min-height: 600px) {
   #app { max-width: 1024px; padding-left: calc(var(--safe-left) + 32px); padding-right: calc(var(--safe-right) + 32px); }
-  .screen:not(.studio):not(.part) > * { width: 100%; max-width: 640px; margin-inline: auto; }
+  .screen:not(.studio):not(.part):not(.tracks) > * { width: 100%; max-width: 640px; margin-inline: auto; }
   .hum .mic { width: 200px; height: 200px; }
   .hum .mic > svg { width: 64px; height: 64px; }
   .choice-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }

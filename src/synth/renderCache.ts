@@ -19,6 +19,11 @@ function store(id: string, midi: number, data: Float32Array, sampleRate: number)
   return buf;
 }
 
+/** Forget every rendered note (they are made again when needed). */
+export function clearRenderCache(): void {
+  cache.clear();
+}
+
 export function cachedBuffer(id: string, midi: number): AudioBuffer | null {
   const k = key(id, midi);
   const b = cache.get(k);

@@ -125,13 +125,13 @@ Heavy DSP runs in a Web Worker (`src/dsp/worker.ts`), so the UI never blocks.
 
 ```
 src/
-  main.ts  router.ts  state.ts  storage.ts  settings.ts  profile.ts  share.ts  app.ts
+  main.ts  router.ts  state.ts  storage.ts  settings.ts  profile.ts  share.ts  app.ts  cache.ts  songName.ts
   audio/   context recorder take metronome scheduler engine render export wav midi importAudio voiceLayer prepare
   dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes level key harmony tempo free voice declick analyze api worker client
   synth/   fx env drums kits instruments voices rendered renderCache
   model/   project music arrange demo autofix styles autoArrange variety
   pro/     pro billing
-  ui/      hum choices taste studio partRows part soundsSheet addPart songSheet mixer record recordProcess recordImport importSheet limits
+  ui/      hum choices taste studio partRows tracks timeline laneDraw part soundsSheet songSheet mixer record recordProcess recordImport importSheet limits swipe chords
            calibrate export videoScene projects trash settings paywall splash dom kit icons parts fix transport grid pianoroll waveform
   styles/  base ui overlay sheets landscape hum taste studio part record calibrate
 tests/     DSP, model and export tests on synthetic signals

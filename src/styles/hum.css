@@ -49,4 +49,4 @@
 .partsq > i.voice { border-color: var(--red); }
 .partsq > i.voice.on { background: var(--red); border-color: var(--ink); }
 .choices .chips { align-items: center; }
-.choices-status { min-height: 20px; }
+.choices-status { min-height: 20px; display: flex; align-items: center; gap: 8px; }
