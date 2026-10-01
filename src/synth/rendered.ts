@@ -125,12 +125,45 @@ export function renderMarimba(sr: number, hz: number): Float32Array<ArrayBuffer>
   return normalize(y);
 }
 
+/** Kalimba: a metal tine — a pure fundamental, one high inharmonic ping and a tiny click. */
+export function renderKalimba(sr: number, hz: number): Float32Array<ArrayBuffer> {
+  const s = Math.pow(440 / hz, 0.3);
+  const y = modal(sr, hz, 1.6, [[1, 1, 1.4 * s], [5.4, 0.22, 0.14], [8.9, 0.06, 0.05]], 0.001);
+  const tick = noise(Math.round(hz * 5));
+  for (let i = 0; i < Math.round(0.002 * sr); i++) y[i] += tick() * 0.1 * (1 - i / (0.002 * sr));
+  return normalize(y);
+}
+
+/** Vibraphone: bars with a long ring and the motor's slow tremolo. */
+export function renderVibes(sr: number, hz: number): Float32Array<ArrayBuffer> {
+  const y = modal(sr, hz, 2.4, [[1, 1, 2.6], [4, 0.28, 0.8], [10, 0.05, 0.2]], 0.001);
+  for (let i = 0; i < y.length; i++) y[i] *= 1 - 0.22 * (0.5 - 0.5 * Math.cos((2 * Math.PI * 5.2 * i) / sr));
+  return normalize(y);
+}
+
+/** Steel drum: a bright, nearly harmonic ring that fades quickly. */
+export function renderSteel(sr: number, hz: number): Float32Array<ArrayBuffer> {
+  return normalize(modal(sr, hz, 1.4, [[1, 1, 1.1], [2, 0.55, 0.8], [3, 0.25, 0.45], [4.04, 0.18, 0.25], [5.1, 0.07, 0.15]], 0.002));
+}
+
+/** Music box: a high comb tooth, clear and short. */
+export function renderMusicBox(sr: number, hz: number): Float32Array<ArrayBuffer> {
+  return normalize(modal(sr, hz, 1.5, [[1, 1, 1.5], [3, 0.3, 0.4], [6.3, 0.1, 0.12]], 0.0008));
+}
+
 export const RENDERED: Record<string, RenderedSpec> = {
   piano: { render: renderPiano, release: 0.18, gain: 0.5, dynamicTone: true, stand_in: 'keys' },
   pluck: { render: (sr, hz) => renderPluck(sr, hz, 2.2, 0.6), release: 0.12, gain: 0.8, stand_in: 'keys' },
   fingerbass: { render: (sr, hz) => renderPluck(sr, hz, 2.6, 0.25, 1.4), release: 0.08, gain: 0.9, stand_in: 'bass' },
   bell: { render: renderBell, release: 0.6, gain: 0.33, ring: true, stand_in: 'keys' },
   marimba: { render: renderMarimba, release: 0.3, gain: 0.54, ring: true, stand_in: 'keys' },
+  harp: { render: (sr, hz) => renderPluck(sr, hz, 3.2, 0.85, 2.2), release: 0.4, gain: 0.76, ring: true, stand_in: 'keys' },
+  ukulele: { render: (sr, hz) => renderPluck(sr, hz, 1.2, 0.75, 1.1), release: 0.1, gain: 0.95, stand_in: 'keys' },
+  upright: { render: (sr, hz) => renderPluck(sr, hz, 1.8, 0.16, 1.3), release: 0.08, gain: 0.95, stand_in: 'bass' },
+  kalimba: { render: renderKalimba, release: 0.4, gain: 0.4, ring: true, stand_in: 'keys' },
+  vibes: { render: renderVibes, release: 0.5, gain: 0.36, ring: true, stand_in: 'keys' },
+  steel: { render: renderSteel, release: 0.3, gain: 0.48, ring: true, stand_in: 'keys' },
+  musicbox: { render: renderMusicBox, release: 0.4, gain: 0.34, ring: true, stand_in: 'keys' },
 };
 
 export const isRendered = (id: string): boolean => id in RENDERED;

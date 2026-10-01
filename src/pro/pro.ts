@@ -1,4 +1,4 @@
-// Free vs Pro. Free: watermark on videos, 2 drum kits, 8 instruments, 3 saved songs.
+// Free vs Pro. Free: watermark on videos, 2 drum kits, 12 instruments, 3 saved songs, 1-minute hums.
 // Pro ($0.99 once): no watermark, all kits and instruments, WAV + MIDI export, unlimited songs.
 import { get, set } from 'idb-keyval';
 import { getInstrument, getKit } from '../synth/kits';

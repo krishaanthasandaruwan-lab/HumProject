@@ -6,6 +6,7 @@ import { mtof } from './fx';
 import { cachedBuffer } from './renderCache';
 import { RENDERED, type RenderedSpec } from './rendered';
 import { OSC_VOICES } from './voices';
+import { OSC_VOICES_2 } from './voices2';
 
 function bass(ctx: BaseAudioContext, out: AudioNode, f: number, t: number, dur: number, vel: number): void {
   const saw = osc(ctx, 'sawtooth', f);
@@ -74,7 +75,7 @@ function pad(ctx: BaseAudioContext, out: AudioNode, f: number, t: number, dur: n
   run(oscs, t, end);
 }
 
-const VOICES: Record<string, typeof bass> = { bass, lead, keys, pad, ...OSC_VOICES };
+const VOICES: Record<string, typeof bass> = { bass, lead, keys, pad, ...OSC_VOICES, ...OSC_VOICES_2 };
 
 /** A pre-rendered note: the buffer, faded out after note-off unless the instrument rings on. */
 function playBuffer(ctx: BaseAudioContext, out: AudioNode, spec: RenderedSpec, buf: AudioBuffer, t: number, dur: number, vel: number): void {

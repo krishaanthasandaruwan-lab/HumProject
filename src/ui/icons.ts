@@ -5,6 +5,7 @@ import {
   Headphones, RotateCcw, Target, Clapperboard, FileAudio, KeyboardMusic, Download, Pencil, Copy, Trash2,
   Ellipsis, ChevronRight, ChevronDown, ChevronUp, Check, X, Repeat, Crown, Drum, Guitar, Piano, Music, Music2, MicVocal,
   Cloud, Sparkle, Sparkles, Hand, Wind, Coffee, Sun, Gem, Disc3, Film, ShieldCheck, AudioLines,
+  Heart, Zap, TreePalm, Flame, Wine, Feather, Speaker, Moon, Radio, Sunset, Mountain, CloudMoon, Globe,
 } from 'lucide';
 
 const ICONS = {
@@ -17,6 +18,8 @@ const ICONS = {
   drums: Drum, bass: Guitar, chords: Piano, melody: Music, harmony: Music2, voice: MicVocal,
   pad: Cloud, sparkle: Sparkle, sparkles: Sparkles, shaker: Hand, whoosh: Wind,
   lofi: Coffee, pop: Sun, trap: Gem, dance: Disc3, band: Guitar, cinema: Film,
+  rnb: Heart, rock: Zap, reggae: TreePalm, afro: Globe, reggaeton: Flame, funk: Sparkles, jazz: Wine, ballad: Feather,
+  edm: Speaker, drill: Moon, garage: Radio, synthwave: Sunset, folk: Mountain, ambient: CloudMoon,
   privacy: ShieldCheck, wave: AudioLines,
 } as const;
 export type IconName = keyof typeof ICONS;

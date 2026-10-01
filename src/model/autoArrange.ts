@@ -43,6 +43,12 @@ export function bassLine(chords: Chord[], rhythm: BassRhythm, kicks: number[]): 
     if (rhythm === 'eighths') for (let s = 0; s < 16; s += 2) add(s, 2, s % 4 === 0 ? 0.9 : 0.7);
     else if (rhythm === 'offbeat') [2, 6, 10, 14].forEach((s) => add(s, 2, 0.85, s === 6 || s === 14 ? root + 12 : root));
     else if (rhythm === 'sustain') add(0, 16, 0.85);
+    else if (rhythm === 'walk') {
+      // Walking bass on the chord's own tones (root, third, fifth, third), so it stays in key.
+      const third = root + (c.quality === 'maj' ? 4 : 3);
+      const fifth = root + (c.quality === 'dim' ? 6 : 7);
+      [root, third, fifth, third].forEach((m, i) => add(i * 4, 4, i === 0 ? 0.9 : 0.75, m));
+    }
     else {
       // 'long' (808): one note per kick, held until the next kick.
       const inBar = kicks.filter((k) => k >= b0 && k < b0 + 16).map((k) => k - b0);
@@ -59,6 +65,7 @@ const RHYTHMS: Record<Exclude<ChordRhythm, 'arp'>, [number, number, number][]> =
   quarters: [[0, 3, 0.8], [4, 3, 0.65], [8, 3, 0.7], [12, 3, 0.65]],
   stabs: [[0, 2, 0.8], [3, 2, 0.7], [6, 2, 0.75], [10, 2, 0.75], [14, 2, 0.7]],
   strum: [[0, 3, 0.8], [3, 3, 0.6], [6, 2, 0.65], [8, 3, 0.75], [11, 3, 0.6], [14, 2, 0.65]],
+  skank: [[2, 1, 0.8], [6, 1, 0.75], [10, 1, 0.8], [14, 1, 0.75]], // reggae: chords on the off-beats
 };
 
 export function chordPart(chords: Chord[], key: Key, rhythm: ChordRhythm, sevenths = false): Note[] {

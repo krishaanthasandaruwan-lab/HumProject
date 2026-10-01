@@ -39,7 +39,8 @@ describe('three different songs', () => {
     const shown = pickVariants(100, C);
     const more = moreVariants(100, C, [], shown);
     expect(more).toHaveLength(3);
-    expect(new Set([...shown, ...more].map((x) => x.style.id)).size).toBe(STYLES.length);
+    const before = new Set(shown.map((x) => x.style.id));
+    for (const m of more) expect(before.has(m.style.id)).toBe(false);
   });
 
   it('only uses sounds that exist', () => {
@@ -66,7 +67,8 @@ describe('arrange', () => {
           expect(scale.has(((n.midi % 12) + 12) % 12)).toBe(true);
         }
       }
-      expect(p.tracks[0].hits!.length).toBeGreaterThan(8);
+      const silent = Object.values(style.groove).every((line) => !/[xo-]/.test(line)); // Ambient: no drums
+      if (!silent) expect(p.tracks[0].hits!.length).toBeGreaterThan(8);
       expect(p.tracks[3].labels).toHaveLength(4);
       const lead = p.tracks[2];
       const mids = lead.notes!.map((n) => n.midi).sort((a, b) => a - b);
@@ -95,5 +97,31 @@ describe('arrange', () => {
     const moved = placeMelody(tune(1), 72);
     expect(moved.map((n) => n.midi)).toEqual([72, 74, 76, 79]);
     expect(moved[0].raw).toBe(72);
+  });
+});
+
+describe('up to 100 songs from one hum', () => {
+  it('keeps offering new ones, never the same twice, other styles first', () => {
+    const shown = pickVariants(96, A_MINOR, ['jazz']);
+    const firstMore = moreVariants(96, A_MINOR, ['jazz'], shown);
+    expect(new Set(firstMore.map((v) => v.style.id)).size).toBe(3);
+    while (shown.length < 100) {
+      const next = moreVariants(96, A_MINOR, ['jazz'], shown);
+      if (!next.length) break;
+      shown.push(...next);
+    }
+    expect(shown.length).toBe(100);
+    const keys = shown.map((v) => `${v.style.id}:${v.bpm}:${v.lead ?? ''}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(new Set(shown.map((v) => v.style.id)).size).toBe(STYLES.length);
+    expect(moreVariants(96, A_MINOR, [], shown)).toHaveLength(0);
+  });
+  it('every style arranges into playable parts', () => {
+    for (const s of STYLES) {
+      const p = arrange({ notes: tune(4), bpm: 100, bars: 4, key: A_MINOR }, s, s.name);
+      expect(p.tracks.find((t) => t.kind === 'chords')?.notes?.length, s.id).toBeGreaterThan(0);
+      expect(p.tracks.find((t) => t.kind === 'bass')?.notes?.length, s.id).toBeGreaterThan(0);
+      for (const id of [s.lead.preset, ...(s.alts ?? [])]) expect(getInstrument(id).id, `${s.id} ${id}`).toBe(id);
+    }
   });
 });

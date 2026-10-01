@@ -4,11 +4,12 @@ import { reload } from '../router';
 import { h, sheet, toast } from './dom';
 import { icon, type IconName } from './icons';
 import { art, iconBtn, link, mainBtn, setLabel } from './kit';
+import { INSTRUMENTS, KITS } from '../synth/kits';
 
 const PERKS: [IconName, string][] = [
   ['video', 'No watermark on videos'],
-  ['drums', 'All 8 drum kits'],
-  ['chords', 'All 18 instruments'],
+  ['drums', `All ${KITS.length} drum kits`],
+  ['chords', `All ${INSTRUMENTS.length} instruments`],
   ['audio', 'Audio and MIDI files'],
   ['songs', 'Unlimited songs'],
 ];

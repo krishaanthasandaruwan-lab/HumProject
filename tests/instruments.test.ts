@@ -4,6 +4,7 @@ import { RENDERED } from '../src/synth/rendered';
 import { mtof } from '../src/synth/fx';
 import { INSTRUMENTS, KITS, instrumentsFor } from '../src/synth/kits';
 import { OSC_VOICES } from '../src/synth/voices';
+import { OSC_VOICES_2 } from '../src/synth/voices2';
 
 const SR = 48000;
 const rms = (x: Float32Array, a: number, b: number): number => {
@@ -19,6 +20,13 @@ describe('rendered instruments', () => {
     ['fingerbass', [33, 40, 45]],
     ['bell', [67, 72, 79]],
     ['marimba', [55, 64, 72]],
+    ['harp', [48, 60, 72]],
+    ['ukulele', [57, 64, 69]],
+    ['upright', [33, 40, 45]],
+    ['kalimba', [60, 67, 72]],
+    ['vibes', [60, 67, 72]],
+    ['steel', [60, 67, 72]],
+    ['musicbox', [72, 79, 84]],
   ];
   for (const [id, notes] of cases) {
     it(`${id}: in tune, finite, decaying`, () => {
@@ -42,13 +50,15 @@ describe('instrument catalog', () => {
   it('has a voice for every instrument and sensible choices for every card', () => {
     const builtIn = ['bass', 'lead', 'keys', 'pad'];
     for (const inst of INSTRUMENTS) {
-      expect(builtIn.includes(inst.id) || inst.id in OSC_VOICES || inst.id in RENDERED, inst.id).toBe(true);
+      expect(builtIn.includes(inst.id) || inst.id in OSC_VOICES || inst.id in OSC_VOICES_2 || inst.id in RENDERED, inst.id).toBe(true);
     }
     expect(instrumentsFor('bass')[0].id).toBe('bass');
     expect(instrumentsFor('chords').map((i) => i.id)).toContain('piano');
     expect(INSTRUMENTS.filter((i) => !i.pro).length).toBeGreaterThanOrEqual(8);
     expect(new Set(INSTRUMENTS.map((i) => i.id)).size).toBe(INSTRUMENTS.length);
-    expect(KITS.length).toBe(8);
+    expect(KITS.length).toBe(16);
+    expect(INSTRUMENTS.length).toBeGreaterThanOrEqual(36);
+    expect(new Set(KITS.map((k) => k.id)).size).toBe(KITS.length);
     expect(KITS.filter((k) => !k.pro).map((k) => k.id)).toEqual(['808', 'boombap']);
   });
 });

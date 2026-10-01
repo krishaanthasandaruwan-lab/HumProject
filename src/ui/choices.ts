@@ -1,22 +1,21 @@
 // 03 · Pick your sound: the melody you just hummed as three clearly different songs — as hummed,
 // slower and faster, each in a style that suits it (model/variety.ts). Tap one to hear it and keep
-// the one you like. Pro offers three more.
+// the one you like. "More" (free) keeps offering new ones, up to 100.
 import { keyName } from '../dsp/key';
 import { prepareProject } from '../audio/prepare';
 import { unlockAudio } from '../audio/context';
 import { Player } from '../audio/scheduler';
 import { arrange, type HumTake } from '../model/autoArrange';
 import type { Project } from '../model/project';
-import { moreVariants, pickVariants, type Variant } from '../model/variety';
-import { isPro } from '../pro/pro';
+import { MAX_VARIANTS, moreVariants, pickVariants, type Variant } from '../model/variety';
 import { navigate } from '../router';
 import { settings } from '../settings';
 import { nextSongName } from '../songName';
 import { flushSave, setProject } from '../state';
+import { getInstrument } from '../synth/kits';
 import { h, toast } from './dom';
 import { icon } from './icons';
 import { chip, iconBtn, pairBtn, setPressed, titleBlock } from './kit';
-import { openPaywall } from './paywall';
 import { PARTS, styleIcon } from './parts';
 import { roomForAnother } from './projects';
 
@@ -51,7 +50,8 @@ export function mountChoices(root: HTMLElement): () => void {
   function add(vs: Variant[]): Promise<void> {
     const start = projects.length;
     for (const v of vs) {
-      const p = arrange({ ...t!, bpm: v.bpm }, v.style, v.style.name);
+      const style = v.lead ? { ...v.style, lead: { ...v.style.lead, preset: v.lead } } : v.style;
+      const p = arrange({ ...t!, bpm: v.bpm }, style, v.style.name);
       const lead = p.tracks.find((x) => x.kind === 'lead');
       if (lead?.voice) lead.voice.on = voiceOn;
       const i = projects.length;
@@ -61,7 +61,7 @@ export function mountChoices(root: HTMLElement): () => void {
         h('span', { class: 'tile48' }, icon(styleIcon(v.style.id), 24)),
         h('span', null,
           h('b', { class: 'h3' }, v.style.name),
-          h('small', { class: 'label muted' }, [FEEL[v.feel], `${v.bpm} BPM`].filter(Boolean).join(' · ')),
+          h('small', { class: 'label muted' }, [v.lead ? getInstrument(v.lead).name : '', FEEL[v.feel], `${v.bpm} BPM`].filter(Boolean).join(' · ')),
           squares(p)),
         h('span', { class: 'eqbars', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')));
       cards.push(card);
@@ -80,7 +80,7 @@ export function mountChoices(root: HTMLElement): () => void {
     cards.forEach((c) => c.querySelector('.partsq .voice')?.classList.toggle('on', voiceOn));
     if (player.playing) play(current);
   }, { icon: 'voice', pressed: true }) : null;
-  const moreChip = chip('More', () => void more(), { icon: 'add', lock: !isPro() }) as HTMLButtonElement;
+  const moreChip = chip('More', () => void more(), { icon: 'add' }) as HTMLButtonElement;
   const status = h('p', { class: 'small muted choices-status', 'aria-live': 'polite' }, 'Building…');
   const bar = pairBtn('Hum again', () => navigate('hum'), 'Use this', () => void use());
   bar.main.disabled = true;
@@ -103,12 +103,14 @@ export function mountChoices(root: HTMLElement): () => void {
   }
 
   async function more(): Promise<void> {
-    if (!isPro()) return openPaywall('More songs to pick from are part of Pro.');
-    moreChip.remove();
+    moreChip.disabled = true;
     const next = moreVariants(t!.bpm, t!.key, likes, variants);
     const first = projects.length;
     await add(next);
-    if (alive) {
+    if (!alive) return;
+    moreChip.disabled = false;
+    if (!next.length || variants.length >= MAX_VARIANTS) moreChip.remove();
+    if (next.length) {
       play(first);
       cards[first]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }

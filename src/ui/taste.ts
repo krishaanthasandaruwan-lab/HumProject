@@ -9,8 +9,11 @@ import { link, mainBtn, titleBlock } from './kit';
 import { styleIcon } from './parts';
 
 export const TASTES: { id: string; label: string }[] = [
-  { id: 'chill', label: 'Chill' }, { id: 'pop', label: 'Pop' }, { id: 'trap', label: 'Hip-hop' },
-  { id: 'dance', label: 'Dance' }, { id: 'band', label: 'Band' }, { id: 'cinema', label: 'Cinematic' },
+  { id: 'pop', label: 'Pop' }, { id: 'trap', label: 'Hip-hop' }, { id: 'rnb', label: 'R&B' }, { id: 'chill', label: 'Chill' },
+  { id: 'dance', label: 'Dance' }, { id: 'edm', label: 'EDM' }, { id: 'rock', label: 'Rock' }, { id: 'band', label: 'Band' },
+  { id: 'afro', label: 'Afrobeat' }, { id: 'reggaeton', label: 'Reggaeton' }, { id: 'reggae', label: 'Reggae' }, { id: 'funk', label: 'Funk' },
+  { id: 'jazz', label: 'Jazz' }, { id: 'ballad', label: 'Ballads' }, { id: 'folk', label: 'Folk' }, { id: 'cinema', label: 'Cinematic' },
+  { id: 'drill', label: 'Drill' }, { id: 'garage', label: 'Garage' }, { id: 'synthwave', label: 'Synthwave' }, { id: 'ambient', label: 'Ambient' },
 ];
 
 export function tasteSummary(): string {
@@ -18,7 +21,7 @@ export function tasteSummary(): string {
   return likes.length ? TASTES.filter((t) => likes.includes(t.id)).map((t) => t.label).join(', ') : 'Anything';
 }
 
-/** Six square tiles, any number selected. */
+/** One square tile per style, any number selected. */
 function tasteGrid(): { el: HTMLElement; picked: () => string[] } {
   const on = new Set(settings().likes);
   const tiles = TASTES.map((t) => {

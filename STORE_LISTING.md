@@ -48,8 +48,9 @@ BUILD IT PART BY PART
 📂 Import a voice memo or a video and HUMM beat-matches it into your song.
 
 SOUNDS
-• 8 drum kits: 808, Boom-Bap, Lo-fi, Trap, House, Acoustic, Techno and Retro 80s.
-• 18 instruments: piano, E-piano, guitar, bells, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit, pads and four kinds of bass.
+• 16 drum kits, from 808 and Boom-Bap to Rock, Jazz Brush, Drill, Reggaeton, Afrobeat and UK Garage.
+• 37 instruments: piano, guitar, harp, ukulele, kalimba, steel drum, sax, violin, harmonica, strings, choir, synths and seven kinds of bass.
+• 20 styles: Pop, Hip-hop, R&B, Afrobeat, Reggaeton, Rock, Jazz, EDM, Lo-fi, Cinematic and more — up to 100 versions of every hum.
 • Tempo, 2/4/8-bar loops, swing, quantize strength, and a mixer with mute and solo.
 
 SHARE
@@ -59,8 +60,8 @@ PRIVATE BY DESIGN
 Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. No account, no ads, no tracking.
 
 FREE vs PRO
-Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 8 instruments, 3 saved songs, and videos with a small "Made with HUMM" watermark.
-Pro, $0.99 once — no subscription: no watermark, all 8 kits and 18 instruments, WAV + MIDI export, and unlimited saved songs.
+Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 12 instruments, 3 saved songs, 1-minute hums, and videos with a small "Made with HUMM" watermark.
+Pro, $0.99 once — no subscription: no watermark, all 16 kits and 37 instruments, WAV + MIDI export, 3-minute hums and unlimited saved songs.
 
 Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 

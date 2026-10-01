@@ -45,14 +45,14 @@ npm run dev:phone    # same as: npm run dev -- --host
 | | Free | Pro ($0.99 once) |
 |---|---|---|
 | Loops | unlimited | unlimited |
-| Drum kits | 808, Boom-Bap | all 8 (+ Lo-fi, Techno, Trap, House, Acoustic, Retro 80s) |
-| Instruments | 8 (synth bass, 808 bass, square lead, piano, E-piano, pad, guitar, bells) | all 18 (+ sub & finger bass, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit) |
+| Drum kits | 808, Boom-Bap | all 16 (+ Lo-fi, Techno, Trap, House, Acoustic, Retro 80s, Rock, Jazz Brush, Drill, Reggaeton, Afrobeat, Funk, Electro, UK Garage) |
+| Instruments | 12 (synth bass, 808 bass, square lead, piano, E-piano, pad, guitar, bells, kalimba, ukulele, whistle, poly synth) | all 37 (+ sub, finger, upright, acid, wobble and reese bass, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit, harp, vibraphone, steel drum, music box, clarinet, sax, violin, accordion, pan flute, harmonica, synth brass) |
 | Hum → song, auto-tune, beat match, Fix, import | ✓ | ✓ |
 | Video watermark | "Made with HUMM" | none |
 | WAV + MIDI export | — | ✓ |
 | Saved songs | 3 | unlimited |
 | Hum or import length | 1 minute | 3 minutes |
-| Songs to pick from after a hum | 3 (as hummed, slower, faster) | 6 ("More") |
+| Songs to pick from after a hum | up to 100 ("More") | up to 100 |
 
 - **Test builds.** `VITE_DEV_PRO=true npm run build` unlocks everything (the `DEV_PRO` flag). On an iPhone: `npm run ios:sync:pro`, then Run in Xcode.
 - **Dev server.** In `npm run dev`, Settings has a "pretend I bought Pro" switch.
@@ -113,7 +113,7 @@ npm run android:apk              # -> android/app/build/outputs/apk/debug/app-de
 | Auto-tune + voice layer | `voice.ts`, `audio/voiceLayer.ts` | TD-PSOLA: grains one pitch period apart are re-spaced to the target notes' periods (auto-tune) and placed at their beat-matched times, in one pass. Formants stay, so it still sounds like you. |
 | Fix | `model/autofix.ts` | Circular mean of the timing residuals (systematic lateness), majority vote per step over 1-, 2- or 4-bar periods, melody octave/glitch/split cleanup. |
 | Hum → song | `model/styles.ts`, `autoArrange.ts` | Six styles (drum grooves with fills, bass and chord rhythms, lead instrument and register), the same Viterbi chords as "Add chords", the three best for your tempo and key. |
-| Synth | `src/synth/*` | Every sound is synthesized: 8 drum kits and 18 instruments — oscillator voices, plus piano (inharmonic partials), guitar and finger bass (Karplus–Strong), bells and marimba rendered note by note in the worker — with a generated-IR reverb. |
+| Synth | `src/synth/*` | Every sound is synthesized: 16 drum kits and 37 instruments — oscillator voices, plus piano (inharmonic partials), guitar, harp, ukulele, finger and upright bass (Karplus–Strong), bells, marimba, kalimba, vibraphone, steel drum and music box (modal) rendered note by note in the worker — with a generated-IR reverb. 20 arrangement styles (`styles.ts`, `styles2.ts`). |
 | Playback | `scheduler.ts`, `engine.ts` | 25 ms lookahead timer scheduling 100 ms ahead on the audio clock. |
 | Export | `render.ts`, `export.ts`, `wav.ts`, `midi.ts`, `ui/videoScene.ts` | OfflineAudioContext to WAV; a hand-written SMF format 1; canvas captureStream plus MediaStreamDestination through MediaRecorder. |
 

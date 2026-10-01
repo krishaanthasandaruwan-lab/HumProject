@@ -1,9 +1,10 @@
 // Arrangement styles for "hum → song". Drum bars are written as 16-character strings:
 // x = accent, o = normal, - = soft (ghost), . = rest. The last bar of the loop uses the fill.
 import type { Key } from './project';
+import { MORE_STYLES } from './styles2';
 
-export type BassRhythm = 'kick' | 'eighths' | 'offbeat' | 'sustain' | 'long';
-export type ChordRhythm = 'sustain' | 'comp' | 'quarters' | 'stabs' | 'strum' | 'arp';
+export type BassRhythm = 'kick' | 'eighths' | 'offbeat' | 'sustain' | 'long' | 'walk';
+export type ChordRhythm = 'sustain' | 'comp' | 'quarters' | 'stabs' | 'strum' | 'arp' | 'skank';
 
 export interface DrumBar {
   kick: string;
@@ -26,9 +27,11 @@ export interface Style {
   chords: { preset: string; rhythm: ChordRhythm; sevenths?: boolean };
   lead: { preset: string; center: number }; // the melody moves by octaves to sit around `center`
   mix: { drums: number; bass: number; chords: number; lead: number };
+  /** Other lead instruments that suit the style ("More" offers them). */
+  alts?: string[];
 }
 
-export const STYLES: readonly Style[] = [
+const BASE_STYLES: readonly Style[] = [
   {
     id: 'chill', name: 'Lo-fi Chill', emoji: '🌙', blurb: 'Dusty drums · E-piano · warm sub',
     bpm: [70, 100], mood: 'any', kit: 'lofi', swing: 0.12,
@@ -89,6 +92,8 @@ export const STYLES: readonly Style[] = [
     mix: { drums: 0.5, bass: 0.75, chords: 0.65, lead: 0.85 },
   },
 ];
+
+export const STYLES: readonly Style[] = [...BASE_STYLES, ...MORE_STYLES];
 
 export function getStyle(id: string): Style {
   return STYLES.find((s) => s.id === id) ?? STYLES[0];

@@ -63,6 +63,54 @@ export const KITS: readonly DrumKit[] = [
     snare: { bandHz: 1700, q: 0.6, decay: 0.35, toneHz: 175, toneDecay: 0.14, noise: 1.8, tone: 0.7, clap: 0.4, gain: 0.7 },
     hat: { hpHz: 7500, decay: 0.05, openDecay: 0.3, gain: 0.36, ring: 0.4 },
   },
+  {
+    id: 'rock', name: 'Rock', pro: true,
+    kick: { startHz: 130, endHz: 52, pitchTime: 0.06, decay: 0.35, click: 0.8, drive: 0.4, gain: 0.8 },
+    snare: { bandHz: 2200, q: 0.6, decay: 0.28, toneHz: 200, toneDecay: 0.1, noise: 2, tone: 0.75, clap: 0, gain: 0.6 },
+    hat: { hpHz: 6500, decay: 0.07, openDecay: 0.45, gain: 0.44 },
+  },
+  {
+    id: 'jazz', name: 'Jazz Brush', pro: true,
+    kick: { startHz: 110, endHz: 58, pitchTime: 0.05, decay: 0.28, click: 0.3, drive: 0.05, gain: 1.1 },
+    snare: { bandHz: 3200, q: 0.4, decay: 0.32, toneHz: 210, toneDecay: 0.05, noise: 2.2, tone: 0.2, clap: 0, gain: 0.55 },
+    hat: { hpHz: 5500, decay: 0.09, openDecay: 0.5, gain: 0.52, ring: 0.8 },
+  },
+  {
+    id: 'drill', name: 'Drill', pro: true,
+    kick: { startHz: 100, endHz: 36, pitchTime: 0.3, decay: 1.4, click: 0.1, drive: 0.5, gain: 0.8 },
+    snare: { bandHz: 2000, q: 0.8, decay: 0.14, toneHz: 240, toneDecay: 0.04, noise: 0.8, tone: 0.1, clap: 1.3, gain: 0.68 },
+    hat: { hpHz: 9500, decay: 0.03, openDecay: 0.2, gain: 0.24, ring: 0.7 },
+  },
+  {
+    id: 'reggaeton', name: 'Reggaeton', pro: true,
+    kick: { startHz: 140, endHz: 45, pitchTime: 0.12, decay: 0.6, click: 0.4, drive: 0.45, gain: 1 },
+    snare: { bandHz: 1900, q: 1, decay: 0.15, toneHz: 230, toneDecay: 0.05, noise: 1, tone: 0.3, clap: 1, gain: 0.85 },
+    hat: { hpHz: 8000, decay: 0.04, openDecay: 0.25, gain: 0.34 },
+  },
+  {
+    id: 'afro', name: 'Afrobeat', pro: true,
+    kick: { startHz: 125, endHz: 55, pitchTime: 0.07, decay: 0.32, click: 0.6, drive: 0.2, gain: 1 },
+    snare: { bandHz: 2600, q: 1.2, decay: 0.12, toneHz: 320, toneDecay: 0.08, noise: 1, tone: 0.9, clap: 0.3, gain: 0.7 },
+    hat: { hpHz: 7000, decay: 0.05, openDecay: 0.3, gain: 0.4, ring: 0.4 },
+  },
+  {
+    id: 'funk', name: 'Funk', pro: true,
+    kick: { startHz: 135, endHz: 54, pitchTime: 0.05, decay: 0.3, click: 0.75, drive: 0.25, gain: 1 },
+    snare: { bandHz: 2400, q: 0.7, decay: 0.2, toneHz: 220, toneDecay: 0.09, noise: 1.8, tone: 0.65, clap: 0.1, gain: 0.75 },
+    hat: { hpHz: 7500, decay: 0.045, openDecay: 0.35, gain: 0.42 },
+  },
+  {
+    id: 'electro', name: 'Electro', pro: true,
+    kick: { startHz: 180, endHz: 44, pitchTime: 0.1, decay: 0.55, click: 0.7, drive: 0.9, gain: 1 },
+    snare: { bandHz: 1300, q: 1.4, decay: 0.25, toneHz: 180, toneDecay: 0.08, noise: 1.1, tone: 0.5, clap: 0.9, gain: 0.95 },
+    hat: { hpHz: 10000, decay: 0.05, openDecay: 0.28, gain: 0.36, ring: 0.9 },
+  },
+  {
+    id: 'garage', name: 'UK Garage', pro: true,
+    kick: { startHz: 150, endHz: 48, pitchTime: 0.08, decay: 0.42, click: 0.55, drive: 0.4, gain: 1 },
+    snare: { bandHz: 1700, q: 0.9, decay: 0.17, toneHz: 210, toneDecay: 0.05, noise: 0.9, tone: 0.2, clap: 1.1, gain: 0.85 },
+    hat: { hpHz: 8800, decay: 0.035, openDecay: 0.22, gain: 0.34, ring: 0.5 },
+  },
 ];
 
 export function getKit(id: string): DrumKit {
@@ -111,6 +159,25 @@ export const INSTRUMENTS: readonly InstrumentPreset[] = [
   I('brass', 'Brass', 0.2, true, ['lead', 'chords'], 61),
   I('supersaw', 'Supersaw', 0.25, true, ['lead', 'chords'], 81),
   I('chip', '8-bit', 0.1, true, ['lead', 'bass'], 80),
+  I('kalimba', 'Kalimba', 0.25, false, ['lead', 'chords'], 108),
+  I('ukulele', 'Ukulele', 0.15, false, ['chords', 'lead'], 24),
+  I('whistle', 'Whistle', 0.25, false, ['lead'], 78),
+  I('polysynth', 'Poly Synth', 0.2, false, ['chords', 'lead'], 90),
+  I('harp', 'Harp', 0.35, true, ['chords', 'lead'], 46),
+  I('vibes', 'Vibraphone', 0.3, true, ['lead', 'chords'], 11),
+  I('steel', 'Steel Drum', 0.25, true, ['lead'], 114),
+  I('musicbox', 'Music Box', 0.35, true, ['lead', 'chords'], 10),
+  I('upright', 'Upright Bass', 0.08, true, ['bass'], 32),
+  I('acid', 'Acid Bass', 0, true, ['bass'], 38),
+  I('wobble', 'Wobble Bass', 0, true, ['bass'], 38),
+  I('reese', 'Reese Bass', 0, true, ['bass'], 38),
+  I('clarinet', 'Clarinet', 0.25, true, ['lead'], 71),
+  I('sax', 'Sax', 0.22, true, ['lead'], 65),
+  I('violin', 'Violin', 0.35, true, ['lead'], 40),
+  I('accordion', 'Accordion', 0.15, true, ['chords', 'lead'], 21),
+  I('panflute', 'Pan Flute', 0.35, true, ['lead'], 75),
+  I('harmonica', 'Harmonica', 0.15, true, ['lead'], 22),
+  I('synthbrass', 'Synth Brass', 0.2, true, ['chords', 'lead'], 62),
 ];
 
 export function getInstrument(id: string): InstrumentPreset {
