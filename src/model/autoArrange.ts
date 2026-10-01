@@ -10,7 +10,7 @@ import type { BassRhythm, ChordRhythm, DrumBar, Style } from './styles';
 export interface HumTake {
   notes: Note[];
   bpm: number;
-  bars: 2 | 4 | 8;
+  bars: number;
   key: Key;
   /** The recording itself, from bar 1, with [input s, grid step] anchors for beat matching. */
   voice?: { audio: Float32Array; rate: number; anchors: number[] };
@@ -21,7 +21,9 @@ const VEL: Record<string, number> = { x: 1, o: 0.78, '-': 0.5 };
 export function drumPattern(style: Style, bars: number): DrumHit[] {
   const hits: DrumHit[] = [];
   for (let b = 0; b < bars; b++) {
-    const bar: DrumBar = b === bars - 1 && bars >= 4 && style.fill ? { ...style.groove, ...style.fill } : style.groove;
+    // A fill closes every 8 bars (and the last bar of a loop of 4 or more).
+    const fill = bars >= 4 && (b === bars - 1 || b % 8 === 7);
+    const bar: DrumBar = fill && style.fill ? { ...style.groove, ...style.fill } : style.groove;
     for (const type of ['kick', 'snare', 'hat'] as DrumType[]) {
       [...bar[type]].forEach((c, s) => {
         if (VEL[c]) hits.push({ step: b * STEPS_PER_BAR + s, type, velocity: VEL[c] });

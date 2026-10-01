@@ -24,7 +24,7 @@ export function openExport(): void {
   const wavBtn = chip('Audio', () => void doWav(), { icon: 'audio', lock: locked }) as HTMLButtonElement;
   const midiBtn = chip('MIDI', () => void doMidi(), { icon: 'midi', lock: locked }) as HTMLButtonElement;
   const proNote = locked
-    ? h('div', { class: 'row share-wm' }, h('span', { class: 'small muted grow' }, 'Made with MouthBand'), link('Remove', () => openPaywall(), true))
+    ? h('div', { class: 'row share-wm' }, h('span', { class: 'small muted grow' }, 'Made with HUMM'), link('Remove', () => openPaywall(), true))
     : null;
 
   const content = h('div', { class: 'stack' },
@@ -64,7 +64,7 @@ export function openExport(): void {
         onProgress: (f) => { bar.style.width = `${(f * 100).toFixed(1)}%`; },
       });
       const url = URL.createObjectURL(blob);
-      const file = `${name} - MouthBand.${ext}`;
+      const file = `${name} - HUMM.${ext}`;
       result.replaceChildren(
         h('video', { class: 'video-preview', src: url, controls: true, playsinline: true }),
         mainBtn('Share', () => void shareFile(blob, file, p.name).then(report, fail), { icon: 'share' }),

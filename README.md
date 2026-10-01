@@ -1,7 +1,7 @@
-# MouthBand 🎤 → 🥁🎸🎹
+# HUMM 🎤 → 🥁🎸🎹
 
 **Hum a melody — get a song. Beatbox the drums. Hum the bassline.**
-Open the app, hum anything with no metronome: MouthBand finds the beat and the key and plays it back as a full arrangement in three styles to choose from, with your own voice auto-tuned on top if you like. Or build a song part by part: beatbox the drums, hum the bass and the lead, add chords. It exports a *"what I recorded → what came out"* video for TikTok and Reels.
+Open the app, hum anything with no metronome: HUMM finds the beat and the key and plays it back as a full arrangement in three styles to choose from, with your own voice auto-tuned on top if you like. Or build a song part by part: beatbox the drums, hum the bass and the lead, add chords. It exports a *"what I recorded → what came out"* video for TikTok and Reels.
 
 It is a Vite + TypeScript PWA with no framework and no server. All audio analysis and synthesis runs on the device — no AI service, no uploads. It is wrapped with Capacitor for the App Store (iPhone) and Google Play. The original spec is in [BUILD_PLAN.md](BUILD_PLAN.md).
 
@@ -26,7 +26,7 @@ npm run dev:phone    # same as: npm run dev -- --host
 1. Put the phone on the same Wi-Fi and open the `Network:` URL that Vite prints (for example `https://192.168.1.20:5173`).
 2. Accept the certificate warning. On Chrome, tap "Advanced" and then "Proceed". On Safari, tap "Show details" and then "visit this website".
 3. Allow the microphone. **Wear headphones** so the speaker doesn't leak into the mic.
-4. On iPhone, turn off the silent switch the first time. MouthBand also asks iOS for "playback" audio, which ignores the switch on iOS 16.4+.
+4. On iPhone, turn off the silent switch the first time. HUMM also asks iOS for "playback" audio, which ignores the switch on iOS 16.4+.
 
 ## What to try
 
@@ -48,11 +48,13 @@ npm run dev:phone    # same as: npm run dev -- --host
 | Drum kits | 808, Boom-Bap | all 8 (+ Lo-fi, Techno, Trap, House, Acoustic, Retro 80s) |
 | Instruments | 8 (synth bass, 808 bass, square lead, piano, E-piano, pad, guitar, bells) | all 18 (+ sub & finger bass, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit) |
 | Hum → song, auto-tune, beat match, Fix, import | ✓ | ✓ |
-| Video watermark | "Made with MouthBand" | none |
+| Video watermark | "Made with HUMM" | none |
 | WAV + MIDI export | — | ✓ |
 | Saved songs | 3 | unlimited |
+| Hum or import length | 1 minute | 3 minutes |
+| Songs to pick from after a hum | 3 (as hummed, slower, faster) | 6 ("More") |
 
-- **Test builds.** `VITE_DEV_PRO=true npm run build` unlocks everything (the `DEV_PRO` flag).
+- **Test builds.** `VITE_DEV_PRO=true npm run build` unlocks everything (the `DEV_PRO` flag). On an iPhone: `npm run ios:sync:pro`, then Run in Xcode.
 - **Dev server.** In `npm run dev`, Settings has a "pretend I bought Pro" switch.
 - **Purchases** only exist in the apps, through RevenueCat (App Store on iPhone, Google Play Billing on Android). The web version links to the store listings.
 - The three hum → song choices may use Pro sounds; the song keeps them, but picking a locked sound yourself opens the paywall.
@@ -103,7 +105,8 @@ npm run android:apk              # -> android/app/build/outputs/apk/debug/app-de
 | Onsets | `src/dsp/onsets.ts` | Spectral flux on log-spaced bands (1024/256, Hann), median×1.5+δ threshold, 70 ms gap, envelope refinement. |
 | Drum classification | `features.ts`, `drumClassifier.ts` | 60 ms features (RMS, centroid, flatness, ZCR, <200 Hz and >5 kHz shares, MFCC 1–8 via Meyda). Rules by default; a personal z-scored weighted k-NN (k=3) after calibration. |
 | Quantize | `quantize.ts` | Swung 16th grid. The residual is stored, so the strength slider works live. Velocity comes from RMS. |
-| Pitch | `pitch.ts`, `notes.ts` | Pitchy (McLeod), clarity > 0.9, 5-frame median, octave folding, segmentation, bass folded into MIDI 28–52. |
+| Pitch | `pitch.ts`, `notes.ts` | Pitchy (McLeod), clarity > 0.9, 5-frame median, octave folding, segmentation, bass folded into MIDI 28–52. A note's pitch is the median of its settled part (after the scoop); the same note hummed again splits at the dip in loudness; the singer's own tuning (how flat or sharp they hum overall) is measured and taken out before rounding. `tests/humBench.ts` scores this on human-like hums (`BENCH=1 npx vitest run tests/humBench.test.ts`). |
+| Soft voices | `level.ts` | Quiet takes are lifted before analysis (never turned down, at most +30 dB); the mic screen's "is someone humming" follows the room's noise floor. |
 | Key and snap | `key.ts` | Krumhansl–Schmuckler over 24 keys. Snapping works from the unrounded pitch, so it can be switched off. |
 | Chords | `harmony.ts` | Chord-tone fit per bar, progression bonuses and Viterbi. Voice-led pad or keys, and a root bass that follows the kick. |
 | Beat match | `tempo.ts`, `free.ts` | For free-tempo hums and imports: tempo from the onset envelope's autocorrelation at beat, half-bar, bar and two-bar lags (log-normal prior around 100 BPM), beats by dynamic programming (Ellis 2007), then a beat map so notes land on the right steps even when you drift. |
@@ -122,14 +125,15 @@ Heavy DSP runs in a Web Worker (`src/dsp/worker.ts`), so the UI never blocks.
 src/
   main.ts  router.ts  state.ts  storage.ts  settings.ts  profile.ts  share.ts  app.ts
   audio/   context recorder take metronome scheduler engine render export wav midi importAudio voiceLayer prepare
-  dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes key harmony tempo free voice declick analyze api worker client
+  dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes level key harmony tempo free voice declick analyze api worker client
   synth/   fx env drums kits instruments voices rendered renderCache
-  model/   project music arrange demo autofix styles autoArrange
+  model/   project music arrange demo autofix styles autoArrange variety
   pro/     pro billing
-  ui/      hum choices studio tracks fixButton voiceRow grid pianoroll record recordImport calibrate mixer export videoScene projects settings paywall dom waveform
-  styles/  base hum record studio calibrate extra
+  ui/      hum choices taste studio partRows part soundsSheet addPart songSheet mixer record recordProcess recordImport importSheet limits
+           calibrate export videoScene projects trash settings paywall splash dom kit icons parts fix transport grid pianoroll waveform
+  styles/  base ui overlay sheets landscape hum taste studio part record calibrate
 tests/     DSP, model and export tests on synthetic signals
-scripts/   make-icons.mjs
+scripts/   make-icons.mjs (app icon, launch mark), make-illustrations.py (art → public/illustrations)
 android/   Capacitor Android project
 ios/       Capacitor iOS project (Swift Package Manager)
 ```

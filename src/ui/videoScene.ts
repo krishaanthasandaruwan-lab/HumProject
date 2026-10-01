@@ -214,7 +214,7 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
       g.textAlign = 'center';
       g.font = LABEL(30);
       g.fillStyle = INK;
-      g.fillText('MADE WITH MOUTHBAND', VIDEO_W / 2, 1222);
+      g.fillText('MADE WITH HUMM', VIDEO_W / 2, 1222);
     }
   }
 

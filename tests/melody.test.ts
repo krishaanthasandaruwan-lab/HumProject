@@ -90,7 +90,7 @@ describe('key detection and scale snap', () => {
 
   it('snaps a hummed sharp note end to end, and can be switched off', () => {
     const x = silence(1.2);
-    mixAt(x, hum(60.5, 0.4), 0.2); // C4 + 50 cents
+    mixAt(x, hum(60.6, 0.4), 0.2); // C4 + 60 cents
     const res = analyzeMelody({ audio: x, sampleRate: SR, preroll: 0, bpm: 120, bars: 2, swing: 0, mode: 'lead' });
     expect(res.notes).toHaveLength(1);
     const p = newProject();
@@ -103,7 +103,7 @@ describe('key detection and scale snap', () => {
     expect(keyName(p.key!)).toBe('C major');
     expect(lead.notes[0].midi).toBe(60);
     refreshKey(p, false);
-    expect(lead.notes[0].midi).toBe(61); // plain rounding of 60.5 without snap
+    expect(lead.notes[0].midi).toBe(61); // plain rounding of 60.6 without snap
   });
 });
 

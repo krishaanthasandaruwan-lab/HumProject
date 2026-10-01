@@ -7,11 +7,13 @@ export interface Settings {
   clickDuringTake: boolean;
   bandDuringTake: boolean;
   snapToScale: boolean;
-  /** Open on the hum screen (mic first) instead of the studio. */
-  startWithMic: boolean;
   lastBpm: number;
   lastBars: 2 | 4 | 8;
   lastProjectId?: string;
+  /** Style ids the person likes (asked once on first launch); shapes the three songs offered. */
+  likes: string[];
+  /** The "what music do you like" question was shown. */
+  tasteAsked: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -19,9 +21,10 @@ const DEFAULTS: Settings = {
   clickDuringTake: true,
   bandDuringTake: true,
   snapToScale: true,
-  startWithMic: true,
   lastBpm: 90,
   lastBars: 4,
+  likes: [],
+  tasteAsked: false,
 };
 
 let current: Settings = { ...DEFAULTS };

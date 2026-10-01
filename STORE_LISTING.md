@@ -1,4 +1,4 @@
-# MouthBand — Store listing
+# HUMM — Store listing
 
 Copy-paste material for the App Store (iPhone) and Google Play.
 
@@ -6,12 +6,12 @@ Copy-paste material for the App Store (iPhone) and Google Play.
 
 | Field | Text | Limit |
 |---|---|---|
-| App Store name | **MouthBand: Hum to Song** | 22 / 30 |
+| App Store name | **HUMM: Hum to Song** | 22 / 30 |
 | App Store subtitle | **Hum it, beatbox it, get a band** | 30 / 30 |
-| Play title | **MouthBand: Hum to Song & Beats** | 30 / 30 |
+| Play title | **HUMM: Hum to Song & Beats** | 30 / 30 |
 | Play short description | **Hum a tune or beatbox a beat — get a full song with drums, bass and chords.** | 75 / 80 |
 | Category | Music (App Store) · Music & Audio (Play) | |
-| Price | Free, with a one-time $0.99 in-app purchase ("MouthBand Pro") | |
+| Price | Free, with a one-time $0.99 in-app purchase ("HUMM Pro") | |
 | Age rating | 4+ (App Store) · Everyone (Play) | |
 
 ## Keywords (App Store, 100 characters)
@@ -31,24 +31,21 @@ New: hum anything and get three full arrangements to pick from — with your own
 
 Hum a melody. Get a song.
 
-MouthBand listens to you hum, sing or whistle — no metronome, no setup — finds the beat and the key, and plays it back as a full band: drums, bass, chords and your melody on a real instrument. Pick from three styles, keep the one you love, and share it.
+HUMM listens to you hum, sing or whistle — no metronome, no setup — finds the beat and the key, and plays it back as a full band: drums, bass, chords and your melody on a real instrument. Pick from three styles, keep the one you love, and share it.
 
 No instruments. No music theory. No studio. Just your mouth and 30 seconds.
 
 HUM → SONG
-🎤 Open the app and hum. MouthBand finds your tempo and key by itself.
+🎤 Open the app and hum. HUMM finds your tempo and key by itself.
 🎧 Three arrangements to choose from — Lo-fi Chill, Bright Pop, Trap, Dance, Acoustic Band or Cinematic, whichever suit your tune.
 🎙 Add your own voice on top, pulled in tune and onto the beat.
 
 BUILD IT PART BY PART
-🥁 Beatbox → Drums: say "B", "K" and "ts" and MouthBand hears a kick, a snare and a hi-hat, right on the beat.
+🥁 Beatbox → Drums: say "B", "K" and "ts" and HUMM hears a kick, a snare and a hi-hat, right on the beat.
 🎸 Hum → Bass and 🎹 Hum → Melody, snapped into the right key.
 ✨ One tap → Chords that fit your melody.
 ✨ Fix: one tap makes every bar of a take agree — a missed hat, a slipped beat, a wobbly note. Always undoable.
-📂 Import a voice memo or a video and MouthBand beat-matches it into your song.
-
-IT LEARNS YOUR MOUTH
-Everyone beatboxes differently. A 20-second calibration teaches MouthBand your own kick, snare and hi-hat sounds.
+📂 Import a voice memo or a video and HUMM beat-matches it into your song.
 
 SOUNDS
 • 8 drum kits: 808, Boom-Bap, Lo-fi, Trap, House, Acoustic, Techno and Retro 80s.
@@ -62,7 +59,7 @@ PRIVATE BY DESIGN
 Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. No account, no ads, no tracking.
 
 FREE vs PRO
-Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 8 instruments, 3 saved songs, and videos with a small "Made with MouthBand" watermark.
+Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 8 instruments, 3 saved songs, and videos with a small "Made with HUMM" watermark.
 Pro, $0.99 once — no subscription: no watermark, all 8 kits and 18 instruments, WAV + MIDI export, and unlimited saved songs.
 
 Tip: wear headphones while recording so the speaker doesn't leak into the mic.
@@ -82,11 +79,11 @@ Sizes: App Store needs 6.9" iPhone shots (1320×2868 or 1290×2796); Play needs 
 
 **App Store (iPhone)**
 1. In App Store Connect, create the app (bundle ID `com.mouthband.app`).
-2. In **Monetization → In-App Purchases**, add a **Non-Consumable** with product ID **`mouthband_pro`**, reference name "MouthBand Pro", price **$0.99**. Add a display name, description and a review screenshot (the paywall).
+2. In **Monetization → In-App Purchases**, add a **Non-Consumable** with product ID **`mouthband_pro`**, reference name "HUMM Pro", price **$0.99**. Add a display name, description and a review screenshot (the paywall).
 3. Sign the Paid Applications agreement (Business section) — purchases do not work without it.
 
 **Google Play (Android)**
-1. In Play Console, go to **Monetize → Products → In-app products**. Create **`mouthband_pro`**, "MouthBand Pro", **$0.99**, a one-time non-consumable purchase.
+1. In Play Console, go to **Monetize → Products → In-app products**. Create **`mouthband_pro`**, "HUMM Pro", **$0.99**, a one-time non-consumable purchase.
 
 **RevenueCat (both)**
 1. Create a project; add the iOS app (`com.mouthband.app`, with an App Store Connect in-app purchase key) and the Android app (`com.mouthband.app`, with the Play service credentials).
@@ -98,7 +95,7 @@ The app reads `customerInfo.entitlements.active.pro`. "Restore purchase" is in S
 
 ## App Review notes (App Store)
 
-> MouthBand records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for a few seconds, then pick one of the three arrangements. MouthBand Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro or by tapping any 🔒 sound; use a sandbox account.
+> HUMM records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for a few seconds, then pick one of the three arrangements. HUMM Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro or by tapping any 🔒 sound; use a sandbox account.
 
 Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.plist.
 
@@ -106,15 +103,15 @@ Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.
 
 *Effective 1 October 2026*
 
-**MouthBand does not collect personal data. Audio never leaves your device.**
+**HUMM does not collect personal data. Audio never leaves your device.**
 
-- **Microphone.** MouthBand uses the microphone only while you record, hum or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
+- **Microphone.** HUMM uses the microphone only while you record, hum or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
 - **Imported files** are read on your device only.
 - **Your songs and settings** are stored locally in the app's own storage on your device. Uninstalling the app deletes them.
-- **No accounts, no ads, no analytics, no tracking.** MouthBand makes no network requests except for purchases.
-- **Purchases.** If you buy MouthBand Pro, the payment is handled by Apple (App Store) or Google (Play). MouthBand uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.
+- **No accounts, no ads, no analytics, no tracking.** HUMM makes no network requests except for purchases.
+- **Purchases.** If you buy HUMM Pro, the payment is handled by Apple (App Store) or Google (Play). HUMM uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.
 - **Sharing.** Videos and audio files are only shared when you choose to share them, using your phone's share sheet.
-- **Children.** MouthBand is suitable for everyone and does not knowingly collect data from anyone.
+- **Children.** HUMM is suitable for everyone and does not knowingly collect data from anyone.
 - **Contact.** Questions: *your-support-email@example.com* (replace before publishing).
 
 ## App Privacy (App Store "nutrition label")

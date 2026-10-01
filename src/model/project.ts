@@ -50,7 +50,8 @@ export interface Project {
   id: string;
   name: string;
   bpm: number;
-  bars: 2 | 4 | 8;
+  /** Song length: 2, 4 or 8 bars for a loop; a hummed song can be any multiple of 4 up to MAX_BARS. */
+  bars: number;
   key?: Key;
   swing: number; // 0–0.3 of a 16th
   quantize: number; // strength 0..1 (1 = hard on the grid)
@@ -60,6 +61,16 @@ export interface Project {
 }
 
 export const STEPS_PER_BAR = 16;
+export const MAX_BARS = 96;
+
+/** The song length that holds `steps` sixteenths: 2, 4 or 8 bars, then whole groups of 4 bars. */
+export function songBars(steps: number): number {
+  const b = steps / STEPS_PER_BAR;
+  if (b <= 2.15) return 2;
+  if (b <= 4.15) return 4;
+  if (b <= 8.15) return 8;
+  return Math.min(MAX_BARS, 4 * Math.ceil((b - 0.15) / 4));
+}
 
 export const TRACK_META: Record<TrackKind, { label: string; emoji: string; color: string; preset: string }> = {
   drums: { label: 'Drums', emoji: '🥁', color: 'var(--drums)', preset: '808' },
@@ -74,7 +85,7 @@ export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-export function newProject(name = 'New song', bpm = 90, bars: 2 | 4 | 8 = 4): Project {
+export function newProject(name = 'New song', bpm = 90, bars = 4): Project {
   const now = Date.now();
   return { id: uid(), name, bpm, bars, swing: 0, quantize: 1, tracks: [], createdAt: now, updatedAt: now };
 }

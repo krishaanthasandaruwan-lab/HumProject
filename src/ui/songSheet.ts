@@ -1,12 +1,12 @@
 // 11 · Song: tempo, loop length and key in one place.
 import { keyName } from '../dsp/key';
 import { refreshKey } from '../model/music';
+import { clampBpm } from '../model/variety';
 import { settings, updateSettings } from '../settings';
 import { edit, getProject } from '../state';
 import { h, segmented, sheet } from './dom';
 import { group, listRow, mainBtn, stepper, toggle } from './kit';
 
-const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
 
 export function openSongSheet(onChange: () => void): void {
   const p = getProject;
@@ -15,12 +15,14 @@ export function openSongSheet(onChange: () => void): void {
     updateSettings({ lastBpm: p().bpm });
     onChange();
   }, 'BPM', 'Tempo');
-  const loop = segmented<2 | 4 | 8>(
-    [{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }],
+  // A long hummed song keeps its own length as a fourth choice.
+  const lengths = [2, 4, 8, ...(p().bars > 8 ? [p().bars] : [])];
+  const loop = segmented<number>(
+    lengths.map((n) => ({ value: n, label: `${n} bars` })),
     p().bars,
     (v) => {
       edit((pp) => { pp.bars = v; });
-      updateSettings({ lastBars: v });
+      if (v === 2 || v === 4 || v === 8) updateSettings({ lastBars: v });
       loop.set(v);
       onChange();
     },

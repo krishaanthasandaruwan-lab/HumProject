@@ -18,3 +18,10 @@
 .video-canvas { width: 46%; max-width: 220px; aspect-ratio: 9 / 16; border: var(--border); box-shadow: var(--shadow-hard); background: var(--paper); }
 .video-preview { width: 60%; max-width: 260px; margin: 0 auto; display: block; aspect-ratio: 9 / 16; border: var(--border); background: var(--ink); }
 .share-wm { justify-content: space-between; }
+.songs-foot { margin-top: 4px; }
+.songs-foot > .link { align-self: center; }
+.trash-row .ico { background: var(--mist); }
+.advanced { margin-top: 8px; }
+.advanced > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--graphite); cursor: pointer; list-style: none; }
+.advanced > summary::-webkit-details-marker { display: none; }
+.advanced[open] > summary svg { transform: rotate(180deg); }

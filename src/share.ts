@@ -4,9 +4,9 @@
 import { Capacitor } from '@capacitor/core';
 
 export type ShareOutcome = 'shared' | 'downloaded' | 'cancelled';
-const TEXT = 'Made with MouthBand 🎤 → 🥁🎸🎹';
+const TEXT = 'Made with HUMM';
 
-export const safeName = (s: string): string => s.replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 60) || 'MouthBand';
+export const safeName = (s: string): string => s.replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 60) || 'HUMM';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {

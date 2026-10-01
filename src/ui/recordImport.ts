@@ -1,12 +1,15 @@
 // Import a recording into the song being edited: decode it, beat-match it (fitting this song's
 // tempo, or setting it when the song is still empty), and build the track. record.ts commits it.
-import { decodeAudioFile, pickAudioFile, sliceSeconds } from '../audio/importAudio';
+import { decodeAudioFile, sliceSeconds } from '../audio/importAudio';
+import { boostQuiet } from '../dsp/level';
 import { runDsp } from '../dsp/client';
 import { refreshKey } from '../model/music';
 import { getTrack, newTrack, stepDur, swingOffset, type Note, type Project, type Track } from '../model/project';
 import { getProfile } from '../profile';
 import { settings } from '../settings';
 import { edit, getProject } from '../state';
+import { chooseImport } from './importSheet';
+import { maxSeconds } from './limits';
 
 export type ImportKind = 'drums' | 'bass' | 'lead';
 
@@ -28,17 +31,19 @@ export function voiceAnchors(notes: Note[], bpm: number, bars: number, swing: nu
 }
 
 export async function importRecording(k: ImportKind, progress: (busy: boolean, text?: string) => void): Promise<Imported | null> {
-  const file = await pickAudioFile();
+  const file = await chooseImport();
   if (!file) return null;
   progress(true, 'Opening your recording…');
   try {
-    const { audio, sampleRate } = await decodeAudioFile(file);
+    const decoded = await decodeAudioFile(file, maxSeconds());
+    const { sampleRate } = decoded;
+    const audio = k === 'drums' ? decoded.audio : boostQuiet(decoded.audio, sampleRate); // soft humming counts too
     progress(true, 'Finding the beat…');
     const p = getProject();
     const others = p.tracks.some((t) => t.kind !== k && hasContent(t));
     const r = await runDsp('free', { audio, sampleRate, kind: k, profile: getProfile(), ...(others ? { bpm: p.bpm, bars: p.bars } : {}) });
     if (!r.hits.length && !r.notes.length) {
-      progress(false, k === 'drums' ? 'I could not hear any beatbox hits in that file.' : 'I could not find a clear melody in that file.');
+      progress(false, k === 'drums' ? 'Didn’t hear any beatbox hits in that file.' : 'Didn’t catch a clear tune in that file.');
       return null;
     }
     const track = newTrack(k, getTrack(p, k)?.preset);

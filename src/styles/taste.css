@@ -1,0 +1,6 @@
+/* What music do you like? (first launch, and Settings › Music I like) */
+.taste-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.taste { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; aspect-ratio: 1;
+  background: var(--white); border: var(--border); transition: background var(--t-ui) var(--ease), box-shadow var(--t-ui) var(--ease); }
+.taste[aria-pressed="true"] { background: var(--red); box-shadow: var(--shadow-hard); }
+.welcome .titleblock .h1 { font-size: 2.25rem; }

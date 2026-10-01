@@ -2,11 +2,11 @@
 // the tempo, the beats and bar 1; notes / hits are then placed on the 16th grid through that beat
 // map (so a performer who drifts still lands on the right steps). Voice anchors record where each
 // note was sung, so the voice itself can later be warped onto the same grid.
-import { STEPS_PER_BAR, type DrumHit, type Key, type Note } from '../model/project';
+import { songBars, STEPS_PER_BAR, type DrumHit, type Key, type Note } from '../model/project';
 import { classify, type Profile } from './drumClassifier';
 import { extractFeatures } from './features';
 import { detectKey, snapToScale } from './key';
-import { notesToGrid, segmentNotes, transposeToRange, type RawNote } from './notes';
+import { notesToGrid, retune, segmentNotes, transposeToRange, type RawNote } from './notes';
 import { detectOnsets } from './onsets';
 import { fixOctaves, medianSmooth, trackPitch } from './pitch';
 import { hitsToGrid } from './quantize';
@@ -18,13 +18,13 @@ export interface FreeInput {
   kind: 'drums' | 'bass' | 'lead';
   /** Fit into this song's tempo / length (importing next to existing parts); otherwise detect them. */
   bpm?: number;
-  bars?: 2 | 4 | 8;
+  bars?: number;
   profile?: Profile | null;
 }
 
 export interface FreeResult {
   bpm: number;
-  bars: 2 | 4 | 8;
+  bars: number;
   notes: Note[];
   hits: DrumHit[];
   key?: Key;
@@ -37,7 +37,6 @@ export interface FreeResult {
   voiced: number;
 }
 
-const barsFor = (steps: number): 2 | 4 | 8 => (steps <= 2.15 * STEPS_PER_BAR ? 2 : steps <= 4.15 * STEPS_PER_BAR ? 4 : 8);
 
 /** Onset events for beat matching: note starts (weighted by length) plus the louder onsets. */
 function melodicEvents(segs: RawNote[], audio: Float32Array, sr: number): TimedEvent[] {
@@ -64,7 +63,7 @@ export function analyzeFree(i: FreeInput): FreeResult {
     const hop = 256;
     const frames = fixOctaves(medianSmooth(trackPitch(i.audio, sr, { hop, maxHz: i.kind === 'bass' ? 900 : 2600 })));
     voiced = frames.length ? frames.filter((f) => f.midi !== null).length / frames.length : 0;
-    segs = segmentNotes(frames, hop / sr);
+    segs = retune(segmentNotes(frames, hop / sr));
     events = melodicEvents(segs, i.audio, sr);
   }
 
@@ -73,7 +72,7 @@ export function analyzeFree(i: FreeInput): FreeResult {
   const toTime = makeTimeMap(grid);
   const bpm = i.bpm ?? grid.bpm;
   const lastEnd = i.kind === 'drums' ? Math.max(0, ...heard.map((h) => h.time)) + 0.05 : Math.max(0, ...segs.map((s) => s.end));
-  const bars = i.bars ?? barsFor(Math.max(1, toSteps(lastEnd)));
+  const bars = i.bars ?? songBars(Math.max(1, toSteps(lastEnd)));
   const steps = bars * STEPS_PER_BAR;
   const loopStart = toTime(0);
   const loopEnd = toTime(steps);

@@ -1,14 +1,16 @@
 // 16 · My songs: open, rename, duplicate, delete, and start a new song. Stored in IndexedDB.
 import { newProject, uid, type Project } from '../model/project';
-import { navigate, type Params } from '../router';
+import { navigate } from '../router';
+import { nextSongName } from '../songName';
 import { settings } from '../settings';
 import { edit, flushSave, getProject, setProject } from '../state';
-import { deleteProject, listProjects, loadProject, saveProject, type ProjectMeta } from '../storage';
+import { listProjects, loadProject, restoreProject, saveProject, trashProject, type ProjectMeta } from '../storage';
 import { FREE_SONG_LIMIT, isPro } from '../pro/pro';
 import { ask, confirmSheet, h, sheet, toast } from './dom';
 import { icon, type IconName } from './icons';
 import { art, backBtn, iconBtn, link, mainBtn, titleBlock } from './kit';
 import { openPaywall } from './paywall';
+import { trashRow } from './trash';
 
 function ago(ts: number): string {
   const s = (Date.now() - ts) / 1000;
@@ -37,7 +39,7 @@ export async function roomForAnother(): Promise<boolean> {
 export async function createSong(): Promise<void> {
   if (!(await roomForAnother())) return;
   const s = settings();
-  await openProject(newProject(`Song ${new Date().toLocaleDateString()}`, s.lastBpm, s.lastBars));
+  await openProject(newProject(await nextSongName(), s.lastBpm, s.lastBars));
 }
 
 function card(ic: IconName, title: string, sub: string, go: () => void): HTMLButtonElement {
@@ -45,13 +47,13 @@ function card(ic: IconName, title: string, sub: string, go: () => void): HTMLBut
     h('span', { class: 'ico', 'aria-hidden': 'true' }, icon(ic, 20)), h('span', null, h('b', null, title), h('small', null, sub)), icon('open', 20));
 }
 
-export function mountProjects(root: HTMLElement, params: Params): () => void {
+export function mountProjects(root: HTMLElement): () => void {
   const list = h('div', { class: 'stack songs' });
-  const foot = h('div', { class: 'center' });
+  const foot = h('div', { class: 'stack songs-foot' });
   let alive = true;
   root.append(h('div', { class: 'screen' },
     h('header', { class: 'top' },
-      backBtn(() => navigate(params.back === 'hum' ? 'hum' : 'studio')),
+      backBtn(() => navigate('hum'), 'Home'),
       iconBtn('settings', 'Settings', () => navigate('settings', { back: 'projects' }), { ghost: true })),
     titleBlock(['My', 'songs'], { deco: 'deco' }),
     mainBtn('New', () => newSheet(), { icon: 'add' }),
@@ -72,7 +74,9 @@ export function mountProjects(root: HTMLElement, params: Params): () => void {
     if (!alive) return;
     list.replaceChildren(...items.map(row));
     if (!items.length) list.append(h('div', { class: 'songs-empty' }, art('ill-08-no-songs'), h('p', { class: 'body muted' }, 'No songs yet')));
-    foot.replaceChildren(isPro() ? '' : link(`${Math.min(items.length, FREE_SONG_LIMIT)} of ${FREE_SONG_LIMIT} free songs`, () => openPaywall(), true));
+    const bin = await trashRow(() => void refresh());
+    if (!alive) return;
+    foot.replaceChildren(...[bin, isPro() ? null : link(`${Math.min(items.length, FREE_SONG_LIMIT)} of ${FREE_SONG_LIMIT} free songs`, () => openPaywall(), true)].filter((x): x is HTMLElement => !!x));
   }
 
   function row(m: ProjectMeta): HTMLElement {
@@ -131,14 +135,14 @@ export function mountProjects(root: HTMLElement, params: Params): () => void {
 
   async function remove(m: ProjectMeta): Promise<void> {
     if (!(await confirmSheet(`Delete “${m.name}”?`, 'Delete', true))) return;
-    const backup = m.id === getProject().id ? structuredClone(getProject()) : await loadProject(m.id);
-    await deleteProject(m.id);
+    await flushSave();
+    await trashProject(m.id);
     if (m.id === getProject().id) {
       const rest = await listProjects();
       const next = rest[0] ? await loadProject(rest[0].id) : undefined;
-      setProject(next ?? newProject('My first song', settings().lastBpm, settings().lastBars));
+      setProject(next ?? newProject(await nextSongName(), settings().lastBpm, settings().lastBars));
     }
-    toast('Deleted', backup ? { label: 'Undo', run: () => void saveProject(backup).then(refresh) } : undefined);
+    toast('Moved to Recently deleted', { label: 'Undo', run: () => void restoreProject(m.id).then(refresh) });
     await refresh();
   }
 

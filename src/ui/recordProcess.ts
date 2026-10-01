@@ -2,6 +2,7 @@
 // into the song (with Undo) and go back to the Studio.
 import { loopAudio, type Take } from '../audio/take';
 import { runDsp } from '../dsp/client';
+import { boostQuiet } from '../dsp/level';
 import { refreshKey } from '../model/music';
 import { getTrack, newTrack, putTrack, type Project, type Track, type TrackKind } from '../model/project';
 import { getProfile } from '../profile';
@@ -17,9 +18,11 @@ export type TakeResult =
 
 export async function processTake(heard: Take, k: TrackKind): Promise<TakeResult> {
   // Without headphones the click is in the take too; left in, it reads as extra hits.
-  const take = heard.clickTones.length
+  const clean = heard.clickTones.length
     ? { ...heard, audio: await runDsp('declick', { audio: heard.audio, sampleRate: heard.sampleRate, tones: heard.clickTones }) }
     : heard;
+  // Soft humming counts too (beatbox keeps its own levels: loudness tells kick from hat).
+  const take = k === 'drums' ? clean : { ...clean, audio: boostQuiet(clean.audio, clean.sampleRate) };
   const p = getProject();
   const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
   const track = newTrack(k, getTrack(p, k)?.preset);

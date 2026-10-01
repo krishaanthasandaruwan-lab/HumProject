@@ -1,0 +1,43 @@
+/* Phones held sideways: wider layouts, and the Studio's bottom bar becomes a rail on the right. */
+@media (orientation: landscape) and (max-height: 540px) {
+  #app { max-width: 960px; padding-top: calc(var(--safe-top) + 4px); }
+
+  /* Studio */
+  #app.with-bar { padding-bottom: calc(var(--safe-bottom) + 20px); padding-right: calc(var(--safe-right) + 108px); }
+  .actionbar { left: auto; top: 0; right: 0; bottom: 0; width: calc(var(--safe-right) + 92px); max-width: none; margin: 0;
+    grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr); align-items: center;
+    padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 6px) calc(var(--safe-bottom) + 8px) 6px;
+    border-top: 0; border-left: var(--border); }
+  .actionbar .slot { justify-content: center; min-height: 0; }
+  .actionbar .playsq { margin: 0 0 0 -34px; }
+  .toast.lifted { bottom: calc(var(--safe-bottom) + 20px); }
+
+  /* Mic: title and tiles on the left, the mic on the right */
+  .hum { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr; column-gap: 32px; row-gap: 12px; }
+  .hum > .top { grid-column: 1 / -1; }
+  .hum > .titleblock { grid-column: 1; }
+  .hum > .hum-tiles { grid-column: 1; align-self: end; }
+  .hum > .hum-stage { grid-column: 2; grid-row: 2 / 4; min-height: 0; gap: 8px; }
+  .hum .mic { width: 128px; height: 128px; margin: 28px 0 24px; }
+  .hum .mic > svg { width: 44px; height: 44px; }
+  .hum-wave { height: 40px; }
+
+  /* Pick your sound: the songs side by side */
+  .choice-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .choice .h3 { font-size: 1.0625rem; }
+
+  /* Record: parts on the left, REC on the right */
+  .record { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; column-gap: 32px; }
+  .record > .top { grid-column: 1 / -1; }
+  .record > :not(.top):not(.rec-stage) { grid-column: 1; }
+  .record > .rec-stage { grid-column: 2; grid-row: 2 / span 6; align-self: center; }
+  .rtile { height: 64px; }
+  .recbtn { width: 112px; height: 112px; }
+
+  /* Taste: one row of six */
+  .taste-grid { grid-template-columns: repeat(6, 1fr); }
+
+  /* Sheets: a little shorter, never taller than the screen */
+  .sheet { max-height: 94vh; max-height: 94dvh; }
+  .h1 { font-size: 2rem; }
+}

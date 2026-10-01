@@ -1,5 +1,6 @@
-// Pitch track -> notes: split on silence or on a pitch move > 0.8 semitones lasting ≥ 50 ms,
-// drop notes < 80 ms, pitch = median over the note, then quantize onto the 16th grid.
+// Pitch track -> notes: split on silence, on a dip in loudness (the same note hummed again), or on a
+// pitch move > 0.8 semitones lasting ≥ 50 ms; drop notes < 80 ms. A note's pitch is the median of its
+// settled part (after the scoop up into it). Then quantize onto the 16th grid.
 import { stepDur, type Note } from '../model/project';
 import type { PitchFrame } from './pitch';
 import { quantizePos, velocityFromRms, type StepMap } from './quantize';
@@ -24,12 +25,37 @@ function median(values: number[]): number {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+/** Frames where the loudness dips to under half of what comes just before and just after it: where
+ * the same note is hummed again ("hm-hm") without a full stop. */
+export function loudnessDips(frames: PitchFrame[], hopSec: number, windowSec = 0.06, ratio = 0.5): Set<number> {
+  const k = Math.max(2, Math.round(windowSec / hopSec));
+  const dips = new Set<number>();
+  for (let i = 1; i + 1 < frames.length; i++) {
+    const r = frames[i].rms;
+    if (r > frames[i - 1].rms || r > frames[i + 1].rms) continue;
+    let before = 0;
+    let after = 0;
+    for (let j = Math.max(0, i - k); j < i; j++) before = Math.max(before, frames[j].rms);
+    for (let j = i + 1; j <= Math.min(frames.length - 1, i + k); j++) after = Math.max(after, frames[j].rms);
+    if (r < ratio * before && r < ratio * after) dips.add(i);
+  }
+  return dips;
+}
+
+/** Median pitch of a note's settled part: skip the scoop at the start and the fall at the end. */
+function settledPitch(cur: PitchFrame[]): number {
+  const n = cur.length;
+  const part = n >= 8 ? cur.slice(Math.floor(n * 0.3), Math.ceil(n * 0.9)) : cur;
+  return median(part.map((f) => f.midi as number));
+}
+
 export function segmentNotes(frames: PitchFrame[], hopSec: number, o: SegmentOptions = {}): RawNote[] {
   const changeSemis = o.changeSemis ?? 0.8;
   const changeSec = o.changeSec ?? 0.05;
   const gapSec = o.gapSec ?? 0.03;
   const minNote = o.minNoteSec ?? 0.08;
   const notes: RawNote[] = [];
+  const dips = loudnessDips(frames, hopSec);
   let cur: PitchFrame[] = [];
   let pending: PitchFrame[] = [];
   let gap = 0;
@@ -40,13 +66,18 @@ export function segmentNotes(frames: PitchFrame[], hopSec: number, o: SegmentOpt
       const end = cur[cur.length - 1].time + hopSec / 2;
       if (end - start >= minNote) {
         const rms = cur.reduce((s, f) => s + f.rms, 0) / cur.length;
-        notes.push({ start, end, pitch: median(cur.map((f) => f.midi as number)), rms });
+        notes.push({ start, end, pitch: settledPitch(cur), rms });
       }
     }
     cur = [];
   };
 
-  for (const f of frames) {
+  for (let fi = 0; fi < frames.length; fi++) {
+    const f = frames[fi];
+    if (dips.has(fi) && cur.length) {
+      close();
+      pending = [];
+    }
     if (f.midi === null) {
       gap += hopSec;
       if (gap >= gapSec) {
@@ -77,6 +108,29 @@ export function segmentNotes(frames: PitchFrame[], hopSec: number, o: SegmentOpt
   }
   close();
   return notes;
+}
+
+/** How far off-key the singer is overall (semitones, -0.5..0.5): the duration-weighted circular mean of
+ * every note's distance from the nearest semitone. 0 with fewer than 3 notes, or when they don't agree. */
+export function tuningOffset(notes: RawNote[]): number {
+  if (notes.length < 3) return 0;
+  let x = 0;
+  let y = 0;
+  let w = 0;
+  for (const n of notes) {
+    const d = n.end - n.start;
+    x += d * Math.cos(2 * Math.PI * n.pitch);
+    y += d * Math.sin(2 * Math.PI * n.pitch);
+    w += d;
+  }
+  if (w === 0 || Math.hypot(x, y) / w < 0.3) return 0;
+  return Math.atan2(y, x) / (2 * Math.PI);
+}
+
+/** Notes moved by the singer's own tuning, so a consistently flat or sharp hum lands on the right notes. */
+export function retune(notes: RawNote[]): RawNote[] {
+  const off = tuningOffset(notes);
+  return Math.abs(off) < 0.06 ? notes : notes.map((n) => ({ ...n, pitch: n.pitch - off }));
 }
 
 /** Monophonic notes on the 16th grid (start quantized with swing, end to the nearest 16th). */

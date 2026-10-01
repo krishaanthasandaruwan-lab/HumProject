@@ -34,8 +34,8 @@ export function mountStudio(root: HTMLElement): () => void {
   const slot = (ic: IconName, label: string, go: () => void): HTMLButtonElement =>
     h('button', { type: 'button', class: 'slot', onClick: go }, icon(ic, 24), h('span', { class: 'caption' }, label));
   const bar = h('nav', { class: 'actionbar', 'aria-label': 'Song actions' },
-    slot('mix', 'Mix', () => openMixer(() => refresh())),
     slot('record', 'Record', () => navigate('record', { kind: nextKind() })),
+    slot('mix', 'Mix', () => openMixer(() => refresh())),
     h('div', { class: 'slot' }, play.el, h('span', { class: 'caption' }, 'Play')),
     slot('add', 'Add', () => openAddPart(() => refresh())),
     slot('share', 'Share', () => { player.stop(); openExport(); }));

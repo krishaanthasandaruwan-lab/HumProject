@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { scaleOf } from '../src/dsp/key';
 import { arrange, chordPart, drumPattern, placeMelody } from '../src/model/autoArrange';
-import { getStyle, pickStyles, STYLES } from '../src/model/styles';
+import { getStyle, STYLES } from '../src/model/styles';
+import { clampBpm, moreVariants, pickVariants } from '../src/model/variety';
 import type { Key, Note } from '../src/model/project';
 import { getInstrument, getKit } from '../src/synth/kits';
 import { chooseChords } from '../src/dsp/harmony';
@@ -11,11 +12,34 @@ const A_MINOR: Key = { tonic: 9, mode: 'minor' };
 const tune = (bars: number): Note[] =>
   Array.from({ length: bars }, (_, b) => [[0, 4, 48], [4, 4, 50], [8, 2, 52], [10, 6, 55]].map(([s, l, m]) => ({ start: b * 16 + s, length: l, midi: m, velocity: 0.8, raw: m }))).flat();
 
-describe('style picking', () => {
-  it('suggests styles that fit the tempo and the mood', () => {
-    expect(pickStyles(80, A_MINOR).map((s) => s.id)).toEqual(expect.arrayContaining(['trap', 'chill', 'cinema']));
-    expect(pickStyles(125, C).map((s) => s.id)).toEqual(expect.arrayContaining(['pop', 'dance', 'band']));
-    expect(pickStyles(100, C)).toHaveLength(3);
+describe('three different songs', () => {
+  it('offers as hummed, slower and faster, in three different styles', () => {
+    for (const [bpm, key] of [[80, A_MINOR], [100, C], [125, C], [62, A_MINOR], [158, C]] as const) {
+      const v = pickVariants(bpm, key);
+      expect(v.map((x) => x.feel)).toEqual(['hummed', 'slower', 'faster']);
+      expect(new Set(v.map((x) => x.style.id)).size).toBe(3);
+      expect(v[1].bpm).toBeLessThan(v[0].bpm);
+      expect(v[2].bpm).toBeGreaterThan(v[0].bpm);
+      for (const x of v) expect(x.bpm).toBe(clampBpm(x.bpm));
+    }
+  });
+
+  it('leans slow songs calm and fast songs lively, and fits the mood', () => {
+    const v = pickVariants(90, A_MINOR);
+    expect(['chill', 'cinema', 'band']).toContain(v[1].style.id);
+    expect(['dance', 'pop', 'trap']).toContain(v[2].style.id);
+  });
+
+  it('puts the music you like first', () => {
+    expect(pickVariants(100, C, ['cinema']).map((x) => x.style.id)).toContain('cinema');
+    expect(pickVariants(100, C, ['trap'])[0].style.id).toBe('trap');
+  });
+
+  it('"More" brings the styles not shown yet', () => {
+    const shown = pickVariants(100, C);
+    const more = moreVariants(100, C, [], shown);
+    expect(more).toHaveLength(3);
+    expect(new Set([...shown, ...more].map((x) => x.style.id)).size).toBe(STYLES.length);
   });
 
   it('only uses sounds that exist', () => {

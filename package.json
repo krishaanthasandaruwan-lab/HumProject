@@ -15,6 +15,7 @@
     "android:open": "cap open android",
     "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
     "ios:sync": "npm run build && cap sync ios",
+    "ios:sync:pro": "VITE_DEV_PRO=true npm run build && cap sync ios",
     "ios:open": "cap open ios",
     "ios:sim": "npm run build && cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination \"generic/platform=iOS Simulator\" -derivedDataPath ../ios-build -clonedSourcePackagesDirPath ../ios-build/spm -packageCachePath ../ios-build/spm-cache -disablePackageRepositoryCache CODE_SIGNING_ALLOWED=NO build"
   },

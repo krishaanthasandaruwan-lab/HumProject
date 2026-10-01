@@ -93,14 +93,3 @@ export const STYLES: readonly Style[] = [
 export function getStyle(id: string): Style {
   return STYLES.find((s) => s.id === id) ?? STYLES[0];
 }
-
-/** The `count` styles that suit this tempo and key best (tempo fit first, then mood). */
-export function pickStyles(bpm: number, key: Key | undefined, count = 3): Style[] {
-  const score = (s: Style): number => {
-    const [lo, hi] = s.bpm;
-    const tempo = bpm < lo ? Math.exp(-(lo - bpm) / 12) : bpm > hi ? Math.exp(-(bpm - hi) / 12) : 1;
-    const mood = s.mood === 'any' ? 0.15 : key && s.mood === key.mode ? 0.3 : -0.1;
-    return tempo + mood;
-  };
-  return [...STYLES].sort((a, b) => score(b) - score(a)).slice(0, count);
-}

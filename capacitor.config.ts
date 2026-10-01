@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.mouthband.app',
-  appName: 'MouthBand',
+  appName: 'HUMM',
   webDir: 'dist',
   backgroundColor: '#F6F4EF',
   ios: {

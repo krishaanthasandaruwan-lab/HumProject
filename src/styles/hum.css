@@ -35,10 +35,12 @@
 .choice:nth-child(3) { animation-delay: 120ms; }
 .choice .tile48 { border: var(--border); }
 .choice:not([aria-current="true"]) .tile48 { background: var(--white); }
-.choice b { display: block; margin-bottom: 8px; }
+.choice b { display: block; margin-bottom: 2px; }
+.choice small { display: block; margin-bottom: 8px; }
 .partsq { display: flex; gap: 4px; }
 .partsq > i { width: 10px; height: 10px; border: 1.5px solid var(--ink); }
 .partsq > i.on { background: var(--ink); }
-.partsq > i.on.voice { background: var(--red); }
+.partsq > i.voice { border-color: var(--red); }
+.partsq > i.voice.on { background: var(--red); border-color: var(--ink); }
 .choices .chips { align-items: center; }
 .choices-status { min-height: 20px; }

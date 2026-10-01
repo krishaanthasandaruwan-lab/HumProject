@@ -11,13 +11,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'MouthBand — Your mouth is the whole band',
-        short_name: 'MouthBand',
-        description: 'Beatbox the drums. Hum the bassline. Whistle the melody.',
+        name: 'HUMM — Hum a melody, get a band',
+        short_name: 'HUMM',
+        description: 'Hum a melody, get a full band.',
         theme_color: '#F6F4EF',
         background_color: '#F6F4EF',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         start_url: '.',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },

@@ -47,7 +47,7 @@ export function openAddPart(onChange: () => void): void {
     h('h3', { class: 'label muted' }, 'Make one'),
     h('div', { class: 'chips' },
       chip(PARTS.chords.label, tune ? () => go(() => makeChords(onChange)) : undefined, { icon: has ? 'done' : 'chords' })),
-    tune ? null : h('p', { class: 'small muted' }, 'Hum a melody first, then MouthBand can add chords.'),
+    tune ? null : h('p', { class: 'small muted' }, 'Hum a melody first, then HUMM can add chords.'),
     h('div', { class: 'stack' },
       card('record', 'Record', 'Beatbox the drums or hum a part', () => go(() => navigate('record', { kind: nextKind() }))),
       card('import', 'Import a recording', 'A voice memo or a video', () => go(() => navigate('record', { kind: nextKind(), import: '1' }))))),

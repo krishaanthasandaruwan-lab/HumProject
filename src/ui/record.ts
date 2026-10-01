@@ -7,8 +7,8 @@ import type { MicRecorder } from '../audio/recorder';
 import { Player } from '../audio/scheduler';
 import { captureTake, type Take } from '../audio/take';
 import type { Project, Track } from '../model/project';
-import { getProfile } from '../profile';
 import { navigate, type Params } from '../router';
+import { clampBpm } from '../model/variety';
 import { settings, updateSettings } from '../settings';
 import { edit, getProject } from '../state';
 import { h, segmented, sheet } from './dom';
@@ -19,7 +19,6 @@ import { importRecording, type ImportKind } from './recordImport';
 import { commit, processTake } from './recordProcess';
 import { drawScope } from './waveform';
 
-const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 const HINTS: Record<ImportKind, string> = { drums: 'B = kick · K = snare · ts = hat', bass: 'Hum low, one note at a time', lead: 'Hum or whistle the tune' };
 
@@ -37,7 +36,6 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   const tiles = (['drums', 'bass', 'lead'] as const).map((k) =>
     h('button', { type: 'button', class: 'rtile', 'aria-pressed': 'false', onClick: () => setKind(k) }, icon(PARTS[k].icon, 26), h('span', { class: 'label' }, PARTS[k].label)));
   const hint = h('p', { class: 'body muted rec-hint' });
-  const teach = h('span');
   const countin = h('div', { class: 'hero countin num', 'aria-live': 'assertive' });
   const beats = [0, 1, 2, 3].map(() => h('i'));
   const recBtn = h('button', { type: 'button', class: 'recbtn', 'aria-label': 'Record', onClick: () => void toggleRecord() }, h('i', { class: 'dot' }), h('span', null, 'Rec'));
@@ -52,7 +50,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     titleBlock(['Record']),
     h('div', { class: 'rtiles', role: 'group', 'aria-label': 'Part' }, tiles),
     hint,
-    h('div', { class: 'chips' }, chip('Best with headphones', undefined, { icon: 'headphones', tip: true }), teach, importChip),
+    h('div', { class: 'chips' }, chip('Best with headphones', undefined, { icon: 'headphones', tip: true }), importChip),
     h('div', { class: 'rec-stage' }, countin, h('div', { class: 'beatsq', 'aria-hidden': 'true' }, beats), recBtn, spinner, status, progress, canvas),
     empty ? tempoBox() : null));
   setKind(kind);
@@ -62,9 +60,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     kind = k;
     tiles.forEach((b, i) => b.setAttribute('aria-pressed', String((['drums', 'bass', 'lead'] as const)[i] === k)));
     hint.textContent = HINTS[k];
-    const has = !!getProfile();
-    teach.replaceChildren(k === 'drums' ? chip('Teach my sounds', () => navigate('calibrate', { back: 'record' }), { icon: has ? 'done' : 'teach' }) : '');
-    teach.firstElementChild?.classList.toggle('done', has);
+    // "Teach my sounds" (calibrate.ts) comes back in a later update.
     if (!abort) status.textContent = '';
   }
 
@@ -73,7 +69,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       edit((p) => { p.bpm = clampBpm(v); });
       updateSettings({ lastBpm: getProject().bpm });
     }, 'BPM', 'Tempo');
-    const bars = segmented<2 | 4 | 8>([{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }], getProject().bars, (v) => {
+    const bars = segmented<2 | 4 | 8>([{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }], getProject().bars as 2 | 4 | 8, (v) => {
       edit((p) => { p.bars = v; });
       updateSettings({ lastBars: v });
       bars.set(v);

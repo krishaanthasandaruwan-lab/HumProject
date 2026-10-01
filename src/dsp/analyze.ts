@@ -3,7 +3,7 @@ import type { DrumHit, DrumType, Note } from '../model/project';
 import { classify, type Profile } from './drumClassifier';
 import { extractFeatures } from './features';
 import { detectOnsets } from './onsets';
-import { notesToGrid, segmentNotes, transposeToRange } from './notes';
+import { notesToGrid, retune, segmentNotes, transposeToRange } from './notes';
 import { fixOctaves, medianSmooth, trackPitch } from './pitch';
 import { hitsToGrid } from './quantize';
 
@@ -84,7 +84,7 @@ export function analyzeMelody(i: MelodyInput): MelodyResult {
   const hop = 256;
   const raw = trackPitch(i.audio, i.sampleRate, { hop, maxHz: i.mode === 'bass' ? 900 : 2600 });
   const frames = fixOctaves(medianSmooth(raw));
-  const segs = segmentNotes(frames, hop / i.sampleRate).map((n) => ({ ...n, start: n.start - i.preroll, end: n.end - i.preroll }));
+  const segs = retune(segmentNotes(frames, hop / i.sampleRate)).map((n) => ({ ...n, start: n.start - i.preroll, end: n.end - i.preroll }));
   let notes = notesToGrid(segs, i.bpm, i.bars * 16, i.swing);
   if (i.mode === 'bass') notes = transposeToRange(notes, 28, 52);
   const voiced = frames.length ? frames.filter((f) => f.midi !== null).length / frames.length : 0;

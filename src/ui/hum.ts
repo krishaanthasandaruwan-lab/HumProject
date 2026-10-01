@@ -1,20 +1,23 @@
-// 02 · Mic (home): hum, sing or whistle — no metronome, no setup. MouthBand finds the beat and the key,
+// 02 · Mic (home): hum, sing or whistle — no metronome, no setup. HUMM finds the beat and the key,
 // then offers three full arrangements (choices.ts).
 import '../styles/hum.css';
 import { getCtx, setAudioSession, unlockAudio } from '../audio/context';
-import { decodeAudioFile, pickAudioFile, sliceSeconds } from '../audio/importAudio';
+import { decodeAudioFile, sliceSeconds } from '../audio/importAudio';
 import { MicRecorder } from '../audio/recorder';
 import { runDsp } from '../dsp/client';
+import { boostQuiet, LevelGate } from '../dsp/level';
+import { isPro } from '../pro/pro';
 import { navigate } from '../router';
 import { fill, h, sleep } from './dom';
 import { icon, type IconName } from './icons';
 import { art, link, mainBtn, mark, titleBlock } from './kit';
 import { setHumTake } from './choices';
+import { chooseImport } from './importSheet';
+import { clock, limitSheet, maxSeconds } from './limits';
 import { drawScope } from './waveform';
 
-const MAX_SECONDS = 24;
-const QUIET_STOP = 2.2; // stop by itself after this much quiet, once something was hummed
-const LOUD = 0.012; // RMS that counts as humming
+const MIN_SECONDS = 10; // never stops by itself before this
+const QUIET_STOP = 3; // after that, stops by itself after this much quiet
 
 type State = 'ready' | 'listening' | 'thinking' | 'no-tune' | 'mic-off' | 'error';
 
@@ -25,6 +28,7 @@ export function mountHum(root: HTMLElement): () => void {
   let quiet = 0;
   let last = 0;
   let raf = 0;
+  let gate = new LevelGate();
   let alive = true;
   const scope = new Float32Array(2048);
 
@@ -40,7 +44,7 @@ export function mountHum(root: HTMLElement): () => void {
     h('button', { type: 'button', class: 'hum-tile', onClick: go }, icon(name, 24), h('span', { class: 'label' }, label));
   const tiles = h('nav', { class: 'hum-tiles', 'aria-label': 'More ways to start' },
     tile('import', 'Import', () => void importFile()),
-    tile('songs', 'Songs', () => navigate('projects', { back: 'hum' })));
+    tile('songs', 'Songs', () => navigate('projects')));
   const stage = h('div', { class: 'hum-stage' }, timer, micBtn, status, canvas, thinking, problem);
 
   root.append(h('div', { class: 'screen hum' },
@@ -76,13 +80,14 @@ export function mountHum(root: HTMLElement): () => void {
       mic.start();
       startedAt = last = getCtx().currentTime;
       heard = quiet = 0;
+      gate = new LevelGate();
       show('listening');
       raf = requestAnimationFrame(frame);
     } catch (err) {
       const e = err as Error;
       mic = null;
       setAudioSession('playback');
-      if (e.name === 'NotAllowedError') show('mic-off', 'Allow the microphone for MouthBand in Settings. Import still works.');
+      if (e.name === 'NotAllowedError') show('mic-off', 'Allow the microphone for HUMM in Settings. Import still works.');
       else show('error', e.message);
     }
   }
@@ -96,19 +101,21 @@ export function mountHum(root: HTMLElement): () => void {
     drawScope(canvas, scope);
     let s = 0;
     for (let i = 0; i < scope.length; i++) s += scope[i] * scope[i];
-    const level = Math.sqrt(s / scope.length);
-    micBtn.style.setProperty('--level', Math.min(1, level * 14).toFixed(3));
-    if (level > LOUD) {
+    const { loud, meter } = gate.update(Math.sqrt(s / scope.length), dt);
+    micBtn.style.setProperty('--level', meter.toFixed(3));
+    if (loud) {
       heard += dt;
       quiet = 0;
     } else quiet += dt;
     const t = now - startedAt;
-    timer.textContent = `0:${String(Math.floor(t)).padStart(2, '0')}`;
-    if ((heard > 1.5 && quiet > QUIET_STOP) || t > MAX_SECONDS) return void finish();
+    const max = maxSeconds();
+    timer.textContent = isPro() ? clock(t) : `${clock(t)} / ${clock(max)}`;
+    if (t >= max) return void finish(!isPro());
+    if (t >= MIN_SECONDS && heard > 1.5 && quiet > QUIET_STOP) return void finish();
     raf = requestAnimationFrame(frame);
   }
 
-  async function finish(): Promise<void> {
+  async function finish(limited = false): Promise<void> {
     const m = mic;
     if (!m) return;
     mic = null;
@@ -122,25 +129,28 @@ export function mountHum(root: HTMLElement): () => void {
     const audio = m.extract(startedAt, end);
     m.close();
     setAudioSession('playback');
+    if (limited) await limitSheet();
     await analyze(audio, getCtx().sampleRate);
   }
 
   async function importFile(): Promise<void> {
     if (mic || stage.dataset.state === 'thinking') return;
-    const file = await pickAudioFile();
+    const file = await chooseImport();
     if (!file || !alive) return;
     show('thinking', 'Opening your recording…');
     try {
-      const { audio, sampleRate } = await decodeAudioFile(file);
+      const { audio, sampleRate, seconds } = await decodeAudioFile(file, maxSeconds());
+      if (seconds > maxSeconds() + 0.5 && !isPro()) await limitSheet();
       await analyze(audio, sampleRate);
     } catch (err) {
       show('error', (err as Error).message);
     }
   }
 
-  async function analyze(audio: Float32Array, sampleRate: number): Promise<void> {
+  async function analyze(heardAudio: Float32Array, sampleRate: number): Promise<void> {
     show('thinking');
     try {
+      const audio = boostQuiet(heardAudio, sampleRate); // soft humming counts too
       const job = runDsp('free', { audio, sampleRate, kind: 'lead' });
       void sleep(1400).then(() => { if (alive && stage.dataset.state === 'thinking') status.textContent = 'Building your band…'; });
       const r = await job;

@@ -1,6 +1,7 @@
 // The project being edited, with debounced autosave to IndexedDB.
 import { newProject, type Project } from './model/project';
 import { settings, updateSettings } from './settings';
+import { nextSongName } from './songName';
 import { listProjects, loadProject, saveProject } from './storage';
 
 let project: Project = newProject();
@@ -56,7 +57,7 @@ export async function openInitialProject(): Promise<void> {
     const list = await listProjects().catch(() => []);
     if (list[0]) p = await loadProject(list[0].id).catch(() => undefined);
   }
-  project = p ?? newProject('My first song', settings().lastBpm, settings().lastBars);
+  project = p ?? newProject(await nextSongName(), settings().lastBpm, settings().lastBars);
   updateSettings({ lastProjectId: project.id });
 }
 

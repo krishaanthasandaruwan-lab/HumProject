@@ -24,10 +24,13 @@ import { mountHum } from './ui/hum';
 import { mountChoices } from './ui/choices';
 import { mountPart } from './ui/part';
 import { hideSplash } from './ui/splash';
+import { mountWelcome } from './ui/taste';
 import { loadPro } from './pro/pro';
 import { initBilling } from './pro/billing';
 import { loadSettings, settings } from './settings';
 import { loadProfile } from './profile';
+// Last, so the sideways layouts win over each screen's own styles.
+import './styles/landscape.css';
 
 registerScreen('studio', mountStudio);
 registerScreen('record', mountRecord);
@@ -37,13 +40,14 @@ registerScreen('projects', mountProjects);
 registerScreen('hum', mountHum);
 registerScreen('choices', mountChoices);
 registerScreen('part', mountPart);
+registerScreen('welcome', mountWelcome);
 
 async function boot(): Promise<void> {
   installUnlock();
   setAudioSession('playback'); // iOS: play through the speaker even when the ring switch is on silent
   await loadSettings();
   await Promise.all([openInitialProject(), loadProfile(), loadPro()]);
-  navigate(settings().startWithMic ? 'hum' : 'studio');
+  navigate(settings().tasteAsked ? 'hum' : 'welcome'); // the mic is home; first launch asks one question
   hideSplash();
   void initBilling();
   // The iPhone and Android apps ship their files inside the app; the service worker is for the web PWA only.
