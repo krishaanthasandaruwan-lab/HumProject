@@ -42,6 +42,9 @@
 .icon-btn.ghost { border-color: transparent; background: transparent; }
 .icon-btn:active:not(:disabled) { transform: translate(1px, 1px); }
 .icon-btn[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+/* Heart (favorite): outline when off, red fill when on */
+.icon-btn.heart[aria-pressed="true"] { background: transparent; color: var(--ink); }
+.icon-btn.heart[aria-pressed="true"] svg { fill: var(--red); }
 .icon-btn:disabled { opacity: .35; }
 :is(button, input, [tabindex]):focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
 

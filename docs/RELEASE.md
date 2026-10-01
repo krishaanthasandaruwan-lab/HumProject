@@ -47,6 +47,10 @@ App Store Connect form:
 
 ## 6. Testing Pro on your own phone before release
 
+- Any build without store keys: Settings › Pro › **Tester code**. The code unlocks Pro on that phone
+  only. It stops working automatically once the RevenueCat keys are in the build (step 2), so the store
+  version never accepts it.
+
 - iPhone: `npm run ios:pro` (builds with Pro on, opens Xcode), then Run. Settings shows a "Test build:
   Pro on" switch to flip between free and Pro. **Never upload this build**: run `npm run ios:sync`
   before archiving.

@@ -1,17 +1,19 @@
 // 03 · Pick your sound: the melody you just hummed as three clearly different songs — as hummed,
 // slower and faster, each in a style that suits it (model/variety.ts). Tap one to hear it and keep
-// the one you like. "More" (free) keeps offering new ones, up to 100.
+// the one you like. "More" (free) keeps offering new ones, up to 100. A heart keeps a version in
+// My songs (as a favorite) without leaving the screen.
 import { keyName } from '../dsp/key';
 import { prepareProject } from '../audio/prepare';
 import { unlockAudio } from '../audio/context';
 import { Player } from '../audio/scheduler';
 import { arrange, type HumTake } from '../model/autoArrange';
-import type { Project } from '../model/project';
+import { uid, type Project } from '../model/project';
 import { MAX_VARIANTS, moreVariants, pickVariants, type Variant } from '../model/variety';
 import { navigate } from '../router';
 import { settings } from '../settings';
 import { nextSongName } from '../songName';
 import { flushSave, setProject } from '../state';
+import { saveProject, trashProject } from '../storage';
 import { getInstrument } from '../synth/kits';
 import { h, toast } from './dom';
 import { icon } from './icons';
@@ -37,6 +39,7 @@ export function mountChoices(root: HTMLElement): () => void {
   const variants: Variant[] = [];
   const projects: Project[] = [];
   const cards: HTMLButtonElement[] = [];
+  const kept = new Set<number>(); // versions hearted (saved to My songs)
   let current = 0;
   let alive = true;
   let voiceOn = true;
@@ -64,8 +67,9 @@ export function mountChoices(root: HTMLElement): () => void {
           h('small', { class: 'label muted' }, [v.lead ? getInstrument(v.lead).name : '', FEEL[v.feel], `${v.bpm} BPM`].filter(Boolean).join(' · ')),
           squares(p)),
         h('span', { class: 'eqbars', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')));
+      const heart = h('button', { type: 'button', class: 'icon-btn ghost heart', 'aria-pressed': 'false', 'aria-label': `Keep ${v.style.name} in My songs`, onClick: () => void toggleKeep(i, heart) }, icon('heart', 24));
       cards.push(card);
-      list.append(card);
+      list.append(h('div', { class: 'choice-wrap' }, card, heart));
     }
     return Promise.all(projects.slice(start).map((p) => prepareProject(p).catch(() => undefined))).then(() => undefined);
   }
@@ -116,11 +120,33 @@ export function mountChoices(root: HTMLElement): () => void {
     }
   }
 
-  async function use(): Promise<void> {
+  /** Heart: keep this version in My songs (a favorite); un-heart moves it to Recently deleted. */
+  async function toggleKeep(i: number, btn: HTMLButtonElement): Promise<void> {
+    const p = projects[i];
+    if (kept.has(i)) {
+      kept.delete(i);
+      btn.setAttribute('aria-pressed', 'false');
+      await trashProject(p.id);
+      p.id = uid(); // a later "Use this" makes a fresh song, not a clash with the deleted one
+      toast('Moved to Recently deleted');
+      return;
+    }
     if (!(await roomForAnother())) return;
+    p.name = await nextSongName();
+    p.favorite = true;
+    p.updatedAt = Date.now();
+    await saveProject(p);
+    kept.add(i);
+    btn.setAttribute('aria-pressed', 'true');
+    navigator.vibrate?.(10);
+    toast(`${p.name} kept in My songs`);
+  }
+
+  async function use(): Promise<void> {
+    if (!kept.has(current) && !(await roomForAnother())) return;
     player.stop();
     await flushSave();
-    projects[current].name = await nextSongName();
+    if (!kept.has(current)) projects[current].name = await nextSongName();
     setProject(projects[current]);
     take = null;
     navigate('studio');

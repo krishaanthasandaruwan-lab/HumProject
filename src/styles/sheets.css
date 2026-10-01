@@ -1,5 +1,5 @@
 /* 15 Share · 16 My songs · 17 Settings · 18 Pro */
-.songs .card-list.song { grid-template-columns: 40px 1fr 44px; padding-right: 4px; }
+.songs .card-list.song { grid-template-columns: 40px 1fr 44px 44px; padding-right: 4px; gap: 4px 8px; }
 .songs .card-list[aria-current="true"] { border-color: var(--ink); }
 .song-open { display: block; text-align: left; min-width: 0; padding: 4px 0; }
 .song-open b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

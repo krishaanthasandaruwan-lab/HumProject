@@ -85,7 +85,23 @@ export function mountProjects(root: HTMLElement): () => void {
       h('span', { class: 'ico', 'aria-hidden': 'true' }, icon('songs', 20)),
       h('button', { type: 'button', class: 'song-open', onClick: () => void open(m.id) },
         h('b', null, m.name), h('small', null, `${Math.round(m.bpm)} BPM · ${m.bars} bars · ${ago(m.updatedAt)}`)),
+      h('button', { type: 'button', class: 'icon-btn ghost heart', 'aria-pressed': String(!!m.favorite), 'aria-label': `Favorite ${m.name}`, onClick: () => void favorite(m) }, icon('heart', 20)),
       iconBtn('more', `More for ${m.name}`, () => menu(m), { ghost: true }));
+  }
+
+  /** Heart a song: favorites are listed first. */
+  async function favorite(m: ProjectMeta): Promise<void> {
+    const on = !m.favorite;
+    if (m.id === getProject().id) {
+      edit((p) => { p.favorite = on; });
+      await flushSave();
+    } else {
+      const p = await loadProject(m.id);
+      if (!p) return;
+      p.favorite = on;
+      await saveProject(p);
+    }
+    await refresh();
   }
 
   async function open(id: string): Promise<void> {

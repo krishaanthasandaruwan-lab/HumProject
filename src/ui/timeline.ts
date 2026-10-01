@@ -1,6 +1,7 @@
-// The Studio's tracks view (like GarageBand): one row per part — its name, sound, Fix and mute on the
-// left (they stay put), and a lane across the bars on the right, with one playhead over all lanes.
-// Long songs scroll sideways; many parts scroll down. Tap a part to edit it, hold its name to solo.
+// The tracks table (like GarageBand), full screen from the Studio's Tracks button: one row per part —
+// its name, sound, Fix and mute on the left (they stay put), and a lane across the bars on the right,
+// with one playhead over all lanes. Long songs scroll sideways; many parts scroll down. Tap a part to
+// edit it, hold its name to solo.
 import { prepareProject } from '../audio/prepare';
 import { STEPS_PER_BAR, type Track } from '../model/project';
 import { navigate } from '../router';
@@ -14,8 +15,8 @@ import { makeChords } from './chords';
 import { PARTS, partLabel } from './parts';
 import { openSounds, soundName } from './soundsSheet';
 
-const ROW_H = 72;
-const MIN_BAR = 40;
+const ROW_H = 84;
+const MIN_BAR = 48;
 
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 const voiceTracks = (): Track[] => getProject().tracks.filter((t) => (t.kind === 'bass' || t.kind === 'lead') && t.rawVoice?.length && t.anchors?.length);
@@ -113,7 +114,7 @@ export function timeline(onChange: () => void): Timeline {
 
   function refresh(): void {
     const p = getProject();
-    headW = el.clientWidth > 600 ? 184 : 152;
+    headW = el.clientWidth > 600 ? 210 : 164;
     const avail = Math.max(0, (el.clientWidth || 360) - headW);
     barW = Math.max(MIN_BAR, Math.floor(avail / p.bars));
     el.style.setProperty('--head-w', `${headW}px`);

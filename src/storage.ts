@@ -8,6 +8,7 @@ export interface ProjectMeta {
   bpm: number;
   bars: number;
   kinds: TrackKind[];
+  favorite?: boolean;
   updatedAt: number;
   createdAt: number;
 }
@@ -17,7 +18,8 @@ const key = (id: string): string => `project:${id}`;
 
 export async function listProjects(): Promise<ProjectMeta[]> {
   const list = (await get<ProjectMeta[]>(INDEX)) ?? [];
-  return list.sort((a, b) => b.updatedAt - a.updatedAt);
+  // Hearted songs first, then the newest.
+  return list.sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite) || b.updatedAt - a.updatedAt);
 }
 
 export async function loadProject(id: string): Promise<Project | undefined> {
@@ -36,7 +38,7 @@ export async function saveProject(p: Project): Promise<void> {
   const list = (await get<ProjectMeta[]>(INDEX)) ?? [];
   const meta: ProjectMeta = {
     id: p.id, name: p.name, bpm: p.bpm, bars: p.bars,
-    kinds: p.tracks.map((t) => t.kind), updatedAt: p.updatedAt, createdAt: p.createdAt,
+    kinds: p.tracks.map((t) => t.kind), favorite: p.favorite, updatedAt: p.updatedAt, createdAt: p.createdAt,
   };
   const i = list.findIndex((m) => m.id === p.id);
   if (i >= 0) list[i] = meta;

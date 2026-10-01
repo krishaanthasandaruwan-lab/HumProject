@@ -30,6 +30,7 @@ import { mountProjects } from './ui/projects';
 import { mountHum } from './ui/hum';
 import { mountChoices } from './ui/choices';
 import { mountPart } from './ui/part';
+import { mountTracks } from './ui/tracks';
 import { hideSplash } from './ui/splash';
 import { mountWelcome } from './ui/taste';
 import { loadPro } from './pro/pro';
@@ -47,6 +48,7 @@ registerScreen('projects', mountProjects);
 registerScreen('hum', mountHum);
 registerScreen('choices', mountChoices);
 registerScreen('part', mountPart);
+registerScreen('tracks', mountTracks);
 registerScreen('welcome', mountWelcome);
 
 /** Storage that never answers (a stuck IndexedDB) must not keep the app on its splash forever. */

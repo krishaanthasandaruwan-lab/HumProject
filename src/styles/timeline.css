@@ -32,3 +32,12 @@
 .tl-suggest b { display: block; font: 600 .875rem/1.2 var(--font-body); }
 .tl-suggest small { display: block; font: 400 .75rem/1.3 var(--font-body); color: var(--graphite); }
 .tl-suggest > svg { width: 30px; height: 30px; padding: 5px; border: 2px dashed var(--ink); flex: none; }
+
+/* The full-screen Tracks screen */
+.tracks { gap: 10px; }
+.tracks .top { gap: 10px; }
+.tracks-title { flex: 1; min-width: 0; }
+.tracks-title .h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracks .playsq { width: 52px; height: 52px; margin: 0; box-shadow: 3px 3px 0 var(--ink); }
+.tracks .tl { margin-bottom: 4px; }
+.tl-name .nm { font-size: .9375rem; }

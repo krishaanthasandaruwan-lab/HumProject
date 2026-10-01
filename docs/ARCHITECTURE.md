@@ -7,7 +7,7 @@ TypeScript web app (Vite, no UI framework) wrapped as an iPhone/iPad and Android
 
 | Layer | Folder | Job | Depends on |
 |---|---|---|---|
-| Screens | `src/ui` | One function per screen (`mountX(root, params)`), sheets, the tracks timeline, the component kit | everything below |
+| Screens | `src/ui` | One function per screen (`mountX(root, params)`), sheets, the component kit. The Studio is the simple main screen (parts list); `tracks.ts` is the full-screen tracks table for detail | everything below |
 | Styles | `src/styles` | Tokens (`base.css`), components (`ui.css`), per-screen CSS; `landscape.css` last | — |
 | State | `src/state.ts`, `src/settings.ts`, `src/storage.ts`, `src/songName.ts` | The open song, autosave, settings, songs + Recently deleted in IndexedDB | model |
 | Model | `src/model` | Song data (`project.ts`), arrangement styles, auto-arrange, variety, Fix | — |
@@ -39,7 +39,8 @@ and `tracks[]`. A track has a `kind` (drums / bass / lead / chords), a `preset`,
 the 16th grid, mixer state, and for hummed parts the raw take (`rawVoice`) with `anchors` that map
 where each note was sung to where it sits. Any number of tracks per kind ("Drums 2").
 
-Songs live in IndexedDB (`project:<id>` + an index). Deleted songs move to `trash:<id>` for 30 days.
+Songs live in IndexedDB (`project:<id>` + an index). Hearted songs (`favorite`) are listed first; a heart on
+a generated version saves it straight to My songs. Deleted songs move to `trash:<id>` for 30 days.
 An empty new song is not saved until something is in it.
 
 ## Security and privacy
@@ -51,8 +52,10 @@ An empty new song is not saved until something is in it.
   set as text. No `eval`, `new Function` or `innerHTML`.
 - **File names** for exports are cleaned (`share.safeName`).
 - **Pro**: the store (via RevenueCat) is the source of truth; it is re-checked at launch and whenever the
-  store reports a change, and only cached for offline use. Test builds (`VITE_DEV_PRO`) are the only
-  builds with a Pro switch; store builds don't contain that code.
+  store reports a change, and only cached for offline use. Test builds (`VITE_DEV_PRO`) have a Pro switch.
+  Until store purchases are configured (no RevenueCat keys in the build), a **tester code** in Settings
+  unlocks Pro on one phone; the app only keeps a fingerprint of the code, and the code stops working by
+  itself once the keys are in the build (`STORE_READY` in `pro/pro.ts`).
 - **Release builds** are minified with no source maps. Web inspection is off in the apps (Android
   `webContentsDebuggingEnabled: false`; on iOS `CAPACITOR_DEBUG` is not set, so the web view is not inspectable).
 - **iOS privacy manifest** (`ios/App/App/PrivacyInfo.xcprivacy`): no tracking; Purchase History for app

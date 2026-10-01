@@ -7,18 +7,16 @@
   .h1 { font-size: 1.875rem; }
   .titleblock { gap: 4px; }
 
-  /* Studio: the bar becomes a rail on the right; the timeline gets the rest */
-  #app.with-bar { padding-bottom: calc(var(--safe-bottom) + 8px); padding-right: calc(var(--safe-right) + 96px); }
-  .actionbar { left: auto; top: 0; right: 0; bottom: 0; width: calc(var(--safe-right) + 84px); max-width: none; margin: 0;
+  /* Studio: the bar becomes a slim rail on the right — as thick as the bar is tall in portrait */
+  #app.with-bar { padding-bottom: calc(var(--safe-bottom) + 8px); padding-right: calc(var(--safe-right) + 84px); }
+  .actionbar { left: auto; top: 0; right: 0; bottom: 0; width: calc(var(--safe-right) + 72px); max-width: none; margin: 0;
     grid-template-columns: 1fr; grid-template-rows: repeat(5, 1fr); align-items: center;
-    padding: calc(var(--safe-top) + 6px) calc(var(--safe-right) + 4px) calc(var(--safe-bottom) + 6px) 4px;
+    padding: calc(var(--safe-top) + 4px) var(--safe-right) calc(var(--safe-bottom) + 4px) 0;
     border-top: 0; border-left: var(--border); }
   .actionbar .slot { justify-content: center; min-height: 0; gap: 2px; }
-  .actionbar .playsq { margin: 0; width: 54px; height: 54px; }
-  .studio { gap: 6px; }
-  .studio .top { min-height: 40px; }
-  .studio-meta { display: none; }
-  .tl { --row-h: 64px; }
+  .actionbar .playsq { margin: 0; width: 48px; height: 48px; box-shadow: 3px 3px 0 var(--ink); }
+  .studio { gap: 8px; }
+  .studio .songname { font-size: 1.375rem; padding: 2px 0; }
   .studio-empty { flex-direction: row; flex-wrap: wrap; justify-content: center; }
   .studio-empty .art { height: 120px; width: auto; }
   .toast.lifted { bottom: calc(var(--safe-bottom) + 12px); }
@@ -74,7 +72,6 @@
   .screen.choices > .choice-list { max-width: 960px; }
   .taste-grid { grid-template-columns: repeat(4, 1fr); }
   .actionbar { max-width: 1024px; padding-inline: 40px; }
-  .tl { --row-h: 84px; }
   .sheet-wrap { align-items: center; }
   .sheet { max-width: 600px; border: var(--border); border-radius: var(--r-sheet); box-shadow: var(--shadow-hard-lg); padding-bottom: 24px; }
   .h1 { font-size: 3rem; }

@@ -56,6 +56,8 @@ export interface Project {
   swing: number; // 0–0.3 of a 16th
   quantize: number; // strength 0..1 (1 = hard on the grid)
   tracks: Track[];
+  /** Hearted: shown first in My songs. */
+  favorite?: boolean;
   createdAt: number;
   updatedAt: number;
 }

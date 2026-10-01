@@ -4,11 +4,11 @@ import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { edit } from '../state';
 import { canBuy, restorePro } from '../pro/billing';
-import { isPro, setDevPro, TESTER_BUILD } from '../pro/pro';
+import { endTesterPro, isPro, redeemTesterCode, setDevPro, STORE_READY, TESTER_BUILD, testerPro } from '../pro/pro';
 import { openPaywall } from './paywall';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
-import { h, toast } from './dom';
+import { ask, h, toast } from './dom';
 import { icon } from './icons';
 import { backBtn, group, listRow, range, titleBlock, toggle } from './kit';
 import { openTaste, tasteSummary } from './taste';
@@ -42,11 +42,21 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
     const dev = TESTER_BUILD ? toggle(isPro(), (on) => { setDevPro(on); renderPro(); }, 'Test build: Pro on') : null;
     pro.replaceChildren(group('Pro',
       isPro()
-        ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: TESTER_BUILD ? 'Test build.' : 'Thank you!' })
+        ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: testerPro() ? 'Tester code.' : TESTER_BUILD ? 'Test build.' : 'Thank you!' })
         : listRow('Unlock Pro', icon('open', 20), { sub: 'One time. No subscription.', onClick: () => openPaywall() }),
       canBuy() && !isPro() ? listRow('Restore purchase', icon('open', 20), { onClick: async () => { toast((await restorePro()) ? 'Welcome back to Pro' : 'No purchase found'); renderPro(); } }) : null,
-      dev ? listRow('Test build: Pro on', dev, { sub: 'Only in test builds. Switch off to see the free app.' }) : null));
+      dev ? listRow('Test build: Pro on', dev, { sub: 'Only in test builds. Switch off to see the free app.' }) : null,
+      // Until store purchases are set up, a tester code unlocks Pro on this phone.
+      !STORE_READY && !isPro() ? listRow('Tester code', icon('open', 20), { sub: 'Unlock Pro on this phone for testing', onClick: () => void enterCode() }) : null,
+      testerPro() ? listRow('Turn off tester Pro', icon('close', 20), { sub: 'Back to the free app', onClick: () => { endTesterPro(); renderPro(); } }) : null));
   };
+  async function enterCode(): Promise<void> {
+    const code = await ask('Tester code', '', 'Unlock', 'Code');
+    if (!code) return;
+    if (redeemTesterCode(code)) toast('Pro unlocked for testing');
+    else toast('That code didn’t work');
+    renderPro();
+  }
   renderPro();
 
   root.append(h('div', { class: 'screen settings' },
