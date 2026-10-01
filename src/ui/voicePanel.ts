@@ -6,7 +6,7 @@ import { type Track } from '../model/project';
 import { edit, getProject } from '../state';
 import { h, segmented } from './dom';
 import { group, listRow, range, toggle } from './kit';
-import { PARTS } from './parts';
+import { partLabel } from './parts';
 
 type Voice = NonNullable<Track['voice']>;
 
@@ -22,7 +22,7 @@ function controls(t: Track, titled: boolean): HTMLElement {
     (v) => { set({ tune: v === 'tuned' }); tune.set(v); },
     'Tuning',
   );
-  return group(titled ? `In the ${PARTS[t.kind].label.toLowerCase()}` : 'My voice',
+  return group(titled ? `In ${partLabel(getProject(), t)}` : 'My voice',
     listRow('In the song', toggle(get().on, (on) => set({ on }), 'My voice in the song')),
     h('div', { class: 'lrow wide' }, tune.el),
     listRow('Voice only', toggle(!!get().only, (only) => set({ only }), 'Voice only'), { sub: 'The instrument steps aside.' }),

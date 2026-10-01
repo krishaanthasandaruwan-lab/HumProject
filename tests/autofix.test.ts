@@ -78,3 +78,25 @@ describe('auto-fix melody', () => {
     expect(notes).toEqual(clean);
   });
 });
+
+describe('fill a short take to the song length', () => {
+  it('repeats a 6-bar hum into an 8-bar song, from the top', () => {
+    const notes = Array.from({ length: 6 }, (_, b) => ({ start: b * 16, length: 8, midi: 60 + b, velocity: 0.8 }));
+    const r = fixNotes(notes, 8, 0);
+    expect(r.report.filled).toBe(2);
+    expect(r.notes.filter((n) => n.start >= 96).map((n) => [n.start, n.midi])).toEqual([[96, 60], [112, 61]]);
+  });
+  it('repeats a 3-bar beat until 8 bars are full, then keeps the pattern', () => {
+    const hits = [0, 1, 2].flatMap((b) => [{ step: b * 16, type: 'kick' as const, velocity: 0.9 }, { step: b * 16 + 8, type: 'snare' as const, velocity: 0.9 }]);
+    const r = fixDrums(hits, 8, 0);
+    expect(r.report.filled).toBe(5);
+    for (let b = 0; b < 8; b++) {
+      expect(r.hits.some((h) => h.step === b * 16 && h.type === 'kick')).toBe(true);
+      expect(r.hits.some((h) => h.step === b * 16 + 8 && h.type === 'snare')).toBe(true);
+    }
+  });
+  it('leaves a full take alone', () => {
+    const notes = Array.from({ length: 4 }, (_, b) => ({ start: b * 16, length: 16, midi: 62, velocity: 0.8 }));
+    expect(fixNotes(notes, 4, 0).report.filled).toBe(0);
+  });
+});

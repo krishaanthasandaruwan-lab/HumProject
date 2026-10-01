@@ -3,7 +3,7 @@ import { buyPro, canBuy, isNative, proPrice, restorePro, storeUrl } from '../pro
 import { reload } from '../router';
 import { h, sheet, toast } from './dom';
 import { icon, type IconName } from './icons';
-import { art, link, mainBtn, setLabel } from './kit';
+import { art, iconBtn, link, mainBtn, setLabel } from './kit';
 
 const PERKS: [IconName, string][] = [
   ['video', 'No watermark on videos'],
@@ -31,7 +31,7 @@ export function openPaywall(reason?: string): void {
   const buy = mainBtn(canBuy() ? 'Unlock · $0.99' : isNative() ? 'Store not available' : 'Get Pro in the app', undefined, { icon: 'pro' });
   const restore = link('Restore');
   const content = h('div', { class: 'paywall' },
-    h('div', { class: 'row' }, h('span', { class: 'pro' }, 'PRO'), h('span', { class: 'grow' }), h('div', { class: 'grille', 'aria-hidden': 'true' })),
+    h('div', { class: 'row' }, h('span', { class: 'pro' }, 'PRO'), h('span', { class: 'grow' }), iconBtn('close', 'Close', () => close(), { ghost: true })),
     h('h2', { class: 'h1' }, 'Unlock', h('br'), h('span', { class: 'hl' }, 'everything')),
     art('ill-09-pro', 0.8),
     reason ? h('p', { class: 'body muted' }, reason) : null,

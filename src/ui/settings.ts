@@ -4,7 +4,7 @@ import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { edit } from '../state';
 import { canBuy, restorePro } from '../pro/billing';
-import { DEV_PRO, isPro, setDevPro } from '../pro/pro';
+import { isPro, setDevPro, TESTER_BUILD } from '../pro/pro';
 import { openPaywall } from './paywall';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
@@ -12,6 +12,8 @@ import { h, toast } from './dom';
 import { icon } from './icons';
 import { backBtn, group, listRow, range, titleBlock, toggle } from './kit';
 import { openTaste, tasteSummary } from './taste';
+import { openAbout, openPrivacy } from './about';
+import { rateApp } from '../native/review';
 
 function switchRow(key: keyof Settings, title: string, sub?: string, onChange?: (on: boolean) => void): HTMLElement {
   return listRow(title, toggle(Boolean(settings()[key]), (on) => {
@@ -37,13 +39,13 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
   const back = params.back || 'studio';
   const pro = h('div');
   const renderPro = (): void => {
-    const dev = import.meta.env.DEV ? toggle(isPro(), (on) => { setDevPro(on); renderPro(); }, 'Developer: pretend I bought Pro') : null;
+    const dev = TESTER_BUILD ? toggle(isPro(), (on) => { setDevPro(on); renderPro(); }, 'Test build: Pro on') : null;
     pro.replaceChildren(group('Pro',
       isPro()
-        ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: DEV_PRO ? 'Unlocked by the test build.' : 'Thank you!' })
+        ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: TESTER_BUILD ? 'Test build.' : 'Thank you!' })
         : listRow('Unlock Pro', icon('open', 20), { sub: 'One time. No subscription.', onClick: () => openPaywall() }),
       canBuy() && !isPro() ? listRow('Restore purchase', icon('open', 20), { onClick: async () => { toast((await restorePro()) ? 'Welcome back to Pro' : 'No purchase found'); renderPro(); } }) : null,
-      dev ? listRow('Developer: Pro on', dev) : null));
+      dev ? listRow('Test build: Pro on', dev, { sub: 'Only in test builds. Switch off to see the free app.' }) : null));
   };
   renderPro();
 
@@ -54,7 +56,10 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
       listRow('Music I like', icon('open', 20), { sub: tasteSummary(), onClick: () => openTaste(() => navigate('settings', params)) }),
       switchRow('snapToScale', 'Snap to key', 'Keeps hummed notes in the key.', (on) => edit((pp) => refreshKey(pp, on)))),
     pro,
-    group('Privacy', h('div', { class: 'lrow wide' }, h('b', null, 'Audio never leaves your phone.'), h('small', null, `No account, no tracking. HUMM ${__APP_VERSION__}`))),
+    group('HUMM',
+      listRow('Rate HUMM', icon('open', 20), { sub: 'Tell others what you think', onClick: () => void rateApp() }),
+      listRow('Privacy', icon('open', 20), { sub: 'Your audio never leaves your phone', onClick: () => openPrivacy() }),
+      listRow('About HUMM', icon('open', 20), { sub: `Version ${__APP_VERSION__}`, onClick: () => openAbout() })),
     h('details', { class: 'advanced' },
       h('summary', { class: 'label' }, 'Advanced', icon('down', 16)),
       group('While recording a part',

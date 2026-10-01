@@ -23,7 +23,10 @@ const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.leng
 const HINTS: Record<ImportKind, string> = { drums: 'B = kick · K = snare · ts = hat', bass: 'Hum low, one note at a time', lead: 'Hum or whistle the tune' };
 
 export function mountRecord(root: HTMLElement, params: Params): () => void {
+  // A re-take ("Redo" in the part editor) replaces that one part; otherwise a new part is added.
+  const replace = params.replace && getProject().tracks.find((t) => t.id === params.replace);
   let kind: ImportKind = (['drums', 'bass', 'lead'] as const).includes(params.kind as ImportKind) ? (params.kind as ImportKind) : 'drums';
+  if (replace && replace.kind !== 'chords') kind = replace.kind;
   let abort: AbortController | null = null;
   let plan: TakePlan | null = null;
   let mic: MicRecorder | null = null;
@@ -31,7 +34,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   let raf = 0;
   let alive = true;
   const scope = new Float32Array(2048);
-  const empty = !getProject().tracks.some(hasContent);
+  const empty = !getProject().tracks.some((t) => t !== replace && hasContent(t));
 
   const tiles = (['drums', 'bass', 'lead'] as const).map((k) =>
     h('button', { type: 'button', class: 'rtile', 'aria-pressed': 'false', onClick: () => setKind(k) }, icon(PARTS[k].icon, 26), h('span', { class: 'label' }, PARTS[k].label)));
@@ -47,7 +50,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
 
   root.append(h('div', { class: 'screen record' },
     h('header', { class: 'top' }, backBtn(() => navigate('studio'), 'Studio'), iconBtn('settings', 'Recording options', () => options(), { ghost: true })),
-    titleBlock(['Record']),
+    titleBlock([replace ? 'Record again' : 'Record']),
     h('div', { class: 'rtiles', role: 'group', 'aria-label': 'Part' }, tiles),
     hint,
     h('div', { class: 'chips' }, chip('Best with headphones', undefined, { icon: 'headphones', tip: true }), importChip),
@@ -57,6 +60,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   if (params.import === '1') void importTake();
 
   function setKind(k: ImportKind): void {
+    if (replace && k !== kind) return; // a re-take keeps its kind
     kind = k;
     tiles.forEach((b, i) => b.setAttribute('aria-pressed', String((['drums', 'bass', 'lead'] as const)[i] === k)));
     hint.textContent = HINTS[k];
@@ -108,10 +112,10 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   }
   raf = requestAnimationFrame(frame);
 
-  /** The project minus the part being re-recorded: what plays along during the take. */
+  /** The song minus the part being re-recorded: what plays along during the take. */
   const bandView = (): Project => {
     const p = getProject();
-    return { ...p, tracks: p.tracks.filter((t) => t.kind !== kind) };
+    return { ...p, tracks: p.tracks.filter((t) => t !== replace) };
   };
 
   function busy(on: boolean, live = false): void {
@@ -130,7 +134,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     abort = new AbortController();
     (progress.firstChild as HTMLElement).style.width = '0';
     const p = getProject();
-    band = settings().bandDuringTake && p.tracks.some((t) => t.kind !== kind && hasContent(t)) ? new Player(bandView) : null;
+    band = settings().bandDuringTake && p.tracks.some((t) => t !== replace && hasContent(t)) ? new Player(bandView) : null;
     let take: Take | null = null;
     try {
       take = await captureTake({
@@ -157,9 +161,9 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     spinner.classList.remove('hidden');
     status.textContent = 'Listening back…';
     try {
-      const res = await processTake(take, takeKind);
+      const res = await processTake(take, takeKind, replace ? replace.preset : undefined);
       if (!alive) return;
-      if (res.ok) commit(res.track, res.message, res.after);
+      if (res.ok) commit(res.track, res.message, res.after, replace ? replace.id : undefined);
       else status.textContent = res.message;
     } catch (err) {
       status.textContent = `Something went wrong: ${(err as Error).message}`;
@@ -181,8 +185,8 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       const res = await importRecording(kind, (on, text) => {
         spinner.classList.toggle('hidden', !on);
         if (text) status.textContent = text;
-      });
-      if (res && alive) commit(res.track, res.message, res.after);
+      }, replace ? replace.id : undefined);
+      if (res && alive) commit(res.track, res.message, res.after, replace ? replace.id : undefined);
     } finally {
       if (alive) {
         busy(false);

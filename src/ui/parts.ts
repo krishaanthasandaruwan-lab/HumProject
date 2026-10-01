@@ -1,6 +1,6 @@
 // What each part is called and which icon shows it (design spec B6). Parts are told apart by icon and
 // name, never by colour.
-import type { TrackKind } from '../model/project';
+import { kindNumber, type Project, type Track, type TrackKind } from '../model/project';
 import type { IconName } from './icons';
 
 export type PartId = TrackKind | 'voice';
@@ -12,6 +12,12 @@ export const PARTS: Record<PartId, { label: string; icon: IconName; verb: string
   chords: { label: 'Chords', icon: 'chords', verb: '' },
   voice: { label: 'My voice', icon: 'voice', verb: '' },
 };
+
+/** "Drums", or "Drums 2" when there is more than one drum part. */
+export function partLabel(p: Project, t: Track): string {
+  const n = kindNumber(p, t);
+  return n ? `${PARTS[t.kind].label} ${n}` : PARTS[t.kind].label;
+}
 
 const STYLE_ICONS: Record<string, IconName> = { chill: 'lofi', pop: 'pop', trap: 'trap', dance: 'dance', band: 'band', cinema: 'cinema' };
 

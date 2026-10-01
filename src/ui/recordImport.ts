@@ -30,7 +30,8 @@ export function voiceAnchors(notes: Note[], bpm: number, bars: number, swing: nu
   return out;
 }
 
-export async function importRecording(k: ImportKind, progress: (busy: boolean, text?: string) => void): Promise<Imported | null> {
+/** `replaceId`: the part being re-recorded (its own audio doesn't count as "the rest of the song"). */
+export async function importRecording(k: ImportKind, progress: (busy: boolean, text?: string) => void, replaceId?: string): Promise<Imported | null> {
   const file = await chooseImport();
   if (!file) return null;
   progress(true, 'Opening your recording…');
@@ -40,13 +41,13 @@ export async function importRecording(k: ImportKind, progress: (busy: boolean, t
     const audio = k === 'drums' ? decoded.audio : boostQuiet(decoded.audio, sampleRate); // soft humming counts too
     progress(true, 'Finding the beat…');
     const p = getProject();
-    const others = p.tracks.some((t) => t.kind !== k && hasContent(t));
+    const others = p.tracks.some((t) => t.id !== replaceId && hasContent(t));
     const r = await runDsp('free', { audio, sampleRate, kind: k, profile: getProfile(), ...(others ? { bpm: p.bpm, bars: p.bars } : {}) });
     if (!r.hits.length && !r.notes.length) {
       progress(false, k === 'drums' ? 'Didn’t hear any beatbox hits in that file.' : 'Didn’t catch a clear tune in that file.');
       return null;
     }
-    const track = newTrack(k, getTrack(p, k)?.preset);
+    const track = newTrack(k, (replaceId ? p.tracks.find((t) => t.id === replaceId)?.preset : undefined) ?? getTrack(p, k)?.preset);
     track.rawVoice = sliceSeconds(audio, sampleRate, r.loopStart, r.loopEnd);
     track.rawRate = sampleRate;
     if (k === 'drums') track.hits = r.hits;

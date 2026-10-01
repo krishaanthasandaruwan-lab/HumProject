@@ -4,10 +4,10 @@ import type { Track } from '../model/project';
 import { h, sheet } from './dom';
 import { icon } from './icons';
 import { group, mainBtn, range } from './kit';
-import { PARTS } from './parts';
+import { PARTS, partLabel } from './parts';
 
 function trackRow(t: Track, rerender: () => void): HTMLElement {
-  const name = PARTS[t.kind].label;
+  const name = partLabel(getProject(), t);
   const toggleBtn = (label: string, on: boolean, aria: string, flip: () => void): HTMLButtonElement =>
     h('button', { type: 'button', class: 'ms', 'aria-pressed': String(on), 'aria-label': aria, onClick: () => { edit(flip); rerender(); } }, label);
   return h('div', { class: `mixrow${t.muted ? ' muted' : ''}` },

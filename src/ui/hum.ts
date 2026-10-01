@@ -21,6 +21,15 @@ const QUIET_STOP = 3; // after that, stops by itself after this much quiet
 
 type State = 'ready' | 'listening' | 'thinking' | 'no-tune' | 'mic-off' | 'error';
 
+/** What HUMM can do, one line at a time under the mic while it waits. */
+const HINTS = [
+  'Tap and hum a tune',
+  'Beatbox a beat. Get real drums.',
+  'Record a street seller’s shout. Make it a song.',
+  'Whistle, sing or hum. It all becomes music.',
+  'Import a video. Its sound becomes a song.',
+];
+
 export function mountHum(root: HTMLElement): () => void {
   let mic: MicRecorder | null = null;
   let startedAt = 0;
@@ -29,6 +38,15 @@ export function mountHum(root: HTMLElement): () => void {
   let last = 0;
   let raf = 0;
   let gate = new LevelGate();
+  let hint = 0;
+  const hintTimer = window.setInterval(() => {
+    if (stage.dataset.state !== 'ready') return;
+    hint = (hint + 1) % HINTS.length;
+    status.classList.remove('hint-in');
+    void status.offsetWidth; // restart the fade
+    status.textContent = HINTS[hint];
+    status.classList.add('hint-in');
+  }, 3400);
   let alive = true;
   const scope = new Float32Array(2048);
 
@@ -58,7 +76,7 @@ export function mountHum(root: HTMLElement): () => void {
     stage.dataset.state = s;
     tiles.classList.toggle('faded', s === 'listening' || s === 'thinking');
     micBtn.setAttribute('aria-label', s === 'listening' ? 'Done' : 'Start humming');
-    status.textContent = text || ({ ready: 'Tap and hum', listening: 'Tap when done', thinking: 'Finding the beat…' } as Record<string, string>)[s] || '';
+    status.textContent = text || ({ ready: HINTS[hint], listening: 'Tap when done', thinking: 'Finding the beat…' } as Record<string, string>)[s] || '';
     if (s === 'no-tune' || s === 'mic-off' || s === 'error') {
       const off = s === 'mic-off';
       fill(problem,
@@ -170,6 +188,7 @@ export function mountHum(root: HTMLElement): () => void {
 
   return () => {
     alive = false;
+    clearInterval(hintTimer);
     cancelAnimationFrame(raf);
     if (mic) {
       mic.close();

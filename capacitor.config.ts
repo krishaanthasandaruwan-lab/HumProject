@@ -8,6 +8,8 @@ const config: CapacitorConfig = {
   ios: {
     // Safe areas are handled in CSS (viewport-fit=cover + env(safe-area-inset-*)).
     contentInset: 'never',
+    // A fixed app frame: the web view itself never scrolls or bounces; screens scroll inside.
+    scrollEnabled: false,
     backgroundColor: '#F6F4EF',
   },
   android: {

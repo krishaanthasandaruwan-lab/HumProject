@@ -2,7 +2,9 @@
 .hum .top .mark { width: 32px; height: 32px; }
 .hum-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; min-height: 340px; }
 .hum-timer { font-size: 1.375rem; min-height: 28px; visibility: hidden; }
-.hum-status { min-height: 22px; color: var(--graphite); }
+.hum-status { min-height: 44px; max-width: 30ch; color: var(--graphite); }
+.hum-status.hint-in { animation: hintIn 3.4s var(--ease) both; }
+@keyframes hintIn { 0% { opacity: 0; transform: translateY(6px); } 12%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 .hum-wave { width: 100%; max-width: 360px; height: 56px; visibility: hidden; }
 .hum-think, .hum-problem { display: none; flex-direction: column; align-items: center; gap: 14px; }
 .hum-think .spinner { margin-top: -6px; }

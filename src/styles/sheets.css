@@ -25,3 +25,4 @@
 .advanced > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--graphite); cursor: pointer; list-style: none; }
 .advanced > summary::-webkit-details-marker { display: none; }
 .advanced[open] > summary svg { transform: rotate(180deg); }
+.prose h3 { margin-bottom: 4px; }

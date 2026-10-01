@@ -1,64 +1,59 @@
-// 04 · Studio: hear the song, change it, finish it. Song name, song chips, the song map, the parts list
-// and the bottom bar (Mix · Record · Play · Add · Share).
+// 04 · Studio: hear the song, change it, finish it. Song name on top, the tracks timeline in the
+// middle, and the bar (Record · Mix · Play · Song · Share) at the bottom — or on the right when
+// the phone is held sideways.
 import '../styles/studio.css';
+import '../styles/timeline.css';
 import { player } from '../app';
 import { keyName } from '../dsp/key';
 import { demoProject } from '../model/demo';
-import { STEPS_PER_BAR, totalSteps, type TrackKind } from '../model/project';
-import { navigate } from '../router';
+import { totalSteps, type TrackKind } from '../model/project';
+import { navigate, type Params } from '../router';
 import { edit, getProject, setProject } from '../state';
 import { ask, h, toast } from './dom';
 import { openExport } from './export';
 import { icon, type IconName } from './icons';
-import { art, backBtn, btn2, chip, iconBtn, link, mainBtn } from './kit';
-import { openAddPart } from './addPart';
+import { art, backBtn, btn2, iconBtn, link, mainBtn } from './kit';
 import { openMixer } from './mixer';
-import { partList } from './partRows';
 import { openSongSheet } from './songSheet';
+import { timeline } from './timeline';
 import { playSquare, togglePlay } from './transport';
 
-export function mountStudio(root: HTMLElement): () => void {
+export function mountStudio(root: HTMLElement, params: Params): () => void {
   const p = getProject;
   let raf = 0;
   let alive = true;
 
-  const name = h('span');
-  const renderName = (): void => { name.textContent = p().name; };
-  const title = h('button', { type: 'button', class: 'songname h2', 'aria-label': 'Rename song', onClick: () => void rename() }, name, icon('rename', 18));
-  const songChips = h('div', { class: 'chips' });
-  const map = h('div', { class: 'songmap', 'aria-hidden': 'true' });
-  const playhead = h('span', { class: 'playhead' });
-  const parts = partList(() => renderMap());
+  const name = h('span', { class: 'nm' });
+  const title = h('button', { type: 'button', class: 'songname', 'aria-label': 'Rename song', onClick: () => void rename() }, name, icon('rename', 16));
+  const meta = h('p', { class: 'studio-meta label' });
+  const tracks = timeline(() => undefined);
   const body = h('div', { class: 'studio-body' });
   const play = playSquare();
   const slot = (ic: IconName, label: string, go: () => void): HTMLButtonElement =>
     h('button', { type: 'button', class: 'slot', onClick: go }, icon(ic, 24), h('span', { class: 'caption' }, label));
-  const bar = h('nav', { class: 'actionbar', 'aria-label': 'Song actions' },
+  const bar = h('nav', { class: 'actionbar', 'aria-label': 'Song' },
     slot('record', 'Record', () => navigate('record', { kind: nextKind() })),
     slot('mix', 'Mix', () => openMixer(() => refresh())),
     h('div', { class: 'slot' }, play.el, h('span', { class: 'caption' }, 'Play')),
-    slot('add', 'Add', () => openAddPart(() => refresh())),
+    slot('settings', 'Song', () => openSongSheet(() => refresh())),
     slot('share', 'Share', () => { player.stop(); openExport(); }));
 
   root.classList.add('with-bar');
-  root.append(h('div', { class: 'screen studio' },
+  root.append(h('div', { class: 'screen studio fixed' },
     h('header', { class: 'top' },
       backBtn(() => navigate('projects'), 'My songs'),
+      title,
       iconBtn('settings', 'Settings', () => navigate('settings', { back: 'studio' }), { ghost: true })),
-    title, songChips, body));
+    meta, body));
   document.body.append(bar);
   refresh();
+  if (params.focus) requestAnimationFrame(() => tracks.focus(params.focus));
 
   function refresh(): void {
-    renderName();
+    name.textContent = p().name;
     const k = p().key;
-    const open = (): void => openSongSheet(() => refresh());
-    songChips.replaceChildren(
-      chip(`${Math.round(p().bpm)} BPM`, open),
-      chip(k ? keyName(k) : 'Key: auto', open),
-      chip(`${p().bars} bars`, open));
-    parts.refresh();
-    if (parts.empty()) {
+    meta.textContent = [`${Math.round(p().bpm)} BPM`, k ? keyName(k) : null, `${p().bars} bars`].filter(Boolean).join(' · ');
+    if (tracks.empty()) {
       bar.classList.add('hidden');
       body.replaceChildren(h('div', { class: 'studio-empty' },
         art('ill-11-live'),
@@ -66,16 +61,11 @@ export function mountStudio(root: HTMLElement): () => void {
         mainBtn('Record', () => navigate('record', { kind: 'drums' }), { icon: 'record' }),
         btn2('Hear a demo', () => loadDemo(), 'headphones'),
         link('Import', () => navigate('record', { kind: 'lead', import: '1' }))));
-    } else {
-      bar.classList.remove('hidden');
-      renderMap();
-      body.replaceChildren(map, parts.el);
+      return;
     }
-  }
-
-  function renderMap(): void {
-    const bars = p().bars;
-    map.replaceChildren(...Array.from({ length: bars }, (_, i) => h('span', { class: 'blk' }, String(i + 1))), playhead);
+    bar.classList.remove('hidden');
+    body.replaceChildren(tracks.el);
+    tracks.refresh();
   }
 
   const nextKind = (): TrackKind =>
@@ -85,7 +75,7 @@ export function mountStudio(root: HTMLElement): () => void {
     const n = await ask('Rename song', p().name);
     if (!n || !alive) return;
     edit((pp) => { pp.name = n; });
-    renderName();
+    name.textContent = n;
   }
 
   function loadDemo(): void {
@@ -99,10 +89,7 @@ export function mountStudio(root: HTMLElement): () => void {
   function frame(): void {
     play.sync();
     const step = player.currentStep();
-    playhead.style.display = step < 0 ? 'none' : 'block';
-    if (step >= 0) playhead.style.left = `${(step / totalSteps(p())) * 100}%`;
-    const barNo = step < 0 ? -1 : Math.floor(step / STEPS_PER_BAR);
-    map.querySelectorAll('.blk').forEach((b, i) => b.classList.toggle('now', i === barNo));
+    tracks.setPlayhead(step < 0 ? -1 : step % totalSteps(p()), player.playing);
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);
@@ -111,6 +98,7 @@ export function mountStudio(root: HTMLElement): () => void {
     alive = false;
     cancelAnimationFrame(raf);
     player.stop();
+    tracks.dispose();
     bar.remove();
     root.classList.remove('with-bar');
   };

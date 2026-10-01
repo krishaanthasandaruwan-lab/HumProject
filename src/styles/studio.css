@@ -1,10 +1,12 @@
 /* 04 · Studio: song name, chips, song map, parts list, bottom action bar */
-#app.with-bar { padding-bottom: calc(var(--safe-bottom) + 116px); }
-.studio { gap: 14px; }
-.songname { display: flex; align-items: flex-start; gap: 8px; text-align: left; color: var(--ink); }
-.songname > span { overflow-wrap: anywhere; }
-.songname > svg { margin-top: 5px; color: var(--graphite); }
-.studio-body { display: flex; flex-direction: column; gap: 16px; }
+#app.with-bar { padding-bottom: calc(var(--safe-bottom) + 96px); }
+.studio { gap: 10px; }
+.studio .top { gap: 8px; }
+.songname { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--ink); }
+.songname .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.375rem/1.1 var(--font-display); text-transform: uppercase; }
+.songname > svg { flex: none; color: var(--graphite); }
+.studio-meta { text-align: center; color: var(--graphite); margin-top: -6px; }
+.studio-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 
 .songmap { position: relative; display: flex; gap: 4px; margin-top: 4px; }
 .songmap .blk { flex: 1 1 0; min-width: 0; height: 32px; display: grid; place-items: center; border: var(--border); background: var(--white);

@@ -73,10 +73,18 @@ export function projectToMidi(p: Project): Uint8Array<ArrayBuffer> {
   const parts = p.tracks.filter((t) => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0);
   let ch = 0;
   const chunks = [trackChunk(p.name, tempo)];
+  const seen = new Map<string, number>();
   for (const t of parts) {
-    const channel = t.kind === 'drums' ? 9 : ch++;
-    if (ch === 9) ch++;
-    chunks.push(trackChunk(t.kind, partEvents(t, channel, steps)));
+    // Melodic parts take channels 1–16 except 10 (drums), wrapping when a song has more parts than that.
+    let channel = 9;
+    if (t.kind !== 'drums') {
+      channel = ch;
+      ch = (ch + 1) % 16;
+      if (ch === 9) ch = 10;
+    }
+    const n = (seen.get(t.kind) ?? 0) + 1;
+    seen.set(t.kind, n);
+    chunks.push(trackChunk(n > 1 ? `${t.kind} ${n}` : t.kind, partEvents(t, channel, steps)));
   }
   const header = chunk('MThd', [0, 1, 0, chunks.length, (PPQ >> 8) & 255, PPQ & 255]);
   return new Uint8Array([...header, ...chunks.flat()]);

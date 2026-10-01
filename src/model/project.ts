@@ -105,7 +105,37 @@ export function getTrack(p: Project, kind: TrackKind): Track | undefined {
   return p.tracks.find((t) => t.kind === kind);
 }
 
-/** One track per kind: replaces the existing one (returns it, for undo). */
+export const MAX_TRACKS = 16;
+
+export function trackById(p: Project, id: string): Track | undefined {
+  return p.tracks.find((t) => t.id === id);
+}
+
+/** A new recorded part goes next to the others of its kind: a second drum part is "Drums 2". */
+export function addTrack(p: Project, track: Track): void {
+  p.tracks.push(track);
+  p.tracks.sort((a, b) => TRACK_ORDER.indexOf(a.kind) - TRACK_ORDER.indexOf(b.kind)); // stable: keeps recording order
+}
+
+/** Put `track` where the track with `id` is (a re-take); returns the old one, for undo. */
+export function replaceTrack(p: Project, id: string, track: Track): Track | undefined {
+  const i = p.tracks.findIndex((t) => t.id === id);
+  if (i < 0) {
+    addTrack(p, track);
+    return undefined;
+  }
+  const old = p.tracks[i];
+  p.tracks[i] = track;
+  return old;
+}
+
+/** 1, 2, 3… among the parts of the same kind, or 0 when it is the only one. */
+export function kindNumber(p: Project, t: Track): number {
+  const same = p.tracks.filter((x) => x.kind === t.kind);
+  return same.length > 1 ? same.indexOf(t) + 1 : 0;
+}
+
+/** Arranged parts: replaces the existing one of that kind (returns it, for undo). */
 export function putTrack(p: Project, track: Track): Track | undefined {
   const i = p.tracks.findIndex((t) => t.kind === track.kind);
   if (i < 0) {

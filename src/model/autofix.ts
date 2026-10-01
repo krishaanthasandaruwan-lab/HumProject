@@ -4,6 +4,8 @@
 //     that is off, shift them all so they stop flipping between neighbouring steps.
 //  2. Drums — find the repeating pattern (1, 2 or 4 bars) by majority vote; every bar follows it.
 //  3. Melody — fold octave slips back, drop tiny glitch notes, re-join notes split in two.
+//  0. Before all that, a take that stops early (6 bars in an 8-bar song) is filled out by repeating
+//     what was recorded, from the top.
 import { quantizePos } from '../dsp/quantize';
 import { STEPS_PER_BAR, swingOffset, type DrumHit, type DrumType, type Note } from './project';
 
@@ -11,6 +13,35 @@ export interface FixReport {
   changes: number; // hits / notes added, removed, moved or re-pitched
   shiftSteps: number; // timing correction applied to everything (steps; 0 = none)
   period: number; // drums: pattern length in bars
+  filled: number; // empty bars at the end that were filled by repeating the take
+}
+
+/** How many bars from the top hold something (the last bar with a note or hit in it, + 1). */
+export function usedBars(starts: number[]): number {
+  return starts.length ? Math.floor(Math.max(...starts) / STEPS_PER_BAR) + 1 : 0;
+}
+
+/** Fill the empty bars at the end by repeating the recorded bars from the top. */
+function fill<T>(items: T[], bars: number, startOf: (x: T) => number, moveTo: (x: T, start: number) => T): { items: T[]; filled: number } {
+  const used = usedBars(items.map(startOf));
+  if (used === 0 || used >= bars) return { items, filled: 0 };
+  const out = [...items];
+  for (let at = used; at < bars; at += used) {
+    const span = Math.min(used, bars - at) * STEPS_PER_BAR;
+    for (const x of items) if (startOf(x) < span) out.push(moveTo(x, startOf(x) + at * STEPS_PER_BAR));
+  }
+  return { items: out, filled: bars - used };
+}
+
+export function fillHits(hits: DrumHit[], bars: number): { hits: DrumHit[]; filled: number } {
+  const r = fill(hits, bars, (h) => h.step, (h, step) => ({ ...h, step }));
+  return { hits: r.items, filled: r.filled };
+}
+
+export function fillNotes(notes: Note[], bars: number): { notes: Note[]; filled: number } {
+  const end = bars * STEPS_PER_BAR;
+  const r = fill(notes, bars, (n) => n.start, (n, start) => ({ ...n, start, length: Math.max(1, Math.min(n.length, end - start)) }));
+  return { notes: r.items, filled: r.filled };
 }
 
 const TAU = 2 * Math.PI;
@@ -40,8 +71,9 @@ const median = (v: number[]): number => {
   return s.length ? s[s.length >> 1] : 0;
 };
 
-export function fixDrums(hits: DrumHit[], bars: number, swing: number): { hits: DrumHit[]; report: FixReport } {
+export function fixDrums(recorded: DrumHit[], bars: number, swing: number): { hits: DrumHit[]; report: FixReport } {
   const total = bars * STEPS_PER_BAR;
+  const { hits, filled } = fillHits(recorded, bars);
   const bias = timingBias(hits);
   let moved = 0;
   const timed = hits.map((h) => {
@@ -77,7 +109,7 @@ export function fixDrums(hits: DrumHit[], bars: number, swing: number): { hits: 
     slots.set(k, slot);
   }
   const out: DrumHit[] = [];
-  let changes = moved;
+  let changes = moved + (hits.length - recorded.length);
   for (const slot of slots.values()) {
     const share = new Set(slot.hits.map((h) => Math.floor(h.step / len))).size / groups;
     const vel = median(slot.hits.map((h) => h.velocity));
@@ -94,13 +126,14 @@ export function fixDrums(hits: DrumHit[], bars: number, swing: number): { hits: 
     }
   }
   out.sort((a, b) => a.step - b.step || a.type.localeCompare(b.type));
-  return { hits: out, report: { changes, shiftSteps: bias, period } };
+  return { hits: out, report: { changes, shiftSteps: bias, period, filled } };
 }
 
-export function fixNotes(notes: Note[], bars: number, swing: number): { notes: Note[]; report: FixReport } {
+export function fixNotes(recorded: Note[], bars: number, swing: number): { notes: Note[]; report: FixReport } {
   const total = bars * STEPS_PER_BAR;
+  const { notes, filled } = fillNotes(recorded, bars);
   const bias = timingBias(notes);
-  let changes = 0;
+  let changes = notes.length - recorded.length;
   let out = notes.map((n) => {
     if (!bias) return { ...n };
     const q = requantize(n.start, n.offset ?? 0, bias, swing, total);
@@ -144,5 +177,5 @@ export function fixNotes(notes: Note[], bars: number, swing: number): { notes: N
     kept.push(n);
   });
   out = kept;
-  return { notes: out, report: { changes, shiftSteps: bias, period: 1 } };
+  return { notes: out, report: { changes, shiftSteps: bias, period: 1, filled } };
 }

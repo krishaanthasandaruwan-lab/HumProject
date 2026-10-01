@@ -3,8 +3,10 @@
 import { get, set } from 'idb-keyval';
 import { getInstrument, getKit } from '../synth/kits';
 
-/** Build-time switch for test builds: VITE_DEV_PRO=true. */
+/** Build-time switch for test builds: VITE_DEV_PRO=true (npm run ios:sync:pro). Starts with Pro on. */
 export const DEV_PRO = import.meta.env.VITE_DEV_PRO === 'true';
+/** Dev server and test builds get a Pro on/off switch in Settings; store builds never contain it. */
+export const TESTER_BUILD = import.meta.env.DEV || DEV_PRO;
 
 export const FREE_SONG_LIMIT = 3;
 const DEV_TOGGLE_KEY = 'mb-dev-pro';
@@ -13,16 +15,17 @@ let owned = false;
 const listeners = new Set<() => void>();
 
 function devToggle(): boolean {
-  if (!import.meta.env.DEV) return false;
+  if (!TESTER_BUILD) return false;
   try {
-    return localStorage.getItem(DEV_TOGGLE_KEY) === '1';
+    const v = localStorage.getItem(DEV_TOGGLE_KEY);
+    return v === null ? DEV_PRO : v === '1';
   } catch {
-    return false;
+    return DEV_PRO;
   }
 }
 
 export function isPro(): boolean {
-  return DEV_PRO || owned || devToggle();
+  return owned || devToggle();
 }
 
 export async function loadPro(): Promise<void> {

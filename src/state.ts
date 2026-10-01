@@ -2,7 +2,7 @@
 import { newProject, type Project } from './model/project';
 import { settings, updateSettings } from './settings';
 import { nextSongName } from './songName';
-import { listProjects, loadProject, saveProject } from './storage';
+import { isSaved, listProjects, loadProject, saveProject } from './storage';
 
 let project: Project = newProject();
 const listeners = new Set<() => void>();
@@ -41,9 +41,13 @@ function queueSave(): void {
   timer = window.setTimeout(() => void flushSave(), 600);
 }
 
+const hasContent = (p: Project): boolean => p.tracks.some((t) => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0);
+
 export async function flushSave(): Promise<void> {
   clearTimeout(timer);
   try {
+    // An empty new song is only kept once something is in it (it doesn't fill a free song slot).
+    if (!hasContent(project) && !(await isSaved(project.id))) return;
     await saveProject(project);
   } catch (err) {
     console.warn('Could not save project', err);

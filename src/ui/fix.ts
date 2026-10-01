@@ -1,7 +1,8 @@
-// "Fix" on a recorded part: make its bars agree (model/autofix.ts). Never automatic — the Fix chip only
-// shows when there is something to fix, and every fix can be undone.
+// "Fix" on a recorded part: fill a take that stopped early, then make its bars agree
+// (model/autofix.ts). Never automatic — the Fix chip only shows when there is something to fix,
+// and every fix can be undone.
 import { fixDrums, fixNotes, type FixReport } from '../model/autofix';
-import { getTrack, stepDur, type DrumHit, type Note, type Track, type TrackKind } from '../model/project';
+import { stepDur, trackById, type DrumHit, type Note, type Track } from '../model/project';
 import { edit, getProject } from '../state';
 import { toast } from './dom';
 
@@ -10,11 +11,11 @@ interface Plan {
   apply: (t: Track) => void;
 }
 
-function plan(kind: TrackKind): Plan | null {
+function plan(id: string): Plan | null {
   const p = getProject();
-  const t = getTrack(p, kind);
+  const t = trackById(p, id);
   if (!t || t.generated) return null;
-  if (kind === 'drums') {
+  if (t.kind === 'drums') {
     if (!t.hits?.length) return null;
     const r = fixDrums(t.hits, p.bars, p.swing);
     return { report: r.report, apply: (tr) => { tr.hits = r.hits; } };
@@ -25,15 +26,15 @@ function plan(kind: TrackKind): Plan | null {
 }
 
 /** True when Fix would change something in this part. */
-export function canFix(kind: TrackKind): boolean {
-  return !!plan(kind)?.report.changes;
+export function canFix(id: string): boolean {
+  return !!plan(id)?.report.changes;
 }
 
 /** Apply Fix, refresh the view, and offer Undo. */
-export function runFix(kind: TrackKind, refresh: () => void): void {
+export function runFix(id: string, refresh: () => void): void {
   const p = getProject();
-  const t = getTrack(p, kind);
-  const pl = plan(kind);
+  const t = trackById(p, id);
+  const pl = plan(id);
   if (!t || !pl) return;
   if (!pl.report.changes) {
     toast('Every bar already agrees');
@@ -44,9 +45,11 @@ export function runFix(kind: TrackKind, refresh: () => void): void {
   edit(() => pl.apply(t));
   navigator.vibrate?.(10);
   refresh();
-  const ms = Math.round(Math.abs(pl.report.shiftSteps) * stepDur(p.bpm) * 1000);
-  const timing = ms ? ` · ${ms} ms ${pl.report.shiftSteps > 0 ? 'late' : 'early'}` : '';
-  toast(`Fixed ${pl.report.changes} ${kind === 'drums' ? 'hits' : 'notes'}${timing}`, {
+  const { filled, shiftSteps, changes } = pl.report;
+  const ms = Math.round(Math.abs(shiftSteps) * stepDur(p.bpm) * 1000);
+  const what = filled ? `Filled ${filled} empty ${filled === 1 ? 'bar' : 'bars'}` : `Fixed ${changes} ${t.kind === 'drums' ? 'hits' : 'notes'}`;
+  const timing = ms ? ` · ${ms} ms ${shiftSteps > 0 ? 'late' : 'early'}` : '';
+  toast(`${what}${timing}`, {
     label: 'Undo',
     run: () => {
       edit(() => {

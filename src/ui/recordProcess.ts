@@ -4,7 +4,7 @@ import { loopAudio, type Take } from '../audio/take';
 import { runDsp } from '../dsp/client';
 import { boostQuiet } from '../dsp/level';
 import { refreshKey } from '../model/music';
-import { getTrack, newTrack, putTrack, type Project, type Track, type TrackKind } from '../model/project';
+import { addTrack, getTrack, newTrack, replaceTrack, trackById, type Project, type Track, type TrackKind } from '../model/project';
 import { getProfile } from '../profile';
 import { navigate } from '../router';
 import { settings } from '../settings';
@@ -16,7 +16,8 @@ export type TakeResult =
   | { ok: true; track: Track; message: string; after?: (p: Project) => void }
   | { ok: false; message: string };
 
-export async function processTake(heard: Take, k: TrackKind): Promise<TakeResult> {
+/** `preset`: the sound of the part being re-recorded, else the one the song already uses for this kind. */
+export async function processTake(heard: Take, k: TrackKind, preset?: string): Promise<TakeResult> {
   // Without headphones the click is in the take too; left in, it reads as extra hits.
   const clean = heard.clickTones.length
     ? { ...heard, audio: await runDsp('declick', { audio: heard.audio, sampleRate: heard.sampleRate, tones: heard.clickTones }) }
@@ -25,7 +26,7 @@ export async function processTake(heard: Take, k: TrackKind): Promise<TakeResult
   const take = k === 'drums' ? clean : { ...clean, audio: boostQuiet(clean.audio, clean.sampleRate) };
   const p = getProject();
   const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
-  const track = newTrack(k, getTrack(p, k)?.preset);
+  const track = newTrack(k, preset ?? getTrack(p, k)?.preset);
   track.rawVoice = loopAudio(take);
   track.rawRate = take.sampleRate;
   if (k === 'drums') {
@@ -43,27 +44,28 @@ export async function processTake(heard: Take, k: TrackKind): Promise<TakeResult
   return { ok: true, track, message: `${res.notes.length} notes added`, after: (pp) => refreshKey(pp, settings().snapToScale) };
 }
 
-/** Put the track into the song, go back to the Studio, and offer Undo. */
-export function commit(track: Track, message: string, after?: (p: Project) => void): void {
+/** Put the track into the song — a new part, or in place of `replaceId` (a re-take) — go back to the
+ * Studio, and offer Undo. */
+export function commit(track: Track, message: string, after?: (p: Project) => void, replaceId?: string): void {
   let old: Track | undefined;
   edit((p) => {
-    const prev = getTrack(p, track.kind);
+    const prev = replaceId ? trackById(p, replaceId) : undefined;
     if (prev) {
       // A re-take keeps the mixer settings of the part it replaces.
       track.volume = prev.volume;
       track.muted = prev.muted;
       track.solo = prev.solo;
-    }
-    old = putTrack(p, track);
+      old = replaceTrack(p, prev.id, track);
+    } else addTrack(p, track);
     after?.(p);
   });
   navigator.vibrate?.(10);
-  navigate('studio', { focus: track.kind });
+  navigate('studio', { focus: track.id });
   toast(message, {
     label: 'Undo',
     run: () => {
       edit((p) => {
-        if (old) putTrack(p, old);
+        if (old) replaceTrack(p, track.id, old);
         else p.tracks = p.tracks.filter((t) => t.id !== track.id);
         after?.(p);
       });

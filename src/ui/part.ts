@@ -1,8 +1,9 @@
-// 05 · Part editor: change the beats or notes of one part. Drums get the grid, hummed parts the piano
-// roll, chords their bar blocks, and "My voice" its three controls (voicePanel.ts).
+// 05 · Part editor: change the beats or notes of one part (route param `id`: a track id, or 'voice').
+// Drums get the grid, hummed parts the piano roll, chords their bar blocks, and "My voice" its
+// controls (voicePanel.ts).
 import '../styles/part.css';
 import { auditionDrum, auditionNote, player, toggleVoice } from '../app';
-import { getTrack, totalSteps, TRACK_META, type Track, type TrackKind } from '../model/project';
+import { totalSteps, trackById, TRACK_META, type Track } from '../model/project';
 import { navigate, type Params } from '../router';
 import { edit, getProject } from '../state';
 import { fill, h, sheet, toast } from './dom';
@@ -10,23 +11,23 @@ import { canFix, runFix } from './fix';
 import { drumGrid } from './grid';
 import { icon } from './icons';
 import { backBtn, btn2, chip, iconBtn } from './kit';
-import { makeChords } from './addPart';
-import { PARTS, type PartId } from './parts';
+import { makeChords } from './chords';
+import { PARTS, partLabel } from './parts';
 import { pianoRoll } from './pianoroll';
 import { openSounds, soundName } from './soundsSheet';
 import { playSquare } from './transport';
 import { voicePanel } from './voicePanel';
 
-const KINDS: PartId[] = ['drums', 'bass', 'lead', 'chords', 'voice'];
-
 export function mountPart(root: HTMLElement, params: Params): () => void {
-  const id = (KINDS.includes(params.kind as PartId) ? params.kind : 'drums') as PartId;
+  const id = params.id ?? 'voice';
   const p = getProject;
-  const track = (): Track | undefined => (id === 'voice' ? undefined : getTrack(p(), id));
-  if (id !== 'voice' && !track()) {
+  const track = (): Track | undefined => (id === 'voice' ? undefined : trackById(p(), id));
+  const t0 = track();
+  if (id !== 'voice' && !t0) {
     navigate('studio');
     return () => undefined;
   }
+  const title = t0 ? partLabel(p(), t0) : PARTS.voice.label;
   const play = playSquare();
   const head = h('div', { class: 'part-chips chips' });
   const editor = h('div', { class: 'part-editor' });
@@ -37,18 +38,18 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
     h('header', { class: 'top' },
       backBtn(() => navigate('studio', { focus: id }), 'Studio'),
       id === 'voice' ? null : iconBtn('more', 'More', () => more(), { ghost: true })),
-    h('div', { class: 'titleblock' }, h('h1', { class: 'h2' }, PARTS[id].label), head),
+    h('div', { class: 'titleblock' }, h('h1', { class: 'h2' }, title), head),
     editor,
     h('div', { class: 'part-actions' }, ...actions(), play.el)));
   renderHead();
   build();
 
   function renderHead(): void {
-    if (id === 'voice') return head.replaceChildren();
-    const kind = id as TrackKind;
+    const t = track();
+    if (!t) return head.replaceChildren();
     fill(head,
-      chip([soundName(kind), icon('down', 14)], () => openSounds(kind, renderHead)),
-      canFix(kind) ? chip('Fix', () => runFix(kind, () => { build(); renderHead(); }), { icon: 'fix', attn: true }) : null);
+      chip([soundName(t), icon('down', 14)], () => openSounds(id, renderHead)),
+      canFix(id) ? chip('Fix', () => runFix(id, () => { build(); renderHead(); }), { icon: 'fix', attn: true }) : null);
   }
 
   function build(): void {
@@ -56,7 +57,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
       editor.replaceChildren(voicePanel());
       return;
     }
-    const kind = id as TrackKind;
+    const kind = t0!.kind;
     if (kind === 'drums') {
       const grid = drumGrid({
         hits: () => track()?.hits ?? [],
@@ -85,7 +86,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
 
   function actions(): HTMLElement[] {
     if (id === 'voice') return [btn2('Redo', () => navigate('record', { kind: 'lead' }), 'record')];
-    if (id === 'chords') return [btn2('Redo', () => { makeChords(() => { build(); renderHead(); }); }, 'again')];
+    if (t0?.kind === 'chords') return [btn2('Redo', () => { makeChords(() => { build(); renderHead(); }); }, 'again')];
     const take = btn2('My take', undefined, 'voice');
     take.addEventListener('click', () => {
       const t = track();
@@ -94,16 +95,16 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
       take.setAttribute('aria-pressed', String(on));
     });
     take.disabled = !track()?.rawVoice?.length;
-    return [btn2('Redo', () => navigate('record', { kind: id }), 'record'), take];
+    return [btn2('Redo', () => navigate('record', { kind: t0!.kind, replace: id }), 'record'), take];
   }
 
   function more(): void {
-    const kind = id as TrackKind;
+    const kind = t0!.kind;
     const go = (fn: () => void): void => { close(); fn(); };
     const close = sheet(h('div', { class: 'stack' },
       btn2('Clear', () => go(() => change('Cleared', (t) => { t.hits = kind === 'drums' ? [] : undefined; t.notes = kind === 'drums' ? undefined : []; }))),
       btn2('Remove part', () => go(() => change('Part removed', null)))),
-    undefined, PARTS[kind].label);
+    undefined, title);
   }
 
   /** Clear or remove this part, with Undo. */
@@ -118,7 +119,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
     });
     const undo = (): void => {
       edit((pp) => { pp.tracks = before.map((t) => (t === old ? copy : t)); });
-      if (fn) navigate('part', { kind: id });
+      if (fn) navigate('part', { id });
       else navigate('studio');
     };
     if (!fn) {

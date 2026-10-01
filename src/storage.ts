@@ -44,6 +44,10 @@ export async function saveProject(p: Project): Promise<void> {
   await set(INDEX, list);
 }
 
+export async function isSaved(id: string): Promise<boolean> {
+  return ((await get<ProjectMeta[]>(INDEX)) ?? []).some((m) => m.id === id);
+}
+
 export async function deleteProject(id: string): Promise<void> {
   await del(key(id));
   const list = ((await get<ProjectMeta[]>(INDEX)) ?? []).filter((m) => m.id !== id);
