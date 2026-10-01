@@ -33,6 +33,8 @@ export async function initBilling(): Promise<void> {
     ready = true;
     const { customerInfo } = await Purchases.getCustomerInfo();
     setOwned(!!customerInfo.entitlements.active[ENTITLEMENT]);
+    // The store stays the source of truth: refunds, restores on another device, family sharing.
+    await Purchases.addCustomerInfoUpdateListener((info) => setOwned(!!info.entitlements.active[ENTITLEMENT]));
   } catch (err) {
     console.warn('Billing unavailable', err);
   }

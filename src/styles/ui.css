@@ -31,7 +31,7 @@
 .btn-del { background: var(--red); }
 .btn-2nd:active:not(:disabled), .btn-del:active { transform: translate(2px, 2px); }
 .btn-2nd:disabled { color: var(--graphite); border-color: var(--stone); }
-.link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--ink);
+.link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; color: var(--ink);
   font: 700 .875rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase;
   text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .link.red { color: var(--red-ink); }

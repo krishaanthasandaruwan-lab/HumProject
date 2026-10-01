@@ -1,9 +1,9 @@
 # HUMM 🎤 → 🥁🎸🎹
 
 **Hum a melody — get a song. Beatbox the drums. Hum the bassline.**
-Open the app, hum anything with no metronome: HUMM finds the beat and the key and plays it back as a full arrangement in three styles to choose from, with your own voice auto-tuned on top if you like. Or build a song part by part: beatbox the drums, hum the bass and the lead, add chords. It exports a *"what I recorded → what came out"* video for TikTok and Reels.
+Open the app, hum anything with no metronome: HUMM finds the beat and the key and plays it back as three different songs (as hummed, slower, faster — up to 100 with "More", in 20 styles), with your own voice auto-tuned on top if you like. Or build a song part by part: beatbox the drums, hum the bass and the lead, add chords. It exports a *"what I recorded → what came out"* video for TikTok and Reels.
 
-It is a Vite + TypeScript PWA with no framework and no server. All audio analysis and synthesis runs on the device — no AI service, no uploads. It is wrapped with Capacitor for the App Store (iPhone) and Google Play. The original spec is in [BUILD_PLAN.md](BUILD_PLAN.md).
+It is a Vite + TypeScript PWA with no framework and no server. All audio analysis and synthesis runs on the device — no AI service, no uploads. It is wrapped with Capacitor for the App Store (iPhone) and Google Play. The original spec is in [BUILD_PLAN.md](BUILD_PLAN.md); how it fits together is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and the store release steps in [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Quick start
 
@@ -61,13 +61,14 @@ npm run dev:phone    # same as: npm run dev -- --host
 
 ## iPhone (Capacitor 8)
 
-Requirements are a Mac with Xcode 26 (iOS 26 SDK) and an Apple Developer account for running on a phone and for the App Store. The app is iPhone-only, portrait (it runs on iPad in iPhone mode), iOS 15+.
+Requirements are a Mac with Xcode 26 (iOS 26 SDK) and an Apple Developer account for running on a phone and for the App Store. The app runs on iPhone and iPad, in every orientation, iOS 15+.
 
 ```bash
 cp .env.example .env.local        # add VITE_REVENUECAT_IOS_KEY (see STORE_LISTING.md)
 npm run ios:sync                  # build web + copy into ios/
 npm run ios:open                  # open in Xcode: Signing & Capabilities → pick your Team, then Run ▶ on your iPhone
 npm run ios:sim                   # command-line compile check for the simulator (no signing)
+npm run ios:pro                   # test build with Pro on (Settings has a Pro on/off switch) — never upload this one
 ```
 
 - **Microphone.** `NSMicrophoneUsageDescription` is in `Info.plist`. Capacitor grants WebKit's own capture request, so iOS asks only once.
@@ -75,7 +76,8 @@ npm run ios:sim                   # command-line compile check for the simulator
 - **Sharing.** The share sheet does the saving ("Save Video" needs `NSPhotoLibraryAddUsageDescription`, which is set; "Save to Files" needs nothing).
 - **Icons and the launch screen** come from `node scripts/make-icons.mjs` (an opaque 1024 icon — the App Store rejects alpha — and the launch logo at exactly the web splash's size, so the hand-over doesn't jump).
 - **Build caches.** `ios:sim` keeps DerivedData and Swift packages in `../ios-build`, outside the repo. Xcode's own builds use `~/Library/Developer/Xcode/DerivedData` (a few GB).
-- **Release.** In Xcode: Product → Archive → Distribute App → App Store Connect. The listing, privacy answers and the in-app purchase are in [STORE_LISTING.md](STORE_LISTING.md).
+- **Release.** In Xcode: Product → Archive → Distribute App → App Store Connect. Step by step: [docs/RELEASE.md](docs/RELEASE.md); the listing, privacy answers and the in-app purchase are in [STORE_LISTING.md](STORE_LISTING.md).
+- **Privacy manifest.** `ios/App/App/PrivacyInfo.xcprivacy` (no tracking; purchase history for app functionality).
 
 ## Android (Capacitor 8)
 

@@ -7,7 +7,7 @@
   animation: toastIn var(--t-ui) var(--ease);
 }
 .toast.lifted { bottom: calc(var(--safe-bottom) + 104px); }
-.toast > button { flex: none; min-height: 36px; color: var(--red); font: 700 .875rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; }
+.toast > button { flex: none; min-height: 44px; min-width: 44px; margin: -6px -4px; padding: 0 6px; color: var(--red); font: 700 .875rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } }
 
 .sheet-wrap { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center;

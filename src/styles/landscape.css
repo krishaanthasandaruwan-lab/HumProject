@@ -55,8 +55,12 @@
   .part-actions { grid-template-columns: repeat(2, minmax(0, 200px)) 56px; justify-content: end; padding-top: 8px; }
   .part-actions .playsq { width: 52px; height: 52px; }
 
-  .taste-grid { grid-template-columns: repeat(8, 1fr); }
-  .taste { aspect-ratio: auto; height: 76px; }
+  .taste-grid { grid-template-columns: repeat(10, 1fr); gap: 6px; }
+  .taste { aspect-ratio: auto; height: 58px; gap: 4px; }
+  .taste svg { width: 20px; height: 20px; }
+  .welcome .titleblock .body { display: none; }
+  .welcome .titleblock .h1 { font-size: 1.75rem; }
+  .paywall .art { display: none; }
   .sheet { max-height: 94vh; max-height: 94dvh; }
 }
 
