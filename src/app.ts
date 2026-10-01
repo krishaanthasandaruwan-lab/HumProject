@@ -3,6 +3,7 @@ import { getCtx, getMaster } from './audio/context';
 import { Player } from './audio/scheduler';
 import type { DrumType, Track } from './model/project';
 import { playNote } from './synth/instruments';
+import { renderNow } from './synth/renderCache';
 import { getKit, playDrum } from './synth/kits';
 import { getProject } from './state';
 
@@ -17,7 +18,8 @@ export function auditionDrum(type: DrumType, kitId: string, velocity = 0.85): vo
 export function auditionNote(preset: string, midi: number): void {
   const ctx = getCtx();
   if (ctx.state !== 'running') return;
-  playNote(ctx, getMaster(), preset, midi, ctx.currentTime + 0.01, 0.3, 0.8);
+  renderNow(preset, midi, ctx.sampleRate); // piano, guitar, bells…: render this one note right now
+  playNote(ctx, getMaster(), preset, midi, ctx.currentTime + 0.01, 0.45, 0.8);
 }
 
 let voice: AudioBufferSourceNode | null = null;

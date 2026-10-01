@@ -71,7 +71,7 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
   }
   const present = new Set<PadId>(d.events.map((e) => e.pad));
   const chords = p.tracks.find((t) => t.kind === 'chords')?.labels ?? [];
-  const sub = `${p.bpm} BPM${p.key ? ` · ${keyName(p.key)}` : ''}`;
+  const sub = `${Math.round(p.bpm)} BPM${p.key ? ` · ${keyName(p.key)}` : ''}`;
   const font = (px: number, weight = 800): string => `${weight} ${px}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
 
   function level(t: number): number {

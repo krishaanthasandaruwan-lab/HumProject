@@ -12,8 +12,34 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>MouthBand</title>
+    <style>
+      /* Splash: drawn before any script loads; main.ts fades it out once the app is ready. */
+      #splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #0e0f13; color: #f3f4f8; font-family: system-ui, -apple-system, sans-serif; transition: opacity .35s ease; }
+      #splash.out { opacity: 0; pointer-events: none; }
+      #splash svg { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 16px 50px rgba(255, 77, 109, .35); animation: splashPop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+      #splash svg rect.b { transform-origin: center; animation: splashBar 1s ease-in-out infinite alternate; }
+      #splash svg rect.b:nth-of-type(2) { animation-delay: .15s; } #splash svg rect.b:nth-of-type(3) { animation-delay: .3s; }
+      #splash svg rect.b:nth-of-type(4) { animation-delay: .45s; } #splash svg rect.b:nth-of-type(5) { animation-delay: .6s; }
+      #splash .name { font-size: 30px; font-weight: 900; letter-spacing: -.02em; background: linear-gradient(135deg, #b9a6ff, #ff4d6d); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #splash .tag { color: #9ba1b6; font-size: 15px; margin-top: -10px; }
+      @keyframes splashPop { from { transform: scale(.6); opacity: 0; } }
+      @keyframes splashBar { to { transform: scaleY(.55); } }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff" /><stop offset="1" stop-color="#ff4d6d" /></linearGradient></defs>
+        <rect width="100" height="100" fill="url(#sg)" />
+        <g fill="#fff">
+          <rect class="b" x="20.75" y="35" width="8.5" height="30" rx="4.25" /><rect class="b" x="34.25" y="24" width="8.5" height="52" rx="4.25" />
+          <rect class="b" x="47.75" y="15" width="8.5" height="70" rx="4.25" /><rect class="b" x="61.25" y="24" width="8.5" height="52" rx="4.25" />
+          <rect class="b" x="74.75" y="35" width="8.5" height="30" rx="4.25" />
+        </g>
+      </svg>
+      <div class="name">MouthBand</div>
+      <div class="tag">Your mouth is the whole band</div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

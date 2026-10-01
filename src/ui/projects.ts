@@ -23,7 +23,7 @@ export async function openProject(p: Project): Promise<void> {
 }
 
 /** Free version keeps FREE_SONG_LIMIT songs; returns false (and shows the paywall) when full. */
-async function roomForAnother(): Promise<boolean> {
+export async function roomForAnother(): Promise<boolean> {
   if (isPro()) return true;
   await flushSave();
   const count = (await listProjects().catch(() => [])).length;
@@ -63,7 +63,7 @@ export function mountProjects(root: HTMLElement): () => void {
       h('button', { class: 'song-main', onClick: () => void open(m.id) },
         h('div', { class: 'song-name' }, m.name),
         h('div', { class: 'small muted' },
-          `${m.bpm} BPM · ${m.bars} bars · ${m.kinds.map((k) => TRACK_META[k].emoji).join(' ') || 'empty'} · ${ago(m.updatedAt)}`)),
+          `${Math.round(m.bpm)} BPM · ${m.bars} bars · ${m.kinds.map((k) => TRACK_META[k].emoji).join(' ') || 'empty'} · ${ago(m.updatedAt)}`)),
       h('button', { class: 'icon ghost', 'aria-label': `More for ${m.name}`, onClick: () => menu(m) }, '⋯'));
   }
 

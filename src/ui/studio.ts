@@ -2,6 +2,7 @@
 import '../styles/studio.css';
 import { player } from '../app';
 import { unlockAudio } from '../audio/context';
+import { prepareQuickly } from '../audio/prepare';
 import { keyName } from '../dsp/key';
 import { addChords } from '../model/arrange';
 import { demoProject } from '../model/demo';
@@ -20,7 +21,7 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
   let raf = 0;
 
   const playBtn = h('button', { class: 'play', 'aria-label': 'Play', onClick: () => void togglePlay() }, '▶');
-  const bpmVal = h('div', { class: 'val' }, String(p().bpm));
+  const bpmVal = h('div', { class: 'val' }, String(Math.round(p().bpm)));
   const setBpm = (v: number): void => {
     edit((pp) => { pp.bpm = clampBpm(v); });
     bpmVal.textContent = String(p().bpm);
@@ -66,9 +67,9 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
         playBtn,
         h('div', { class: 'grow' },
           h('div', { class: 'stepper' },
-            h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(p().bpm - 1) }, '−'),
+            h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(Math.round(p().bpm) - 1) }, '−'),
             h('div', null, bpmVal, h('div', { class: 'bpm-lbl' }, 'BPM')),
-            h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(p().bpm + 1) }, '+'))),
+            h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(Math.round(p().bpm) + 1) }, '+'))),
         h('div', { style: 'width:120px' }, barsSeg.el, h('div', { class: 'bpm-lbl', style: 'margin-top:4px' }, 'bars'))),
       h('div', { class: 'meta-row' }, keyChip)),
     isEmpty
@@ -117,8 +118,9 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
 
   async function togglePlay(): Promise<void> {
     await unlockAudio();
-    if (player.playing) player.stop();
-    else player.start();
+    if (player.playing) return player.stop();
+    await prepareQuickly(p()); // piano / guitar notes and voice layers, if not ready yet
+    if (!player.playing) player.start();
   }
 
   let shownPlaying: boolean | null = null;

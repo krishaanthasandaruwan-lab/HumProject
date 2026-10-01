@@ -13,6 +13,7 @@ import { navigate, type Params } from '../router';
 import { settings, updateSettings } from '../settings';
 import { edit, getProject } from '../state';
 import { h, segmented, toast } from './dom';
+import { importRecording, voiceAnchors, type ImportKind } from './recordImport';
 import { drawScope } from './waveform';
 
 const clampBpm = (v: number): number => Math.max(70, Math.min(140, Math.round(v)));
@@ -28,7 +29,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   let alive = true;
   const scope = new Float32Array(2048);
 
-  const bpmVal = h('div', { class: 'val' }, String(getProject().bpm));
+  const bpmVal = h('div', { class: 'val' }, String(Math.round(getProject().bpm)));
   const setBpm = (v: number): void => {
     edit((p) => { p.bpm = clampBpm(v); });
     updateSettings({ lastBpm: getProject().bpm });
@@ -79,6 +80,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   const canvas = h('canvas', { class: 'wave' });
   const spinner = h('div', { class: 'spinner hidden' });
   const recBtn = h('button', { class: 'recbtn', 'aria-label': 'Record', onClick: () => void toggleRecord() }, 'REC');
+  const importBtn = h('button', { class: 'link rec-import', onClick: () => void importTake() }, '📂 Import a recording');
   const clickBox = h('input', { type: 'checkbox', checked: settings().clickDuringTake });
   clickBox.addEventListener('change', () => updateSettings({ clickDuringTake: clickBox.checked }));
   const bandBox = h('input', { type: 'checkbox', checked: settings().bandDuringTake });
@@ -93,12 +95,12 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     h('div', { class: 'card stack' },
       h('div', { class: 'row between' }, h('h2', null, 'Tempo'),
         h('div', { class: 'stepper' },
-          h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(getProject().bpm - 1) }, '−'),
+          h('button', { class: 'icon', 'aria-label': 'Slower', onClick: () => setBpm(Math.round(getProject().bpm) - 1) }, '−'),
           bpmVal,
-          h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(getProject().bpm + 1) }, '+'))),
+          h('button', { class: 'icon', 'aria-label': 'Faster', onClick: () => setBpm(Math.round(getProject().bpm) + 1) }, '+'))),
       barsSeg.el),
     calib,
-    h('div', { class: 'rec-stage' }, countin, h('div', { class: 'beats' }, dots), recBtn, spinner, status,
+    h('div', { class: 'rec-stage' }, countin, h('div', { class: 'beats' }, dots), recBtn, importBtn, spinner, status,
       h('div', { class: 'progress' }, bar), canvas),
     h('div', { class: 'card' },
       h('label', { class: 'check' }, clickBox, 'Metronome click while recording'),
@@ -143,6 +145,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     }
     const takeKind = kind; // the picker is locked during the take, but be explicit
     pickButtons.forEach((b) => { b.disabled = true; });
+    importBtn.disabled = true;
     abort = new AbortController();
     recBtn.classList.add('live');
     recBtn.textContent = 'STOP';
@@ -179,6 +182,23 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     }
     if (take && alive) await processTake(take, takeKind);
     pickButtons.forEach((b) => { b.disabled = false; });
+    importBtn.disabled = false;
+  }
+
+  /** A recording made elsewhere, beat-matched into this song (see recordImport.ts). */
+  async function importTake(): Promise<void> {
+    if (abort) return;
+    recBtn.disabled = importBtn.disabled = true;
+    try {
+      const res = await importRecording(kind as ImportKind, (busy, text) => {
+        spinner.classList.toggle('hidden', !busy);
+        if (text) status.textContent = text;
+      });
+      if (res && alive) commit(res.track, res.message, res.after);
+    } finally {
+      recBtn.disabled = importBtn.disabled = false;
+      spinner.classList.add('hidden');
+    }
   }
 
   async function processTake(take: Take, k: TrackKind): Promise<void> {
@@ -210,6 +230,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
           return;
         }
         track.notes = res.notes;
+        track.anchors = voiceAnchors(res.notes, p.bpm, p.bars, p.swing);
         commit(track, `${k === 'bass' ? '🎸' : '🎹'} ${res.notes.length} notes added`, (p) => refreshKey(p, settings().snapToScale));
       }
     } catch (err) {
@@ -254,3 +275,4 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     band?.stop();
   };
 }
+

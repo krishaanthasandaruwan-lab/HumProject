@@ -5,19 +5,4 @@
 .pw-list li { display: flex; gap: 12px; align-items: center; font-size: 16px; }
 .pw-list li span { width: 28px; text-align: center; font-size: 20px; }
 
-.onboarding { display: flex; flex-direction: column; gap: 18px; min-height: calc(100dvh - 40px); padding-bottom: 12px; }
-.ob-brand { font-weight: 900; font-size: 20px; }
-.ob-track { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 24px; }
-.ob-track::-webkit-scrollbar { display: none; }
-.ob-card {
-  flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; gap: 14px; padding: 28px 22px; background: radial-gradient(circle at 50% 30%, rgba(124,92,255,.25), transparent 60%), var(--panel);
-  border: 1px solid var(--line); border-radius: 24px;
-}
-.ob-card h1 { font-size: 30px; }
-.ob-card p { font-size: 17px; max-width: 320px; }
-.ob-art { font-size: 64px; letter-spacing: .05em; }
-.ob-dots { display: flex; gap: 8px; justify-content: center; }
-.ob-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: width .2s; }
-.ob-dots i.on { width: 22px; border-radius: 4px; background: var(--accent); }
 .pro-chip { font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 999px; background: linear-gradient(135deg, var(--accent2), var(--accent)); margin-left: 6px; }

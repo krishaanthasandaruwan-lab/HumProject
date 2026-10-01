@@ -28,8 +28,8 @@ function proSection(): HTMLElement {
     append(box, [
       h('h2', null, 'MouthBand Pro', isPro() ? h('span', { class: 'pro-chip' }, 'ON') : null),
       h('p', { class: 'small muted' }, isPro()
-        ? DEV_PRO ? 'Unlocked by the DEV_PRO test build flag.' : 'Thank you! No watermark, all kits, WAV + MIDI, unlimited songs.'
-        : 'Free: watermark on videos, 2 drum kits, 3 saved songs.'),
+        ? DEV_PRO ? 'Unlocked by the DEV_PRO test build flag.' : 'Thank you! No watermark, all kits and instruments, WAV + MIDI, unlimited songs.'
+        : 'Free: watermark on videos, 2 drum kits, 8 instruments, 3 saved songs.'),
       isPro() ? null : h('button', { class: 'primary', onClick: () => openPaywall() }, 'Unlock Pro — $0.99 once'),
       canBuy() && !isPro() ? h('button', { onClick: async () => { toast((await restorePro()) ? 'Pro restored 🎉' : 'No purchase found'); render(); } }, 'Restore purchase') : null,
       dev ? h('label', { class: 'check' }, dev, 'Developer: pretend I bought Pro') : null,
@@ -78,6 +78,10 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
       toggle('bandDuringTake', 'Play my other tracks while recording'),
       h('p', { class: 'tiny muted' }, 'Use headphones so the speaker does not leak into the mic.'),
     ),
+    h('section', { class: 'card stack' },
+      h('h2', null, 'Start'),
+      toggle('startWithMic', 'Open MouthBand on the mic (hum → song)'),
+      h('p', { class: 'tiny muted' }, 'Off: open straight into your last song.')),
     h('section', { class: 'card stack' }, h('h2', null, 'Beatbox calibration'), calibBox),
     h('section', { class: 'card stack' },
       h('h2', null, 'Melody'),

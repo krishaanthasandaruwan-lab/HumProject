@@ -7,7 +7,8 @@ export const PAYWALL_HEADLINE = 'Remove watermark & unlock all sounds — $0.99 
 
 const PERKS = [
   ['🚫', 'No watermark on your videos'],
-  ['🥁', 'All 4 drum kits — adds Lo-fi and Techno'],
+  ['🥁', 'All 8 drum kits — Lo-fi, Trap, House, Acoustic, Techno, Retro 80s'],
+  ['🎻', 'All 18 instruments — strings, choir, flute, brass, organ, marimba…'],
   ['🎵', 'WAV audio + MIDI export for your DAW'],
   ['💾', 'Unlimited saved songs'],
 ];

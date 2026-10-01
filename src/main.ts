@@ -11,7 +11,8 @@ import { mountStudio } from './ui/studio';
 import { mountCalibrate } from './ui/calibrate';
 import { mountSettings } from './ui/settings';
 import { mountProjects } from './ui/projects';
-import { mountOnboarding } from './ui/onboarding';
+import { mountHum } from './ui/hum';
+import { mountChoices } from './ui/choices';
 import { loadPro } from './pro/pro';
 import { initBilling } from './pro/billing';
 import { loadSettings, settings } from './settings';
@@ -22,14 +23,28 @@ registerScreen('record', mountRecord);
 registerScreen('calibrate', mountCalibrate);
 registerScreen('settings', mountSettings);
 registerScreen('projects', mountProjects);
-registerScreen('onboarding', mountOnboarding);
+registerScreen('hum', mountHum);
+registerScreen('choices', mountChoices);
+
+const SPLASH_MS = 1100;
+
+/** Fade the logo splash out once the app is ready (and has been on screen for a moment). */
+function hideSplash(): void {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 400);
+  }, Math.max(0, SPLASH_MS - performance.now()));
+}
 
 async function boot(): Promise<void> {
   installUnlock();
   setAudioSession('playback'); // iOS: play through the speaker even when the ring switch is on silent
   await loadSettings();
   await Promise.all([openInitialProject(), loadProfile(), loadPro()]);
-  navigate(settings().onboarded ? 'studio' : 'onboarding');
+  navigate(settings().startWithMic ? 'hum' : 'studio');
+  hideSplash();
   void initBilling();
   // The Android app ships its files inside the APK; the service worker is for the web PWA only.
   if (import.meta.env.PROD && !Capacitor.isNativePlatform()) registerSW({ immediate: true });

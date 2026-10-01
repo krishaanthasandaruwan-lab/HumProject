@@ -7,7 +7,8 @@ export interface Settings {
   clickDuringTake: boolean;
   bandDuringTake: boolean;
   snapToScale: boolean;
-  onboarded: boolean;
+  /** Open on the hum screen (mic first) instead of the studio. */
+  startWithMic: boolean;
   lastBpm: number;
   lastBars: 2 | 4 | 8;
   lastProjectId?: string;
@@ -18,7 +19,7 @@ const DEFAULTS: Settings = {
   clickDuringTake: true,
   bandDuringTake: true,
   snapToScale: true,
-  onboarded: false,
+  startWithMic: true,
   lastBpm: 90,
   lastBars: 4,
 };

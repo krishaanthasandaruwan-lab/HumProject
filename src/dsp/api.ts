@@ -2,6 +2,7 @@
 import { mtof } from '../synth/fx';
 import { RENDERED } from '../synth/rendered';
 import { analyzeBeatbox, analyzeCalibration, analyzeMelody } from './analyze';
+import { analyzeFree } from './free';
 import { processVoice } from './voice';
 
 /** Pre-render notes of the sample-by-sample instruments (piano, guitar, bells…). */
@@ -13,6 +14,7 @@ export const DSP = {
   beatbox: analyzeBeatbox,
   calibration: analyzeCalibration,
   melody: analyzeMelody,
+  free: analyzeFree,
   render: renderNotes,
   voice: processVoice,
 };
