@@ -7,7 +7,8 @@ import { art, iconBtn, link, mainBtn, setLabel } from './kit';
 import { INSTRUMENTS, KITS } from '../synth/kits';
 
 const PERKS: [IconName, string][] = [
-  ['video', 'No watermark on videos'],
+  ['share', 'Share and save your videos'],
+  ['sparkles', 'Up to 100 versions of every hum'],
   ['drums', `All ${KITS.length} drum kits`],
   ['chords', `All ${INSTRUMENTS.length} instruments`],
   ['audio', 'Audio and MIDI files'],

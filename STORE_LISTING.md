@@ -79,16 +79,16 @@ Sizes: App Store needs 6.9" iPhone shots (1320×2868 or 1290×2796); Play needs 
 ## In-app purchase and RevenueCat setup
 
 **App Store (iPhone)**
-1. In App Store Connect, create the app (bundle ID `com.mouthband.app`).
-2. In **Monetization → In-App Purchases**, add a **Non-Consumable** with product ID **`mouthband_pro`**, reference name "HUMM Pro", price **$0.99**. Add a display name, description and a review screenshot (the paywall).
+1. In App Store Connect, create the app (bundle ID `com.krishanthasandaruwan.humm`).
+2. In **Monetization → In-App Purchases**, add a **Non-Consumable** with product ID **`humm_pro`**, reference name "HUMM Pro", price **$0.99**. Add a display name, description and a review screenshot (the paywall).
 3. Sign the Paid Applications agreement (Business section) — purchases do not work without it.
 
 **Google Play (Android)**
-1. In Play Console, go to **Monetize → Products → In-app products**. Create **`mouthband_pro`**, "HUMM Pro", **$0.99**, a one-time non-consumable purchase.
+1. In Play Console, go to **Monetize → Products → In-app products**. Create **`humm_pro`**, "HUMM Pro", **$0.99**, a one-time non-consumable purchase.
 
 **RevenueCat (both)**
-1. Create a project; add the iOS app (`com.mouthband.app`, with an App Store Connect in-app purchase key) and the Android app (`com.mouthband.app`, with the Play service credentials).
-2. Create entitlement **`pro`** and attach both `mouthband_pro` products.
+1. Create a project; add the iOS app (`com.krishanthasandaruwan.humm`, with an App Store Connect in-app purchase key) and the Android app (`com.krishanthasandaruwan.humm`, with the Play service credentials).
+2. Create entitlement **`pro`** and attach both `humm_pro` products.
 3. Create offering **`default`** with a **Lifetime** package containing the two products; mark it Current.
 4. Put the public SDK keys in `.env.local` — `VITE_REVENUECAT_IOS_KEY` (`appl_…`) and `VITE_REVENUECAT_ANDROID_KEY` (`goog_…`) — then rebuild: `npm run ios:sync` / `npm run android:sync`.
 

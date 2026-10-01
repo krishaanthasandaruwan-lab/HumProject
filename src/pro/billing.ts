@@ -6,7 +6,7 @@ import { setOwned } from './pro';
 const PLATFORM = Capacitor.getPlatform();
 const API_KEY = (PLATFORM === 'ios' ? import.meta.env.VITE_REVENUECAT_IOS_KEY : import.meta.env.VITE_REVENUECAT_ANDROID_KEY) ?? '';
 const ENTITLEMENT = import.meta.env.VITE_PRO_ENTITLEMENT || 'pro';
-export const PLAY_URL = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps/details?id=com.mouthband.app';
+export const PLAY_URL = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps/details?id=com.krishanthasandaruwan.humm';
 const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL || '';
 
 /** Where a web visitor gets the app: the App Store on iPhone / iPad (once listed), else Google Play. */

@@ -65,8 +65,6 @@
   .screen:not(.studio):not(.part):not(.tracks) > * { width: 100%; max-width: 640px; margin-inline: auto; }
   .hum .mic { width: 200px; height: 200px; }
   .hum .mic > svg { width: 64px; height: 64px; }
-  .choice-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .screen.choices > .choice-list { max-width: 960px; }
   .taste-grid { grid-template-columns: repeat(4, 1fr); }
   .actionbar { max-width: 1024px; padding-inline: 40px; }
   .sheet-wrap { align-items: center; }

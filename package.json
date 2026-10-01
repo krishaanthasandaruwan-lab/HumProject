@@ -17,6 +17,7 @@
     "ios:sync": "npm run build && cap sync ios",
     "ios:sync:pro": "VITE_DEV_PRO=true npm run build && cap sync ios",
     "ios:pro": "npm run ios:sync:pro && cap open ios",
+    "ios:release": "bash scripts/ios-release.sh",
     "android:sync:pro": "VITE_DEV_PRO=true npm run build && cap sync android",
     "ios:open": "cap open ios",
     "ios:sim": "npm run build && cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination \"generic/platform=iOS Simulator\" -derivedDataPath ../ios-build -clonedSourcePackagesDirPath ../ios-build/spm -packageCachePath ../ios-build/spm-cache -disablePackageRepositoryCache CODE_SIGNING_ALLOWED=NO build"

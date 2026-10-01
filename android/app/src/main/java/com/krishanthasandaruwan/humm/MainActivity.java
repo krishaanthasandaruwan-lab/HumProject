@@ -1,4 +1,4 @@
-package com.mouthband.app;
+package com.krishanthasandaruwan.humm;
 
 import com.getcapacitor.BridgeActivity;
 

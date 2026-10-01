@@ -10,6 +10,8 @@ import { btn2, chip, link, mainBtn, setLabel } from './kit';
 import { openPaywall } from './paywall';
 import { createScene, loadSceneFonts, sceneEvents } from './videoScene';
 
+const PRO_EXPORT = 'Watch your video for free. Sharing and saving it is part of Pro.';
+
 export function openExport(): void {
   const p = getProject();
   const name = safeName(p.name);
@@ -24,7 +26,7 @@ export function openExport(): void {
   const wavBtn = chip('Audio', () => void doWav(), { icon: 'audio', lock: locked }) as HTMLButtonElement;
   const midiBtn = chip('MIDI', () => void doMidi(), { icon: 'midi', lock: locked }) as HTMLButtonElement;
   const proNote = locked
-    ? h('div', { class: 'row share-wm' }, h('span', { class: 'small muted grow' }, 'Made with HUMM'), link('Remove', () => openPaywall(), true))
+    ? h('div', { class: 'row share-wm' }, h('span', { class: 'small muted grow' }, 'Preview free · share and save with Pro'), link('Pro', () => openPaywall(PRO_EXPORT), true))
     : null;
 
   const content = h('div', { class: 'stack' },
@@ -67,8 +69,8 @@ export function openExport(): void {
       const file = `${name} - HUMM.${ext}`;
       result.replaceChildren(
         h('video', { class: 'video-preview', src: url, controls: true, playsinline: true }),
-        mainBtn('Share', () => void shareFile(blob, file, p.name).then(report, fail), { icon: 'share' }),
-        btn2('Save', () => void download(blob, file, p.name).then(report, fail), 'save'),
+        mainBtn('Share', () => (isPro() ? void shareFile(blob, file, p.name).then(report, fail) : openPaywall(PRO_EXPORT)), { icon: isPro() ? 'share' : 'lock' }),
+        btn2('Save', () => (isPro() ? void download(blob, file, p.name).then(report, fail) : openPaywall(PRO_EXPORT)), isPro() ? 'save' : 'lock'),
       );
       result.classList.remove('hidden');
       makeBtn.classList.add('hidden');

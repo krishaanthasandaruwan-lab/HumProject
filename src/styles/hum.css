@@ -39,7 +39,8 @@
 .choice { padding-right: 56px; }
 .choice-wrap > .heart { position: absolute; right: 6px; top: 50%; width: 44px; height: 44px; transform: translateY(-50%); }
 
-.choice .tile48 { border: var(--border); }
+.choice .tile48 { position: relative; border: var(--border); }
+.choice .tile48 .lockb { position: absolute; top: -2px; right: -2px; }
 .choice:not([aria-current="true"]) .tile48 { background: var(--white); }
 .choice b { display: block; margin-bottom: 2px; }
 .choice small { display: block; margin-bottom: 8px; }

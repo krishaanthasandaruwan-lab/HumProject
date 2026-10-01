@@ -1,7 +1,7 @@
 // 03 · Pick your sound: the melody you just hummed as three clearly different songs — as hummed,
 // slower and faster, each in a style that suits it (model/variety.ts). Tap one to hear it and keep
-// the one you like. "More" (free) keeps offering new ones, up to 100. A heart keeps a version in
-// My songs (as a favorite) without leaving the screen.
+// the one you like. "More" keeps offering new ones, up to 100: the first 5 are free to keep, later ones
+// play as a preview and need Pro to keep. A heart keeps a version in My songs (a favorite).
 import { keyName } from '../dsp/key';
 import { prepareProject } from '../audio/prepare';
 import { unlockAudio } from '../audio/context';
@@ -12,6 +12,7 @@ import { MAX_VARIANTS, moreVariants, pickVariants, type Variant } from '../model
 import { navigate } from '../router';
 import { settings } from '../settings';
 import { nextSongName } from '../songName';
+import { FREE_VERSIONS, isPro } from '../pro/pro';
 import { flushSave, setProject } from '../state';
 import { saveProject, trashProject } from '../storage';
 import { getInstrument } from '../synth/kits';
@@ -20,6 +21,7 @@ import { icon } from './icons';
 import { chip, iconBtn, pairBtn, setPressed, titleBlock } from './kit';
 import { PARTS, styleIcon } from './parts';
 import { roomForAnother } from './projects';
+import { openPaywall } from './paywall';
 
 let take: HumTake | null = null;
 
@@ -61,7 +63,7 @@ export function mountChoices(root: HTMLElement): () => void {
       variants.push(v);
       projects.push(p);
       const card = h('button', { type: 'button', class: 'card-bold choice', 'aria-current': 'false', onClick: () => play(i) },
-        h('span', { class: 'tile48' }, icon(styleIcon(v.style.id), 24)),
+        h('span', { class: 'tile48' }, icon(styleIcon(v.style.id), 24), previewOnly(i) ? h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 12)) : null),
         h('span', null,
           h('b', { class: 'h3' }, v.style.name),
           h('small', { class: 'label muted' }, [v.lead ? getInstrument(v.lead).name : '', FEEL[v.feel], `${v.bpm} BPM`].filter(Boolean).join(' · ')),
@@ -123,9 +125,14 @@ export function mountChoices(root: HTMLElement): () => void {
     }
   }
 
+  /** Versions past the free ones play as a preview; keeping them needs Pro. */
+  const previewOnly = (i: number): boolean => i >= FREE_VERSIONS && !isPro();
+  const PRO_VERSIONS = `Your first ${FREE_VERSIONS} versions are free. Keeping more is part of Pro.`;
+
   /** Heart: keep this version in My songs (a favorite); un-heart moves it to Recently deleted. */
   async function toggleKeep(i: number, btn: HTMLButtonElement): Promise<void> {
     const p = projects[i];
+    if (!kept.has(i) && previewOnly(i)) return openPaywall(PRO_VERSIONS);
     if (kept.has(i)) {
       kept.delete(i);
       btn.setAttribute('aria-pressed', 'false');
@@ -144,6 +151,7 @@ export function mountChoices(root: HTMLElement): () => void {
   }
 
   async function use(): Promise<void> {
+    if (previewOnly(current)) return openPaywall(PRO_VERSIONS);
     if (!kept.has(current) && !(await roomForAnother())) return;
     player.stop();
     await flushSave();

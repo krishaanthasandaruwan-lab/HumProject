@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">HUMM</string>
     <string name="title_activity_main">HUMM</string>
-    <string name="package_name">com.mouthband.app</string>
-    <string name="custom_url_scheme">com.mouthband.app</string>
+    <string name="package_name">com.krishanthasandaruwan.humm</string>
+    <string name="custom_url_scheme">com.krishanthasandaruwan.humm</string>
 </resources>

@@ -4,14 +4,14 @@ Everything in the code is ready for review. These are the steps only you can do,
 
 ## 1. Decide two things before the first upload (they can't change later)
 
-- **Bundle ID / application ID.** It is `com.mouthband.app` today (hidden from users). If you want
-  `com.humm.app` or similar, say so before the first upload; after that it is fixed forever.
+- **Bundle ID / application ID.** It is `com.krishanthasandaruwan.humm` today (hidden from users). If you want
+  `com.krishanthasandaruwan.humm` or similar, say so before the first upload; after that it is fixed forever.
 - **App name.** "HUMM: Hum to Song" must be free in App Store Connect and Play Console. Check it there first.
 
 ## 2. Purchases (RevenueCat)
 
-1. App Store Connect: create the app, then a **Non-Consumable** in-app purchase `mouthband_pro`, $0.99.
-2. Play Console: create the app, then an in-app product `mouthband_pro`, $0.99.
+1. App Store Connect: create the app, then a **Non-Consumable** in-app purchase `humm_pro`, $0.99.
+2. Play Console: create the app, then an in-app product `humm_pro`, $0.99.
 3. RevenueCat: entitlement `pro`, offering `default` with both products.
 4. Put the two public SDK keys in `.env.local` (`VITE_REVENUECAT_IOS_KEY`, `VITE_REVENUECAT_ANDROID_KEY`).
    Details: `STORE_LISTING.md`.
