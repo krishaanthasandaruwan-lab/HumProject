@@ -1,10 +1,11 @@
-// Free vs Pro. Free: watermark on videos, 2 drum kits, 3 saved songs.
-// Pro ($0.99 once): no watermark, all kits, WAV + MIDI export, unlimited songs.
+// Free vs Pro. Free: watermark on videos, 2 drum kits, 8 instruments, 3 saved songs.
+// Pro ($0.99 once): no watermark, all kits and instruments, WAV + MIDI export, unlimited songs.
 import { get, set } from 'idb-keyval';
+import { getInstrument, getKit } from '../synth/kits';
 
 /** Build-time switch for test builds: VITE_DEV_PRO=true. */
 export const DEV_PRO = import.meta.env.VITE_DEV_PRO === 'true';
-export const FREE_KITS: readonly string[] = ['808', 'boombap'];
+
 export const FREE_SONG_LIMIT = 3;
 const DEV_TOGGLE_KEY = 'mb-dev-pro';
 
@@ -54,4 +55,5 @@ export function onProChange(f: () => void): () => void {
   return () => listeners.delete(f);
 }
 
-export const kitLocked = (id: string): boolean => !isPro() && !FREE_KITS.includes(id);
+export const kitLocked = (id: string): boolean => !isPro() && getKit(id).pro;
+export const instrumentLocked = (id: string): boolean => !isPro() && getInstrument(id).pro;

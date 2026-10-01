@@ -35,6 +35,10 @@ export interface Track {
   solo?: boolean;
   generated?: boolean; // made by auto-chords rather than recorded
   labels?: string[]; // chord names per bar (chords track)
+  /** Your own voice as a layer in the mix: beat-matched onto the grid, optionally auto-tuned. */
+  voice?: { on: boolean; tune: boolean; level: number; only?: boolean };
+  /** Flat [seconds into rawVoice, grid step] pairs: where each note was sung → where it belongs. */
+  anchors?: number[];
 }
 
 export interface Key {

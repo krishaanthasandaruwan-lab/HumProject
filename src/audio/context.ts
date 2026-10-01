@@ -64,6 +64,19 @@ export function getStreamDest(): MediaStreamAudioDestinationNode {
   return streamDest;
 }
 
+/** A mono AudioBuffer holding `data`; usable in any context (offline renders included). */
+export function monoBuffer(data: Float32Array, sampleRate: number): AudioBuffer {
+  const length = Math.max(1, data.length);
+  let b: AudioBuffer;
+  try {
+    b = new AudioBuffer({ length, sampleRate, numberOfChannels: 1 });
+  } catch {
+    b = getCtx().createBuffer(1, length, sampleRate); // older Safari
+  }
+  b.getChannelData(0).set(data.subarray(0, length));
+  return b;
+}
+
 /** Output-side latency the browser reports (seconds). */
 export function outputLatency(): number {
   const c = getCtx();

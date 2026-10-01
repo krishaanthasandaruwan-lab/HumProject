@@ -3,6 +3,7 @@ import { stepDur, swingOffset, trackGain, type Project, type Track, type TrackKi
 import { crushCurve, reverbIR } from '../synth/fx';
 import { playNote } from '../synth/instruments';
 import { getInstrument, getKit, playDrum } from '../synth/kits';
+import { voiceBuffer, voiceOn } from './voiceLayer';
 
 export interface TrackBus {
   trackId: string;
@@ -67,6 +68,19 @@ export function scheduleStep(ctx: BaseAudioContext, p: Project, buses: Map<strin
         playDrum(ctx, bus.input, hit.type, kit, Math.max(0, tStep + (hit.offset ?? 0) * loose * sd), hit.velocity);
       }
     } else {
+      if (track.voice && voiceOn(track)) {
+        // Your own (beat-matched, maybe auto-tuned) voice: one loop-long buffer per pass.
+        const buf = step === 0 ? voiceBuffer(p, track) : null;
+        if (buf) {
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          const g = ctx.createGain();
+          g.gain.value = track.voice.level;
+          src.connect(g).connect(bus.input);
+          src.start(Math.max(0, tStep));
+        }
+        if (track.voice.only) continue; // the voice replaces the instrument
+      }
       for (const n of track.notes ?? []) {
         if (n.start !== step) continue;
         const start = Math.max(0, tStep + (n.offset ?? 0) * loose * sd);

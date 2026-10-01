@@ -3,6 +3,7 @@
 import { loopDuration, stepDur, totalSteps, trackGain, type Project } from '../model/project';
 import { getCtx, getMaster, outputLatency } from './context';
 import { createBus, scheduleStep, type TrackBus } from './engine';
+import { prepareProject } from './prepare';
 
 const TICK_MS = 25;
 const AHEAD = 0.1;
@@ -24,6 +25,7 @@ export class Player {
     if (this.playing) this.stop();
     const ctx = getCtx();
     const p = this.project();
+    void prepareProject(p).catch(() => undefined); // usually ready already; stand-ins cover the gap
     this.anchorTime = at ?? ctx.currentTime + 0.06;
     this.anchorStep = 0;
     this.anchorBpm = p.bpm;

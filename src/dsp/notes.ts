@@ -2,7 +2,7 @@
 // drop notes < 80 ms, pitch = median over the note, then quantize onto the 16th grid.
 import { stepDur, type Note } from '../model/project';
 import type { PitchFrame } from './pitch';
-import { quantizePos, velocityFromRms } from './quantize';
+import { quantizePos, velocityFromRms, type StepMap } from './quantize';
 
 export interface RawNote {
   start: number; // seconds
@@ -80,15 +80,17 @@ export function segmentNotes(frames: PitchFrame[], hopSec: number, o: SegmentOpt
 }
 
 /** Monophonic notes on the 16th grid (start quantized with swing, end to the nearest 16th). */
-export function notesToGrid(raw: RawNote[], bpm: number, steps: number, swing = 0): Note[] {
+export function notesToGrid(raw: RawNote[], bpm: number, steps: number, swing = 0, toSteps?: StepMap): Note[] {
   const sd = stepDur(bpm);
+  const at = toSteps ?? ((t: number): number => t / sd);
   const maxRms = raw.reduce((m, n) => Math.max(m, n.rms), 0);
   const notes: Note[] = [];
   for (const r of raw) {
-    const q = quantizePos(r.start / sd, swing);
-    if (q.step >= steps || r.end / sd <= 0) continue;
+    const q = quantizePos(at(r.start), swing);
+    const endStep = at(r.end);
+    if (q.step >= steps || endStep <= 0) continue;
     const start = Math.max(0, q.step);
-    const length = Math.min(steps - start, Math.max(1, Math.round(r.end / sd) - start));
+    const length = Math.min(steps - start, Math.max(1, Math.round(endStep) - start));
     const v = velocityFromRms(r.rms, maxRms);
     notes.push({
       start, length, midi: Math.round(r.pitch),

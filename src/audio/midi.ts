@@ -1,10 +1,11 @@
 // Standard MIDI File, format 1, written by hand: a tempo track + one track per part.
 import { totalSteps, type Project, type Track } from '../model/project';
+import { getInstrument } from '../synth/kits';
 
 const PPQ = 96; // ticks per quarter note -> 24 per 16th
 const TICKS_PER_STEP = PPQ / 4;
 const GM_DRUM: Record<string, number> = { kick: 36, snare: 38, hat: 42 };
-const GM_PROGRAM: Record<string, number> = { bass: 38, lead: 80, keys: 4, pad: 88 }; // Synth Bass 1, Square Lead, E-Piano, New Age Pad
+
 
 /** Variable-length quantity. */
 export function vlq(n: number): number[] {
@@ -49,7 +50,7 @@ function partEvents(t: Track, channel: number, steps: number): Ev[] {
       ev.push({ tick: tick + TICKS_PER_STEP / 2, data: [0x89, GM_DRUM[h.type], 0], order: 0 });
     }
   } else {
-    ev.push({ tick: 0, data: [0xc0 | channel, GM_PROGRAM[t.preset] ?? 80], order: -1 });
+    ev.push({ tick: 0, data: [0xc0 | channel, getInstrument(t.preset).gm], order: -1 });
     for (const n of t.notes ?? []) {
       if (n.start >= steps) continue;
       const on = n.start * TICKS_PER_STEP;

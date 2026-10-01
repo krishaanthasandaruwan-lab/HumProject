@@ -34,12 +34,15 @@ export interface TimedHit {
   rms: number;
 }
 
+/** Seconds -> fractional 16th steps; a beat map when the tempo drifts (free-tempo takes, imports). */
+export type StepMap = (seconds: number) => number;
+
 /** Quantize hits into the loop; same step + same drum -> keep the louder one. */
-export function hitsToGrid(hits: TimedHit[], bpm: number, steps: number, swing = 0): DrumHit[] {
+export function hitsToGrid(hits: TimedHit[], bpm: number, steps: number, swing = 0, toSteps?: StepMap): DrumHit[] {
   const maxRms = hits.reduce((m, h) => Math.max(m, h.rms), 0);
   const best = new Map<string, { hit: DrumHit; rms: number }>();
   for (const h of hits) {
-    const q = quantizePos(secondsToSteps(h.time, bpm), swing);
+    const q = quantizePos(toSteps ? toSteps(h.time) : secondsToSteps(h.time, bpm), swing);
     if (q.step < 0 || q.step >= steps) continue;
     const key = `${q.step}:${h.type}`;
     const prev = best.get(key);

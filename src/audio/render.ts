@@ -2,6 +2,7 @@
 import { STEPS_PER_BAR, stepDur, totalSteps, trackGain, type Project } from '../model/project';
 import { MASTER_GAIN, makeLimiter } from './context';
 import { createBus, scheduleStep, type TrackBus } from './engine';
+import { prepareProject } from './prepare';
 
 export interface RenderOptions {
   sampleRate?: number;
@@ -15,6 +16,7 @@ const Offline = (): OfflineCtor =>
   window.OfflineAudioContext ?? (window as unknown as { webkitOfflineAudioContext: OfflineCtor }).webkitOfflineAudioContext;
 
 export async function renderMix(p: Project, o: RenderOptions = {}): Promise<AudioBuffer> {
+  await prepareProject(p); // rendered instruments + voice layers must be ready for the bounce
   const sr = o.sampleRate ?? 44100;
   const steps = Math.min(totalSteps(p), (o.bars ?? p.bars) * STEPS_PER_BAR);
   const loops = o.loops ?? 1;

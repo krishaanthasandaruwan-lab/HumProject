@@ -1,44 +1,11 @@
-// Melodic voices: bass (saw + LPF env), lead (square + vibrato), keys (2-op FM), pad (3 detuned saws).
+// Melodic voices. The original four live here — bass (saw + LPF env), lead (square + vibrato),
+// keys (2-op FM), pad (3 detuned saws); more oscillator voices are in voices.ts and the
+// sample-by-sample rendered ones (piano, guitar, bells…) in rendered.ts.
+import { adsr, osc, run } from './env';
 import { mtof } from './fx';
-import type { InstrumentId } from './kits';
-
-/** Piecewise-linear ADSR. Returns the time the voice is silent. */
-function adsr(p: AudioParam, t: number, dur: number, peak: number, a: number, d: number, s: number, r: number): number {
-  const rel = t + Math.max(dur, 0.02);
-  p.setValueAtTime(0, t);
-  let v: number;
-  if (rel <= t + a) {
-    v = peak * ((rel - t) / a);
-    p.linearRampToValueAtTime(v, rel);
-  } else {
-    p.linearRampToValueAtTime(peak, t + a);
-    if (rel <= t + a + d) {
-      v = peak - (peak - peak * s) * ((rel - t - a) / d);
-      p.linearRampToValueAtTime(v, rel);
-    } else {
-      v = peak * s;
-      p.linearRampToValueAtTime(v, t + a + d);
-      p.setValueAtTime(v, rel);
-    }
-  }
-  p.linearRampToValueAtTime(0, rel + r);
-  return rel + r;
-}
-
-function osc(ctx: BaseAudioContext, type: OscillatorType, hz: number, detune = 0): OscillatorNode {
-  const o = ctx.createOscillator();
-  o.type = type;
-  o.frequency.value = hz;
-  o.detune.value = detune;
-  return o;
-}
-
-function run(nodes: OscillatorNode[], t: number, end: number): void {
-  for (const n of nodes) {
-    n.start(t);
-    n.stop(end + 0.05);
-  }
-}
+import { cachedBuffer } from './renderCache';
+import { RENDERED, type RenderedSpec } from './rendered';
+import { OSC_VOICES } from './voices';
 
 function bass(ctx: BaseAudioContext, out: AudioNode, f: number, t: number, dur: number, vel: number): void {
   const saw = osc(ctx, 'sawtooth', f);
@@ -107,11 +74,43 @@ function pad(ctx: BaseAudioContext, out: AudioNode, f: number, t: number, dur: n
   run(oscs, t, end);
 }
 
-const VOICES: Record<InstrumentId, typeof bass> = { bass, lead, keys, pad };
+const VOICES: Record<string, typeof bass> = { bass, lead, keys, pad, ...OSC_VOICES };
+
+/** A pre-rendered note: the buffer, faded out after note-off unless the instrument rings on. */
+function playBuffer(ctx: BaseAudioContext, out: AudioNode, spec: RenderedSpec, buf: AudioBuffer, t: number, dur: number, vel: number): void {
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  const level = spec.gain * (0.35 + 0.65 * vel);
+  g.gain.setValueAtTime(level, t);
+  let head: AudioNode = src;
+  if (spec.dynamicTone) {
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = Math.min(ctx.sampleRate * 0.45, 1800 + 9000 * vel * vel);
+    src.connect(lp);
+    head = lp;
+  }
+  head.connect(g).connect(out);
+  src.start(t);
+  const off = t + Math.max(0.05, dur);
+  if (!spec.ring && off < t + buf.duration) {
+    g.gain.setValueAtTime(level, off);
+    g.gain.linearRampToValueAtTime(0, off + spec.release);
+    src.stop(off + spec.release + 0.02);
+  }
+}
 
 export function playNote(
   ctx: BaseAudioContext, out: AudioNode, id: string, midi: number, t: number, dur: number, vel: number,
 ): void {
-  const voice = VOICES[id as InstrumentId] ?? lead;
-  voice(ctx, out, mtof(midi), t, dur, Math.max(0.05, Math.min(1, vel)));
+  const v = Math.max(0.05, Math.min(1, vel));
+  const spec = RENDERED[id];
+  if (spec) {
+    const buf = cachedBuffer(id, midi);
+    if (buf) return playBuffer(ctx, out, spec, buf, t, dur, v);
+    id = spec.stand_in; // not rendered yet: a similar oscillator voice for now
+  }
+  const voice = VOICES[id] ?? lead;
+  voice(ctx, out, mtof(midi), t, dur, v);
 }
