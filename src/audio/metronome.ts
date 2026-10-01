@@ -1,5 +1,8 @@
 // Count-in + click track, scheduled sample-accurately on the audio clock.
 
+/** The click's pitches: the downbeat and the other beats (dsp/declick.ts removes them from takes). */
+export const CLICK_HZ = { accent: 1760, beat: 1175 } as const;
+
 export interface TakePlan {
   start: number; // context time of the first count-in click
   recStart: number; // context time of the first recorded beat
@@ -44,7 +47,7 @@ export function click(ctx: BaseAudioContext, dest: AudioNode, t: number, accent:
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
   osc.type = 'sine';
-  osc.frequency.value = accent ? 1760 : 1175;
+  osc.frequency.value = accent ? CLICK_HZ.accent : CLICK_HZ.beat;
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(volume, t + 0.001);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);

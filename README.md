@@ -99,6 +99,7 @@ npm run android:apk              # -> android/app/build/outputs/apk/debug/app-de
 | Stage | File | Method |
 |---|---|---|
 | Recording | `src/audio/recorder.ts`, `take.ts` | AudioWorklet capture with frame stamps, voice processing off. Output + input latency plus a manual offset are compensated. There is a 150 ms pre-roll so hits on beat 1 are caught. |
+| Metronome leak | `src/dsp/declick.ts` | Without headphones the click reaches the mic and would read as a hit on empty beats. Its two tones are notched out (zero phase, so nothing moves in time), and the few milliseconds a notch can't remove are blanked where the click sounds on its own. |
 | Onsets | `src/dsp/onsets.ts` | Spectral flux on log-spaced bands (1024/256, Hann), median×1.5+δ threshold, 70 ms gap, envelope refinement. |
 | Drum classification | `features.ts`, `drumClassifier.ts` | 60 ms features (RMS, centroid, flatness, ZCR, <200 Hz and >5 kHz shares, MFCC 1–8 via Meyda). Rules by default; a personal z-scored weighted k-NN (k=3) after calibration. |
 | Quantize | `quantize.ts` | Swung 16th grid. The residual is stored, so the strength slider works live. Velocity comes from RMS. |
@@ -121,7 +122,7 @@ Heavy DSP runs in a Web Worker (`src/dsp/worker.ts`), so the UI never blocks.
 src/
   main.ts  router.ts  state.ts  storage.ts  settings.ts  profile.ts  share.ts  app.ts
   audio/   context recorder take metronome scheduler engine render export wav midi importAudio voiceLayer prepare
-  dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes key harmony tempo free voice analyze api worker client
+  dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes key harmony tempo free voice declick analyze api worker client
   synth/   fx env drums kits instruments voices rendered renderCache
   model/   project music arrange demo autofix styles autoArrange
   pro/     pro billing

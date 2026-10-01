@@ -201,11 +201,16 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     }
   }
 
-  async function processTake(take: Take, k: TrackKind): Promise<void> {
+  async function processTake(heard: Take, k: TrackKind): Promise<void> {
     recBtn.disabled = true;
     spinner.classList.remove('hidden');
     status.textContent = info().verb;
     try {
+      // Without headphones the click is in the take too; left in, it reads as extra hits.
+      const take = heard.clickTones.length
+        ? { ...heard, audio: await runDsp('declick', { audio: heard.audio, sampleRate: heard.sampleRate, tones: heard.clickTones }) }
+        : heard;
+      if (!alive) return;
       const p = getProject();
       const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
       const track = newTrack(k, getTrack(p, k)?.preset);

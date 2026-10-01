@@ -1,6 +1,6 @@
 // One recording pass: count-in, click, capture, latency compensation.
 import { getMaster, outputLatency, setAudioSession, unlockAudio } from './context';
-import { Metronome, planTake, type TakePlan } from './metronome';
+import { CLICK_HZ, Metronome, planTake, type TakePlan } from './metronome';
 import { MicRecorder } from './recorder';
 
 export interface Take {
@@ -11,6 +11,8 @@ export interface Take {
   tail: number;
   /** Round-trip latency that was compensated (seconds). */
   latency: number;
+  /** The click's tones if it played during the take (without headphones they leak into the mic). */
+  clickTones: number[];
 }
 
 export interface TakeOptions {
@@ -62,7 +64,8 @@ export async function captureTake(o: TakeOptions): Promise<Take> {
     await waitForTime(ctx, plan.recEnd + latency + tail + 0.06, o.signal);
     await mic.stop();
     const audio = mic.extract(plan.recStart + latency - preroll, plan.recEnd + latency + tail);
-    return { audio, sampleRate: ctx.sampleRate, preroll, tail, latency };
+    const clickTones = o.clickDuringTake ? [CLICK_HZ.accent, CLICK_HZ.beat] : [];
+    return { audio, sampleRate: ctx.sampleRate, preroll, tail, latency, clickTones };
   } finally {
     metro.stop();
     mic?.close();
