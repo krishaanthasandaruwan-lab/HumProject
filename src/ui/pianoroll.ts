@@ -1,14 +1,15 @@
 // Piano roll: drag a note up/down to change its pitch; tap to select, then delete or nudge.
 import { NOTE_NAMES, scaleOf } from '../dsp/key';
 import type { Key, Note } from '../model/project';
+import { GRAPHITE, INK, MIST, STONE, WHITE } from './colors';
 import { h } from './dom';
+import { iconBtn } from './kit';
 import { fitCanvas } from './waveform';
 
 export interface RollOptions {
   notes: () => Note[];
   steps: () => number;
   keyOf: () => Key | undefined;
-  color: string;
   edit: (fn: (notes: Note[]) => void) => void;
   audition: (midi: number) => void;
 }
@@ -19,7 +20,7 @@ export interface RollApi {
   setPlayhead(step: number): void;
 }
 
-const ROW = 11;
+const ROW = 14;
 const isBlack = (m: number): boolean => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
 
 export function pianoRoll(o: RollOptions): RollApi {
@@ -27,12 +28,12 @@ export function pianoRoll(o: RollOptions): RollApi {
   const inner = h('div', { class: 'roll-inner' });
   const bg = h('canvas', { class: 'roll-bg' });
   const head = h('div', { class: 'roll-head' });
-  const label = h('span', { class: 'small muted grow' });
+  const label = h('span', { class: 'label grow' });
   const tools = h('div', { class: 'roll-tools hidden' },
     label,
-    h('button', { class: 'icon', 'aria-label': 'Pitch down', onClick: () => nudge(-1) }, '▼'),
-    h('button', { class: 'icon', 'aria-label': 'Pitch up', onClick: () => nudge(1) }, '▲'),
-    h('button', { 'aria-label': 'Delete note', onClick: () => remove() }, '🗑 Delete'));
+    iconBtn('down', 'Pitch down', () => nudge(-1)),
+    iconBtn('up', 'Pitch up', () => nudge(1)),
+    iconBtn('delete', 'Delete note', () => remove()));
   inner.append(bg, head);
   scroller.append(inner);
   const el = h('div', { class: 'roll' }, scroller, tools);
@@ -68,17 +69,18 @@ export function pianoRoll(o: RollOptions): RollApi {
     for (let m = lo; m <= hi; m++) {
       const y = (hi - m) * ROW;
       const inScale = scale?.has(((m % 12) + 12) % 12);
-      g.fillStyle = isBlack(m) ? '#171a24' : '#1d2130';
-      if (scale && inScale) g.fillStyle = isBlack(m) ? '#1f2433' : '#252a3b';
+      g.fillStyle = (scale ? inScale : !isBlack(m)) ? WHITE : MIST;
       g.fillRect(0, y, width, ROW);
+      g.fillStyle = STONE;
+      g.fillRect(0, y + ROW - 1, width, 1);
       if (((m % 12) + 12) % 12 === 0) {
-        g.fillStyle = 'rgba(255,255,255,.35)';
-        g.font = '8px system-ui';
+        g.fillStyle = GRAPHITE;
+        g.font = '600 8px system-ui';
         g.fillText(`C${Math.floor(m / 12) - 1}`, 2, y + ROW - 2);
       }
     }
     for (let s = 0; s <= steps; s += 4) {
-      g.fillStyle = s % 16 === 0 ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.07)';
+      g.fillStyle = s % 16 === 0 ? INK : STONE;
       g.fillRect(Math.round(s * stepW), 0, 1, height);
     }
   }
@@ -103,7 +105,7 @@ export function pianoRoll(o: RollOptions): RollApi {
     inner.querySelectorAll('.note').forEach((n) => n.remove());
     for (const n of o.notes()) {
       if (n.start >= steps) continue;
-      const d = h('div', { class: `note${n === selected ? ' sel' : ''}`, style: `--c:${o.color}` });
+      const d = h('div', { class: `note${n === selected ? ' sel' : ''}` });
       place(d, n);
       d.addEventListener('pointerdown', (e) => drag(e, n, d));
       inner.appendChild(d);

@@ -1,38 +1,54 @@
-// Paywall: one-time $0.99 unlock. On the web it points to the app stores.
+// 18 · Pro: explain Pro in five lines and sell it in one tap ($0.99 once). On the web it points to the stores.
 import { buyPro, canBuy, isNative, proPrice, restorePro, storeUrl } from '../pro/billing';
-import { currentScreen, navigate } from '../router';
+import { reload } from '../router';
 import { h, sheet, toast } from './dom';
+import { icon, type IconName } from './icons';
+import { art, link, mainBtn, setLabel } from './kit';
 
-export const PAYWALL_HEADLINE = 'Remove watermark & unlock all sounds — $0.99 once. No subscription.';
-
-const PERKS = [
-  ['🚫', 'No watermark on your videos'],
-  ['🥁', 'All 8 drum kits — Lo-fi, Trap, House, Acoustic, Techno, Retro 80s'],
-  ['🎻', 'All 18 instruments — strings, choir, flute, brass, organ, marimba…'],
-  ['🎵', 'WAV audio + MIDI export for your DAW'],
-  ['💾', 'Unlimited saved songs'],
+const PERKS: [IconName, string][] = [
+  ['video', 'No watermark on videos'],
+  ['drums', 'All 8 drum kits'],
+  ['chords', 'All 18 instruments'],
+  ['audio', 'Audio and MIDI files'],
+  ['songs', 'Unlimited songs'],
 ];
 
-export function openPaywall(reason?: string): void {
-  const buy = h('button', { class: 'primary big wide' }, canBuy() ? 'Unlock Pro — $0.99' : isNative() ? 'Store not available' : 'Get Pro in the app');
-  const restore = h('button', { class: 'link' }, 'Restore purchase');
-  const content = h('div', { class: 'stack paywall' },
-    h('div', { class: 'pw-badge' }, 'MouthBand PRO'),
-    h('h2', { class: 'pw-title' }, PAYWALL_HEADLINE),
-    reason ? h('p', { class: 'small muted center' }, reason) : null,
-    h('ul', { class: 'pw-list' }, PERKS.map(([em, text]) => h('li', null, h('span', null, em), text))),
-    buy,
-    canBuy() ? h('div', { class: 'center' }, restore) : h('p', { class: 'tiny muted center' }, 'The web version stays free. Pro is a one-time purchase in the iPhone and Android apps.'),
-  );
-  const close = sheet(content);
-  if (canBuy()) {
-    void proPrice().then((price) => { if (price) buy.textContent = `Unlock Pro — ${price}`; });
+/** Red confetti squares fall once (skipped with Reduce Motion). */
+export function confetti(): void {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer = h('div', { class: 'confetti', 'aria-hidden': 'true' });
+  for (let i = 0; i < 36; i++) {
+    const s = h('i', { style: `left:${Math.random() * 100}%;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;${i % 4 === 0 ? 'background:var(--ink)' : ''}` });
+    layer.append(s);
+    s.animate([{ transform: 'translateY(-20px) rotate(0)' }, { transform: `translateY(${innerHeight + 40}px) rotate(${360 + Math.random() * 360}deg)` }],
+      { duration: 900 + Math.random() * 600, delay: Math.random() * 250, easing: 'cubic-bezier(.3,.6,.6,1)', fill: 'both' });
   }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 1800);
+}
+
+export function openPaywall(reason?: string): void {
+  const buy = mainBtn(canBuy() ? 'Unlock · $0.99' : isNative() ? 'Store not available' : 'Get Pro in the app', undefined, { icon: 'pro' });
+  const restore = link('Restore');
+  const content = h('div', { class: 'paywall' },
+    h('div', { class: 'row' }, h('span', { class: 'pro' }, 'PRO'), h('span', { class: 'grow' }), h('div', { class: 'grille', 'aria-hidden': 'true' })),
+    h('h2', { class: 'h1' }, 'Unlock', h('br'), h('span', { class: 'hl' }, 'everything')),
+    art('ill-09-pro', 0.8),
+    reason ? h('p', { class: 'body muted' }, reason) : null,
+    h('ul', { class: 'perks' }, PERKS.map(([ic, text]) => h('li', null, h('span', { class: 'tile48' }, icon(ic, 22)), h('span', { class: 'body' }, text)))),
+    buy,
+    h('p', { class: 'small muted center' }, canBuy() ? 'One time. No subscription.' : 'The web version stays free. Pro is a one-time purchase in the iPhone and Android apps.'),
+    canBuy() ? h('div', { class: 'center' }, restore) : null,
+    h('div', { class: 'piano-band', 'aria-hidden': 'true' }));
+  const close = sheet(content, undefined);
+  if (canBuy()) void proPrice().then((price) => { if (price) setLabel(buy, `Unlock · ${price}`); });
 
   const unlocked = (): void => {
-    toast('Welcome to Pro 🎉');
+    navigator.vibrate?.(20);
+    confetti();
+    toast('Welcome to Pro');
     close();
-    navigate(currentScreen());
+    reload();
   };
 
   buy.addEventListener('click', async () => {
@@ -41,17 +57,19 @@ export function openPaywall(reason?: string): void {
       return;
     }
     buy.disabled = true;
+    buy.classList.add('busy');
     const res = await buyPro();
     buy.disabled = false;
+    buy.classList.remove('busy');
     if (res === 'ok') unlocked();
-    else if (res === 'unavailable') toast('The store is not available right now. Try again later.');
-    else if (res === 'error') toast('The purchase did not go through.');
+    else if (res === 'unavailable') toast('Can’t reach the store. Try again.');
+    else if (res === 'error') toast('The purchase didn’t go through.');
   });
   restore.addEventListener('click', async () => {
     restore.disabled = true;
     const ok = await restorePro();
     restore.disabled = false;
     if (ok) unlocked();
-    else toast('No previous purchase found for this account.');
+    else toast('No earlier purchase found.');
   });
 }

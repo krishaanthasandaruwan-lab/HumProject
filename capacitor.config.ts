@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.mouthband.app',
   appName: 'MouthBand',
   webDir: 'dist',
-  backgroundColor: '#0e0f13',
+  backgroundColor: '#F6F4EF',
   ios: {
     // Safe areas are handled in CSS (viewport-fit=cover + env(safe-area-inset-*)).
     contentInset: 'never',
-    backgroundColor: '#0e0f13',
+    backgroundColor: '#F6F4EF',
   },
   android: {
     // Lets `chrome://inspect` attach to debug builds only.
@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
     SystemBars: {
       insetsHandling: 'css', // edge-to-edge with correct env(safe-area-inset-*) values
       initialViewportFitValueHint: 'cover',
-      style: 'DARK', // light status-bar icons on our dark UI
+      style: 'LIGHT', // dark status-bar icons on our light UI
     },
   },
 };

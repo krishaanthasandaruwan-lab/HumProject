@@ -1,0 +1,25 @@
+/* Toasts and bottom sheets (design spec C6, B5 19). */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 20px); z-index: 60; transform: translateX(-50%);
+  width: min(520px, calc(100% - 2 * var(--side)));
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px;
+  background: var(--ink); color: var(--white); font: 600 .9375rem/1.3 var(--font-body);
+  animation: toastIn var(--t-ui) var(--ease);
+}
+.toast.lifted { bottom: calc(var(--safe-bottom) + 104px); }
+.toast > button { flex: none; min-height: 36px; color: var(--red); font: 700 .875rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+.sheet-wrap { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center;
+  background: rgb(17 17 17 / .42); animation: fadeIn var(--t-ui) var(--ease); }
+.sheet-wrap.out { opacity: 0; transition: opacity 180ms ease; }
+.sheet-wrap.out .sheet { transform: translateY(40px); transition: transform 180ms ease; }
+.sheet {
+  width: 100%; max-width: 560px; max-height: 90vh; max-height: 90dvh; overflow: auto; overscroll-behavior: contain;
+  background: var(--paper); border-top: var(--border); border-radius: var(--r-sheet) var(--r-sheet) 0 0; box-shadow: var(--shadow-sheet);
+  padding: 10px var(--side) calc(var(--safe-bottom) + 20px); animation: sheetIn var(--t-sheet) var(--ease);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.sheet-grip { width: 36px; height: 4px; flex: none; margin: 0 auto -6px; background: var(--stone); }
+.sheet-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-right: -8px; }
+@keyframes sheetIn { from { transform: translateY(100%); } }

@@ -1,18 +1,22 @@
-// The first screen after the logo: hum (or sing, or whistle) a melody — no metronome, no setup.
-// MouthBand finds the beat and the key, then offers three full arrangements (choices.ts).
+// 02 · Mic (home): hum, sing or whistle — no metronome, no setup. MouthBand finds the beat and the key,
+// then offers three full arrangements (choices.ts).
 import '../styles/hum.css';
 import { getCtx, setAudioSession, unlockAudio } from '../audio/context';
 import { decodeAudioFile, pickAudioFile, sliceSeconds } from '../audio/importAudio';
 import { MicRecorder } from '../audio/recorder';
 import { runDsp } from '../dsp/client';
 import { navigate } from '../router';
-import { h } from './dom';
+import { fill, h, sleep } from './dom';
+import { icon, type IconName } from './icons';
+import { art, link, mainBtn, mark, titleBlock } from './kit';
 import { setHumTake } from './choices';
 import { drawScope } from './waveform';
 
 const MAX_SECONDS = 24;
 const QUIET_STOP = 2.2; // stop by itself after this much quiet, once something was hummed
 const LOUD = 0.012; // RMS that counts as humming
+
+type State = 'ready' | 'listening' | 'thinking' | 'no-tune' | 'mic-off' | 'error';
 
 export function mountHum(root: HTMLElement): () => void {
   let mic: MicRecorder | null = null;
@@ -22,39 +26,47 @@ export function mountHum(root: HTMLElement): () => void {
   let last = 0;
   let raf = 0;
   let alive = true;
-  let busy = false;
   const scope = new Float32Array(2048);
 
-  const title = h('h1', { class: 'hum-title' }, 'Hum a melody');
-  const sub = h('p', { class: 'muted hum-sub' }, 'Hum, sing or whistle anything. MouthBand finds the beat and the key and turns it into a full song.');
-  const micBtn = h('button', { class: 'hum-mic', 'aria-label': 'Start humming', onClick: () => void toggle() }, h('span', null, '🎤'));
-  const timer = h('div', { class: 'hum-timer' });
-  const status = h('p', { class: 'hum-status muted' }, 'Tap the mic and hum. Tap again when you’re done.');
-  const spinner = h('div', { class: 'spinner hidden' });
-  const canvas = h('canvas', { class: 'wave hum-wave hidden' });
-  const importBtn = h('button', { class: 'link', onClick: () => void importFile() }, '📂 Use a recording instead');
+  const rings = [1, 2, 3].map((n) => h('i', { class: 'ring', style: `--n:${n}`, 'aria-hidden': 'true' }));
+  const micBtn = h('button', { type: 'button', class: 'mic', id: 'hum-mic', 'aria-label': 'Start humming', onClick: () => void toggle() }, rings, icon('mic', 56));
+  const timer = h('div', { class: 'hum-timer num', 'aria-hidden': 'true' });
+  const status = h('p', { class: 'hum-status body', 'aria-live': 'polite' });
+  const canvas = h('canvas', { class: 'hum-wave', 'aria-hidden': 'true' });
+  const spinner = h('div', { class: 'spinner' });
+  const thinking = h('div', { class: 'hum-think' }, art('ill-13-keytar', 0.85), spinner);
+  const problem = h('div', { class: 'hum-problem' });
+  const tile = (name: IconName, label: string, go: () => void): HTMLButtonElement =>
+    h('button', { type: 'button', class: 'hum-tile', onClick: go }, icon(name, 24), h('span', { class: 'label' }, label));
+  const tiles = h('nav', { class: 'hum-tiles', 'aria-label': 'More ways to start' },
+    tile('import', 'Import', () => void importFile()),
+    tile('songs', 'Songs', () => navigate('projects', { back: 'hum' })));
+  const stage = h('div', { class: 'hum-stage' }, timer, micBtn, status, canvas, thinking, problem);
 
-  root.append(h('div', { class: 'hum' },
-    h('header', { class: 'row between' },
-      h('span', { class: 'brand hum-brand' }, 'MouthBand'),
-      h('button', { class: 'link', onClick: () => skip() }, 'Skip')),
-    h('div', { class: 'hum-stage' }, title, sub, micBtn, timer, spinner, status, canvas),
-    h('div', { class: 'center' }, importBtn)));
+  root.append(h('div', { class: 'screen hum' },
+    h('header', { class: 'top' }, mark(), link('Skip', () => navigate('studio'))),
+    titleBlock(['Hum a', 'melody'], { hl: 1 }),
+    stage,
+    tiles));
+  show('ready');
 
-  function skip(): void {
-    navigate('studio');
-  }
-
-  function setBusy(on: boolean, text = ''): void {
-    busy = on;
-    micBtn.classList.toggle('hidden', on);
-    spinner.classList.toggle('hidden', !on);
-    importBtn.disabled = on;
-    if (text) status.textContent = text;
+  function show(s: State, text = ''): void {
+    stage.dataset.state = s;
+    tiles.classList.toggle('faded', s === 'listening' || s === 'thinking');
+    micBtn.setAttribute('aria-label', s === 'listening' ? 'Done' : 'Start humming');
+    status.textContent = text || ({ ready: 'Tap and hum', listening: 'Tap when done', thinking: 'Finding the beat…' } as Record<string, string>)[s] || '';
+    if (s === 'no-tune' || s === 'mic-off' || s === 'error') {
+      const off = s === 'mic-off';
+      fill(problem,
+        s === 'error' ? null : art(off ? 'ill-04-mic-off' : 'ill-03-no-tune', 0.8),
+        h('h2', { class: 'h3' }, off ? 'Mic is off' : s === 'error' ? 'Something went wrong' : 'Didn’t catch a tune'),
+        h('p', { class: 'small muted' }, text),
+        mainBtn(off ? 'Turn on' : 'Try again', () => { show('ready'); if (off) void toggle(); }, { icon: off ? 'mic' : 'again' }));
+    }
   }
 
   async function toggle(): Promise<void> {
-    if (busy) return;
+    if (stage.dataset.state === 'thinking') return;
     if (mic) return void finish();
     try {
       await unlockAudio();
@@ -64,16 +76,14 @@ export function mountHum(root: HTMLElement): () => void {
       mic.start();
       startedAt = last = getCtx().currentTime;
       heard = quiet = 0;
-      micBtn.classList.add('live');
-      canvas.classList.remove('hidden');
-      micBtn.setAttribute('aria-label', 'Done');
-      status.textContent = 'Listening… tap when you’re done.';
+      show('listening');
       raf = requestAnimationFrame(frame);
     } catch (err) {
       const e = err as Error;
       mic = null;
       setAudioSession('playback');
-      status.textContent = e.name === 'NotAllowedError' ? 'MouthBand needs the microphone to hear you. Allow it in Settings, or tap Skip.' : e.message;
+      if (e.name === 'NotAllowedError') show('mic-off', 'Allow the microphone for MouthBand in Settings. Import still works.');
+      else show('error', e.message);
     }
   }
 
@@ -87,7 +97,7 @@ export function mountHum(root: HTMLElement): () => void {
     let s = 0;
     for (let i = 0; i < scope.length; i++) s += scope[i] * scope[i];
     const level = Math.sqrt(s / scope.length);
-    micBtn.style.setProperty('--lvl', Math.min(1, level * 12).toFixed(3));
+    micBtn.style.setProperty('--level', Math.min(1, level * 14).toFixed(3));
     if (level > LOUD) {
       heard += dt;
       quiet = 0;
@@ -103,10 +113,10 @@ export function mountHum(root: HTMLElement): () => void {
     if (!m) return;
     mic = null;
     cancelAnimationFrame(raf);
-    micBtn.classList.remove('live');
-    micBtn.style.removeProperty('--lvl');
-    canvas.classList.add('hidden');
+    micBtn.style.removeProperty('--level');
     timer.textContent = '';
+    navigator.vibrate?.(15);
+    show('thinking');
     const end = getCtx().currentTime;
     await m.stop();
     const audio = m.extract(startedAt, end);
@@ -116,34 +126,35 @@ export function mountHum(root: HTMLElement): () => void {
   }
 
   async function importFile(): Promise<void> {
-    if (busy || mic) return;
+    if (mic || stage.dataset.state === 'thinking') return;
     const file = await pickAudioFile();
-    if (!file) return;
-    setBusy(true, 'Opening your recording…');
+    if (!file || !alive) return;
+    show('thinking', 'Opening your recording…');
     try {
       const { audio, sampleRate } = await decodeAudioFile(file);
       await analyze(audio, sampleRate);
     } catch (err) {
-      setBusy(false, (err as Error).message);
+      show('error', (err as Error).message);
     }
   }
 
   async function analyze(audio: Float32Array, sampleRate: number): Promise<void> {
-    setBusy(true, 'Finding the beat and the key…');
+    show('thinking');
     try {
-      const r = await runDsp('free', { audio, sampleRate, kind: 'lead' });
+      const job = runDsp('free', { audio, sampleRate, kind: 'lead' });
+      void sleep(1400).then(() => { if (alive && stage.dataset.state === 'thinking') status.textContent = 'Building your band…'; });
+      const r = await job;
       if (!alive) return;
       if (r.notes.length < 2 || !r.key) {
-        setBusy(false, r.voiced < 0.05
-          ? 'I didn’t hear any humming. Try again a little louder, close to the mic.'
-          : 'I couldn’t find a clear tune. Hum steady notes with little breaks between them.');
+        show('no-tune', r.voiced < 0.05 ? 'Hum a little louder, close to the phone.' : 'Hum steady notes with small breaks between them.');
         return;
       }
       const voice = sliceSeconds(audio, sampleRate, r.loopStart, r.loopEnd + 0.3);
       setHumTake({ notes: r.notes, bpm: r.bpm, bars: r.bars, key: r.key, voice: { audio: voice, rate: sampleRate, anchors: r.anchors } });
+      navigator.vibrate?.(10);
       navigate('choices');
     } catch (err) {
-      setBusy(false, `Something went wrong: ${(err as Error).message}`);
+      show('error', (err as Error).message);
     }
   }
 

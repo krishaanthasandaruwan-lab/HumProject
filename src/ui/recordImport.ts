@@ -59,7 +59,7 @@ export async function importRecording(k: ImportKind, progress: (busy: boolean, t
     progress(false, '');
     return {
       track,
-      message: `📂 Imported ${count}${others ? '' : ` · ${Math.round(r.bpm)} BPM`}`,
+      message: `Imported ${count}${others ? '' : ` · ${Math.round(r.bpm)} BPM`}`,
       after: k === 'drums' ? undefined : (pp) => refreshKey(pp, settings().snapToScale),
     };
   } catch (err) {

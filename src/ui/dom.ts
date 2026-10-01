@@ -1,4 +1,6 @@
-// Tiny DOM helpers — no framework.
+// Tiny DOM helpers — no framework. Toasts, sheets and the two small dialogs (rename, confirm delete).
+import { icon } from './icons';
+
 export type Child = Node | string | number | false | null | undefined | Child[];
 export type Props = Record<string, unknown>;
 
@@ -38,70 +40,116 @@ export function append(el: Node, children: Child[]): void {
   }
 }
 
-/** Segmented control. Returns the element and a setter for the active value. */
+/** Replace an element's children (falsy children are skipped). */
+export function fill(el: Element, ...children: Child[]): void {
+  el.replaceChildren();
+  append(el, children);
+}
+
+/** Segmented control (mist track, ink active segment). Returns the element and a setter. */
 export function segmented<T extends string | number>(
   options: { value: T; label: string; locked?: boolean }[],
   active: T,
   onChange: (v: T) => void,
+  name = '',
 ): { el: HTMLDivElement; set: (v: T) => void } {
   const buttons = options.map((o) =>
-    h('button', { type: 'button', class: o.value === active ? 'on' : '', onClick: () => onChange(o.value) }, o.label, o.locked ? ' 🔒' : ''),
-  );
-  const set = (v: T): void => buttons.forEach((b, i) => b.classList.toggle('on', options[i].value === v));
-  return { el: h('div', { class: 'seg' }, buttons), set };
+    h('button', { type: 'button', 'aria-pressed': String(o.value === active), onClick: () => onChange(o.value) }, o.label,
+      o.locked ? h('span', { class: 'sr-only' }, ' (Pro)') : null));
+  const set = (v: T): void => buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i].value === v)));
+  return { el: h('div', { class: 'seg', role: 'group', 'aria-label': name || null }, buttons), set };
 }
 
 let toastEl: HTMLDivElement | null = null;
 let toastTimer = 0;
-export function toast(msg: string, action?: { label: string; run: () => void }, ms = 2800): void {
+/** Ink toast, one line, above the bottom bar. `action` adds a red UNDO-style button. */
+export function toast(msg: string, action?: { label: string; run: () => void }, ms = 3000): void {
   toastEl?.remove();
   clearTimeout(toastTimer);
-  const el = h('div', { class: 'toast', role: 'status' }, h('span', null, msg));
-  if (action) {
-    el.appendChild(h('button', { class: 'link', onClick: () => { action.run(); el.remove(); } }, action.label));
-  }
+  const lifted = !!document.querySelector('.actionbar:not(.hidden), .part-actions');
+  const el = h('div', { class: `toast${lifted ? ' lifted' : ''}`, role: 'status' }, h('span', null, msg));
+  if (action) el.appendChild(h('button', { type: 'button', onClick: () => { action.run(); el.remove(); } }, action.label));
   document.body.appendChild(el);
   toastEl = el;
-  toastTimer = window.setTimeout(() => el.remove(), action ? ms + 2200 : ms);
+  toastTimer = window.setTimeout(() => el.remove(), action ? ms + 2000 : ms);
 }
 
-/** Bottom sheet modal. Returns a close function. */
-export function sheet(content: HTMLElement, onClose?: () => void): () => void {
-  const close = (): void => { wrap.remove(); onClose?.(); };
-  const wrap = h('div', { class: 'sheet-wrap', onClick: (e: Event) => { if (e.target === wrap) close(); } },
-    h('div', { class: 'sheet' }, h('div', { class: 'sheet-grip' }), content));
+/** Bottom sheet: paper, grabber, H2 title, content. Returns a close function. */
+export function sheet(content: HTMLElement, onClose?: () => void, title?: string): () => void {
+  let closed = false;
+  const close = (): void => {
+    if (closed) return;
+    closed = true;
+    wrap.classList.add('out');
+    setTimeout(() => wrap.remove(), 200);
+    document.removeEventListener('keydown', onKey);
+    onClose?.();
+  };
+  const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
+  const box = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title ?? null },
+    h('div', { class: 'sheet-grip', 'aria-hidden': 'true' }),
+    title ? h('div', { class: 'sheet-top' }, h('h2', { class: 'h2' }, title),
+      h('button', { type: 'button', class: 'icon-btn ghost', 'aria-label': 'Close', onClick: () => close() }, icon('close', 22))) : null,
+    content);
+  const wrap = h('div', { class: 'sheet-wrap', onClick: (e: Event) => { if (e.target === wrap) close(); } }, box);
+  dragToClose(box, close);
+  document.addEventListener('keydown', onKey);
   document.body.appendChild(wrap);
   return close;
 }
 
+/** Swipe the grabber area down to dismiss. */
+function dragToClose(box: HTMLElement, close: () => void): void {
+  let y0 = -1;
+  box.addEventListener('pointerdown', (e) => {
+    const top = box.getBoundingClientRect().top;
+    if (box.scrollTop > 0 || e.clientY - top > 56) return;
+    y0 = e.clientY;
+  });
+  box.addEventListener('pointermove', (e) => {
+    if (y0 < 0) return;
+    const dy = Math.max(0, e.clientY - y0);
+    box.style.transform = `translateY(${dy}px)`;
+  });
+  const end = (e: PointerEvent): void => {
+    if (y0 < 0) return;
+    const dy = e.clientY - y0;
+    y0 = -1;
+    box.style.transform = '';
+    if (dy > 90) close();
+  };
+  box.addEventListener('pointerup', end);
+  box.addEventListener('pointercancel', end);
+}
+
 export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Text prompt in a bottom sheet. Resolves null when dismissed. */
-export function ask(title: string, value: string, ok = 'Save'): Promise<string | null> {
+/** Text prompt in a bottom sheet (rename). Resolves null when dismissed. */
+export function ask(title: string, value: string, ok = 'Save', label = 'Name'): Promise<string | null> {
   return new Promise((resolve) => {
     let done = false;
-    const input = h('input', { type: 'text', value, maxlength: 60 });
+    const id = `f${Math.random().toString(36).slice(2, 8)}`;
+    const input = h('input', { id, type: 'text', class: 'field', value, maxlength: 60, autocomplete: 'off' });
     const finish = (v: string | null): void => {
       if (done) return;
       done = true;
       close();
       resolve(v);
     };
-    const form = h('form', { class: 'stack' }, h('h2', null, title), input,
-      h('div', { class: 'row' },
-        h('button', { type: 'button', class: 'grow', onClick: () => finish(null) }, 'Cancel'),
-        h('button', { type: 'submit', class: 'primary grow' }, ok)));
+    const form = h('form', { class: 'stack' },
+      h('label', { class: 'label', for: id }, label), input,
+      h('button', { type: 'submit', class: 'btn' }, h('span', { class: 'btn-label' }, ok), h('span', { class: 'btn-arrow', 'aria-hidden': 'true' }, icon('done'))),
+      h('button', { type: 'button', class: 'btn-2nd', onClick: () => finish(null) }, 'Cancel'));
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const v = input.value.trim();
-      finish(v || null);
+      finish(input.value.trim() || null);
     });
-    const close = sheet(form, () => { if (!done) { done = true; resolve(null); } });
-    setTimeout(() => { input.focus(); input.select(); }, 50);
+    const close = sheet(form, () => { if (!done) { done = true; resolve(null); } }, title);
+    setTimeout(() => { input.focus(); input.select(); }, 60);
   });
 }
 
-/** Yes/no in a bottom sheet. */
+/** Small confirm sheet: the red button first, then Cancel. Only for deleting. */
 export function confirmSheet(message: string, ok: string, danger = false): Promise<boolean> {
   return new Promise((resolve) => {
     let done = false;
@@ -111,10 +159,9 @@ export function confirmSheet(message: string, ok: string, danger = false): Promi
       close();
       resolve(v);
     };
-    const close = sheet(h('div', { class: 'stack' }, h('h2', null, message),
-      h('div', { class: 'row' },
-        h('button', { class: 'grow', onClick: () => finish(false) }, 'Cancel'),
-        h('button', { class: `grow ${danger ? 'danger' : 'primary'}`, onClick: () => finish(true) }, ok))),
-    () => { if (!done) { done = true; resolve(false); } });
+    const close = sheet(h('div', { class: 'stack' },
+      h('button', { type: 'button', class: danger ? 'btn-del' : 'btn-2nd', onClick: () => finish(true) }, ok),
+      h('button', { type: 'button', class: 'btn-2nd', onClick: () => finish(false) }, 'Cancel')),
+    () => { if (!done) { done = true; resolve(false); } }, message);
   });
 }

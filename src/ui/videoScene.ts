@@ -1,20 +1,25 @@
-// The 9:16 "what I recorded → what came out" video, drawn frame by frame on a canvas.
+// The 9:16 "what I recorded → what came out" video, drawn frame by frame on a canvas, in the app's look:
+// paper, ink and Stage Red, Anton titles, square pads with hard shadows.
 import { keyName } from '../dsp/key';
 import { STEPS_PER_BAR, stepDur, swingOffset, totalSteps, type Project } from '../model/project';
+import { GRAPHITE, INK, MIST, PAPER, RED, WHITE } from './colors';
 
 export type PadId = 'kick' | 'snare' | 'hat' | 'bass' | 'lead' | 'chords';
 export interface SceneEvent { t: number; pad: PadId }
 export const VIDEO_W = 720;
 export const VIDEO_H = 1280;
 
-const PADS: { id: PadId; label: string; color: string; emoji: string }[] = [
-  { id: 'kick', label: 'KICK', color: '#ff7a45', emoji: '🥁' },
-  { id: 'snare', label: 'SNARE', color: '#3ec5ff', emoji: '👏' },
-  { id: 'hat', label: 'HI-HAT', color: '#ffd23f', emoji: '✨' },
-  { id: 'bass', label: 'BASS', color: '#9b7bff', emoji: '🎸' },
-  { id: 'lead', label: 'LEAD', color: '#ff4d9d', emoji: '🎹' },
-  { id: 'chords', label: 'CHORDS', color: '#3ddc97', emoji: '🎶' },
+const PADS: { id: PadId; label: string }[] = [
+  { id: 'kick', label: 'KICK' }, { id: 'snare', label: 'SNARE' }, { id: 'hat', label: 'HAT' },
+  { id: 'bass', label: 'BASS' }, { id: 'lead', label: 'MELODY' }, { id: 'chords', label: 'CHORDS' },
 ];
+const DISPLAY = (px: number): string => `400 ${px}px Anton, Impact, "Arial Narrow", sans-serif`;
+const LABEL = (px: number): string => `700 ${px}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+
+/** Load the title fonts before drawing text on a canvas. */
+export function loadSceneFonts(): Promise<unknown> {
+  return Promise.all([document.fonts.load(DISPLAY(48)), document.fonts.load(LABEL(30))]).catch(() => undefined);
+}
 
 /** When each pad fires during the band part (seconds, starting at `offset`), sorted by time. */
 export function sceneEvents(p: Project, bars: number, offset: number): SceneEvent[] {
@@ -44,16 +49,6 @@ export interface SceneData {
   watermark: boolean;
 }
 
-function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
-}
-
 export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: number): void } {
   canvas.width = VIDEO_W;
   canvas.height = VIDEO_H;
@@ -61,7 +56,7 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
   const p = d.project;
   const sd = stepDur(p.bpm);
   const bandDur = d.bars * STEPS_PER_BAR * sd;
-  const COLS = 90;
+  const COLS = 48;
   const env = new Float32Array(COLS);
   const per = Math.max(1, Math.floor(d.wave.length / COLS));
   for (let c = 0; c < COLS; c++) {
@@ -69,10 +64,19 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
     for (let i = c * per; i < Math.min(d.wave.length, (c + 1) * per); i++) m = Math.max(m, Math.abs(d.wave[i]));
     env[c] = m;
   }
-  const present = new Set<PadId>(d.events.map((e) => e.pad));
+  const peak = Math.max(1e-4, ...env);
+  // The poster frame has no events yet: show every pad as present.
+  const present = new Set<PadId>(d.events.length ? d.events.map((e) => e.pad) : PADS.map((x) => x.id));
   const chords = p.tracks.find((t) => t.kind === 'chords')?.labels ?? [];
-  const sub = `${Math.round(p.bpm)} BPM${p.key ? ` · ${keyName(p.key)}` : ''}`;
-  const font = (px: number, weight = 800): string => `${weight} ${px}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const sub = `${Math.round(p.bpm)} BPM${p.key ? ` · ${keyName(p.key)}` : ''}`.toUpperCase();
+
+  const box = (x: number, y: number, w: number, h: number, fill: string, shadow = 0): void => {
+    if (shadow) { g.fillStyle = INK; g.fillRect(x + shadow, y + shadow, w, h); }
+    g.fillStyle = INK;
+    g.fillRect(x, y, w, h);
+    g.fillStyle = fill;
+    g.fillRect(x + 4, y + 4, w - 8, h - 8);
+  };
 
   function level(t: number): number {
     const c = Math.round(t * d.sampleRate);
@@ -82,46 +86,69 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
     return Math.min(1, Math.sqrt(s / (2 * n)) * 3);
   }
 
-  function header(title: string, frac: number, accent: string): void {
-    g.textAlign = 'center';
-    g.fillStyle = '#ffffff';
-    g.font = font(52);
-    g.fillText(title, VIDEO_W / 2, 170);
-    g.font = font(30, 600);
-    g.fillStyle = 'rgba(255,255,255,.6)';
-    g.fillText(`${p.name} · ${sub}`, VIDEO_W / 2, 225);
-    g.fillStyle = 'rgba(255,255,255,.12)';
-    roundRect(g, 60, 270, VIDEO_W - 120, 12, 6);
-    g.fill();
-    g.fillStyle = accent;
-    roundRect(g, 60, 270, Math.max(12, (VIDEO_W - 120) * frac), 12, 6);
-    g.fill();
+  /** Two-line Anton title, left-aligned; the second line sits on the red highlight block. */
+  function title(a: string, b: string, frac: number): void {
+    g.textAlign = 'left';
+    g.textBaseline = 'alphabetic';
+    g.font = DISPLAY(112);
+    g.fillStyle = INK;
+    g.fillText(a, 56, 250);
+    const w = g.measureText(b).width;
+    g.fillStyle = RED;
+    g.fillRect(48, 272, w + 22, 122);
+    g.fillStyle = INK;
+    g.fillText(b, 59, 380);
+    g.font = LABEL(30);
+    g.fillStyle = GRAPHITE;
+    g.fillText(`${p.name.toUpperCase()} · ${sub}`, 58, 450, VIDEO_W - 116);
+    g.fillStyle = INK;
+    g.fillRect(56, 478, VIDEO_W - 112, 14);
+    g.fillStyle = MIST;
+    g.fillRect(60, 482, VIDEO_W - 120, 6);
+    g.fillStyle = RED;
+    g.fillRect(60, 482, (VIDEO_W - 120) * Math.min(1, frac), 6);
   }
 
   function before(t: number): void {
-    header('🎤 What I recorded', t / d.rawDur, '#ff4d6d');
-    const x0 = 60;
-    const colW = (VIDEO_W - 120) / COLS;
+    title('WHAT I', 'RECORDED', t / d.rawDur);
+    const colW = (VIDEO_W - 112) / COLS;
     const head = (t / d.rawDur) * COLS;
     for (let c = 0; c < COLS; c++) {
-      const hgt = Math.max(6, env[c] * 380);
-      g.fillStyle = c <= head ? '#ff4d6d' : '#3a3f58';
-      roundRect(g, x0 + c * colW + 1, 680 - hgt / 2, Math.max(2, colW - 2), hgt, 2);
-      g.fill();
+      const hgt = Math.max(8, (env[c] / peak) * 260);
+      g.fillStyle = c <= head ? RED : INK;
+      g.fillRect(56 + c * colW + 2, 690 - hgt / 2, Math.max(3, colW - 5), hgt);
     }
     const lv = level(t);
-    g.beginPath();
-    g.arc(VIDEO_W / 2, 1040, 80 + 70 * lv, 0, Math.PI * 2);
-    g.fillStyle = `rgba(255,77,109,${0.18 + 0.3 * lv})`;
-    g.fill();
-    g.font = font(96, 400);
-    g.fillText('🎤', VIDEO_W / 2, 1075);
+    const r = 110;
+    const cx = VIDEO_W / 2;
+    const cy = 1010;
+    for (let k = 1; k <= 3; k++) {
+      g.setLineDash([10, 9]);
+      g.lineWidth = 4;
+      g.strokeStyle = `rgba(17,17,17,${0.6 - k * 0.15})`;
+      g.beginPath();
+      g.arc(cx, cy, r + k * 26 * (1 + lv * 0.5), 0, Math.PI * 2);
+      g.stroke();
+    }
+    g.setLineDash([]);
+    g.fillStyle = INK;
+    g.beginPath(); g.arc(cx + 10, cy + 10, r, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+    g.fillStyle = RED;
+    g.beginPath(); g.arc(cx, cy, r - 5, 0, Math.PI * 2); g.fill();
+    // mic glyph
+    g.fillStyle = INK;
+    g.fillRect(cx - 18, cy - 52, 36, 66);
+    g.lineWidth = 9;
+    g.strokeStyle = INK;
+    g.beginPath(); g.arc(cx, cy - 4, 40, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+    g.fillRect(cx - 4, cy + 34, 8, 22);
   }
 
   function after(t: number, bt: number): void {
-    header('🔥 What MouthBand made', bt / bandDur, '#3ddc97');
-    const size = 190;
-    const gap = 24;
+    title('WHAT CAME', 'OUT', bt / bandDur);
+    const size = 184;
+    const gap = 28;
     const x0 = (VIDEO_W - (size * 3 + gap * 2)) / 2;
     PADS.forEach((pad, i) => {
       let last = -Infinity;
@@ -129,67 +156,65 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
         if (e.t > t) break;
         if (e.pad === pad.id) last = e.t;
       }
-      const glow = Number.isFinite(last) ? Math.exp(-(t - last) / 0.18) : 0;
+      const glow = Number.isFinite(last) ? Math.exp(-(t - last) / 0.16) : 0;
+      const on = present.has(pad.id);
       const x = x0 + (i % 3) * (size + gap);
-      const y = 400 + Math.floor(i / 3) * (size + gap);
-      const s = 1 + 0.06 * glow;
-      g.save();
-      g.globalAlpha = present.has(pad.id) ? 1 : 0.3;
-      g.translate(x + size / 2, y + size / 2);
-      g.scale(s, s);
-      g.fillStyle = '#1f2333';
-      roundRect(g, -size / 2, -size / 2, size, size, 34);
-      g.fill();
-      g.globalAlpha *= 0.15 + 0.85 * glow;
-      g.fillStyle = pad.color;
-      roundRect(g, -size / 2, -size / 2, size, size, 34);
-      g.fill();
-      g.globalAlpha = present.has(pad.id) ? 1 : 0.3;
+      const y = 560 + Math.floor(i / 3) * (size + gap);
+      g.globalAlpha = on ? 1 : 0.3;
+      box(x, y, size, size, glow > 0.35 ? RED : WHITE, on ? 10 * Math.max(0.3, glow) : 0);
+      g.globalAlpha = 1;
       g.textAlign = 'center';
-      g.font = font(64, 400);
-      g.fillText(pad.emoji, 0, 10);
-      g.font = font(26);
-      g.fillStyle = glow > 0.5 ? '#111' : '#fff';
-      g.fillText(pad.label, 0, 70);
-      g.restore();
+      g.font = LABEL(34);
+      g.fillStyle = on ? INK : GRAPHITE;
+      g.fillText(pad.label, x + size / 2, y + size / 2 + 12);
     });
     const step = Math.floor(bt / sd);
     const bar = Math.min(d.bars - 1, Math.floor(step / STEPS_PER_BAR));
     for (let s = 0; s < 16; s++) {
-      g.beginPath();
-      g.arc(120 + s * 32, 900, s % 4 === 0 ? 9 : 6, 0, Math.PI * 2);
-      g.fillStyle = s === step % 16 ? '#ffffff' : 'rgba(255,255,255,.18)';
-      g.fill();
+      const x = 64 + s * 37.5;
+      g.fillStyle = INK;
+      g.fillRect(x, 1022, 26, 26);
+      g.fillStyle = s === step % 16 ? RED : s % 4 === 0 ? MIST : WHITE;
+      g.fillRect(x + 3, 1025, 20, 20);
     }
-    g.textAlign = 'center';
-    g.font = font(28, 600);
-    g.fillStyle = 'rgba(255,255,255,.6)';
-    g.fillText(`Bar ${bar + 1} of ${d.bars}`, VIDEO_W / 2, 965);
+    g.textAlign = 'left';
+    g.font = LABEL(30);
+    g.fillStyle = GRAPHITE;
+    g.fillText(`BAR ${bar + 1} OF ${d.bars}`, 64, 1096);
     if (chords[bar]) {
-      g.font = font(88);
-      g.fillStyle = '#3ddc97';
-      g.fillText(chords[bar], VIDEO_W / 2, 1090);
+      g.textAlign = 'right';
+      g.font = DISPLAY(72);
+      g.fillStyle = INK;
+      g.fillText(chords[bar], VIDEO_W - 64, 1110);
     }
   }
 
   function draw(t: number): void {
-    const grad = g.createLinearGradient(0, 0, 0, VIDEO_H);
-    const isBefore = t < d.rawDur;
-    grad.addColorStop(0, isBefore ? '#251427' : '#10202a');
-    grad.addColorStop(1, '#0b0c12');
-    g.fillStyle = grad;
+    g.fillStyle = PAPER;
     g.fillRect(0, 0, VIDEO_W, VIDEO_H);
+    // grille + drum-pad squares in the corners
+    g.fillStyle = INK;
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { g.beginPath(); g.arc(70 + i * 16, 70 + j * 16, 3, 0, Math.PI * 2); g.fill(); }
+    g.fillRect(VIDEO_W - 112, 64, 28, 28);
+    g.fillStyle = RED;
+    g.fillRect(VIDEO_W - 84, 92, 28, 28);
+    const isBefore = t < d.rawDur;
     if (isBefore) before(t);
     else after(t, Math.min(bandDur, t - d.rawDur));
-    if (d.rawDur > 0 && t >= d.rawDur && t < d.rawDur + 0.35) {
-      g.fillStyle = `rgba(255,255,255,${0.55 * (1 - (t - d.rawDur) / 0.35)})`;
-      g.fillRect(0, 0, VIDEO_W, VIDEO_H);
+    if (d.rawDur > 0 && t >= d.rawDur && t < d.rawDur + 0.4) {
+      // a red slab sweeps across at the switch
+      const k = (t - d.rawDur) / 0.4;
+      g.fillStyle = RED;
+      g.beginPath();
+      const x = -400 + k * (VIDEO_W + 800);
+      g.moveTo(x, 0); g.lineTo(x + 300, 0); g.lineTo(x + 100, VIDEO_H); g.lineTo(x - 200, VIDEO_H);
+      g.fill();
     }
     if (d.watermark) {
       g.textAlign = 'center';
-      g.font = font(30, 700);
-      g.fillStyle = 'rgba(255,255,255,.75)';
-      g.fillText('Made with MouthBand 🎤', VIDEO_W / 2, 1215);
+      g.font = LABEL(30);
+      g.fillStyle = INK;
+      g.fillText('MADE WITH MOUTHBAND', VIDEO_W / 2, 1222);
     }
   }
 

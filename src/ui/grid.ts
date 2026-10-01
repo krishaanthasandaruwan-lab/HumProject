@@ -5,6 +5,7 @@ import { h } from './dom';
 
 const CYCLE: (DrumType | null)[] = ['kick', 'snare', 'hat', null];
 const LABELS: Record<DrumType, string> = { kick: 'K', snare: 'S', hat: 'H' };
+const NAMES: Record<DrumType, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
 
 export interface GridOptions {
   hits: () => DrumHit[];
@@ -21,7 +22,7 @@ export interface GridApi {
 }
 
 export function drumGrid(o: GridOptions): GridApi {
-  const el = h('div', { class: 'grid' });
+  const el = h('div', { class: 'grid', role: 'group', 'aria-label': 'Drum grid' });
   let cells: HTMLElement[][] = []; // [step][row]
   let head = -1;
   let pressTimer = 0;
@@ -34,7 +35,7 @@ export function drumGrid(o: GridOptions): GridApi {
     const bars = o.bars();
     for (let b = 0; b < bars; b++) {
       const rows = DRUM_TYPES.map((type, r) => {
-        const row = h('div', { class: 'grid-row' }, h('span', { class: `grid-lbl ${type}` }, LABELS[type]));
+        const row = h('div', { class: 'grid-row' }, h('span', { class: 'grid-lbl', title: NAMES[type] }, LABELS[type]));
         for (let s = 0; s < 16; s++) {
           const step = b * 16 + s;
           const c = h('div', { class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'data-step': step, 'data-row': r });
@@ -43,7 +44,7 @@ export function drumGrid(o: GridOptions): GridApi {
         }
         return row;
       });
-      el.appendChild(h('div', { class: 'grid-bar' }, h('div', { class: 'grid-bar-no' }, `Bar ${b + 1}`), rows));
+      el.appendChild(h('div', { class: 'grid-bar' }, h('div', { class: 'grid-bar-no label' }, `Bar ${b + 1} of ${bars}`), rows));
     }
     paint();
   }

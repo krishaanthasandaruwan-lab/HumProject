@@ -5,6 +5,7 @@ export type Screen = (root: HTMLElement, params: Params) => (() => void) | void;
 const screens = new Map<string, Screen>();
 let cleanup: (() => void) | void;
 let current = '';
+let currentParams: Params = {};
 
 export function registerScreen(name: string, screen: Screen): void {
   screens.set(name, screen);
@@ -21,10 +22,16 @@ export function navigate(name: string, params: Params = {}): void {
   }
   root.replaceChildren();
   current = name;
+  currentParams = params;
   window.scrollTo(0, 0);
   cleanup = screen(root, params);
 }
 
 export function currentScreen(): string {
   return current;
+}
+
+/** Draw the current screen again (e.g. after Pro unlocks), with the same params. */
+export function reload(): void {
+  navigate(current, currentParams);
 }

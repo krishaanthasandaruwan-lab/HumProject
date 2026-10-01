@@ -9,11 +9,13 @@ import type { DrumType } from '../model/project';
 import { saveProfile } from '../profile';
 import { navigate, type Params } from '../router';
 import { h, toast } from './dom';
+import { icon } from './icons';
+import { backBtn, btn2, mainBtn, setLabel, titleBlock } from './kit';
 
 const SOUNDS: { type: DrumType; say: string; hint: string }[] = [
-  { type: 'kick', say: 'B', hint: 'Your kick drum: a punchy lip “B”' },
-  { type: 'snare', say: 'K', hint: 'Your snare: a sharp “K” or “Psh”' },
-  { type: 'hat', say: 'ts', hint: 'Your hi-hat: a crisp “ts”' },
+  { type: 'kick', say: 'B', hint: 'Kick' },
+  { type: 'snare', say: 'K', hint: 'Snare' },
+  { type: 'hat', say: 'ts', hint: 'Hat' },
 ];
 const CUES = 5;
 const GAP = 0.8;
@@ -28,37 +30,40 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
   let raf = 0;
   let testTimer = 0;
 
-  const chips = SOUNDS.map((s) => h('span', null, s.say));
-  const pad = h('div', { class: 'pad-big' });
+  const chips = SOUNDS.map((s) => h('span', { class: 'chip' }, s.say));
+  const pad = h('div', { class: 'padsq hero', 'aria-hidden': 'true' });
   const dots = Array.from({ length: CUES }, () => h('i'));
-  const info = h('p', { class: 'center muted' });
-  const startBtn = h('button', { class: 'primary big wide', onClick: () => void runStage() });
-  const meterBar = h('div');
-  const meterLbl = h('span', { class: 'small muted' });
-  const stagePanel = h('div', { class: 'card stack' }, pad, h('div', { class: 'hit-dots' }, dots), info, startBtn);
-  const resultPanel = h('div', { class: 'card stack hidden' });
+  const info = h('p', { class: 'body center', 'aria-live': 'polite' });
+  const startBtn = mainBtn('Start', () => void runStage(), { icon: 'mic' });
+  const meterBar = h('i');
+  const meterLbl = h('span', { class: 'label num' });
+  const stagePanel = h('div', { class: 'cal-stage' }, pad, h('div', { class: 'hitsq', 'aria-hidden': 'true' }, dots), info);
+  const resultPanel = h('div', { class: 'cal-stage hidden' });
+  const startZone = h('div', { class: 'action' }, startBtn);
 
-  root.append(
-    h('header', { class: 'topbar' },
-      h('button', { class: 'icon ghost', 'aria-label': 'Back', onClick: () => navigate(back) }, '←'),
-      h('h1', null, 'Teach it your sounds')),
-    h('p', { class: 'muted center small' }, 'Everyone beatboxes differently. Make each sound 5 times and MouthBand learns yours. Headphones help.'),
-    h('div', { class: 'cal-steps' }, chips),
+  root.append(h('div', { class: 'screen cal' },
+    h('header', { class: 'top' }, backBtn(() => navigate(back))),
+    titleBlock(['Teach my', 'sounds'], { deco: 'deco' }),
+    h('div', { class: 'chips cal-steps' }, chips),
     stagePanel,
-    h('div', { class: 'card stack' }, h('div', { class: 'row between' }, h('b', null, 'Confidence'), meterLbl), h('div', { class: 'meter' }, meterBar)),
     resultPanel,
-  );
+    h('div', { class: 'cal-meter' }, h('div', { class: 'row' }, h('span', { class: 'label grow' }, 'Confidence'), meterLbl), h('div', { class: 'bar' }, meterBar)),
+    startZone,
+  ));
   showStage();
   updateMeter();
 
   function showStage(): void {
     const s = SOUNDS[stage];
-    chips.forEach((c, i) => { c.className = i < stage ? 'done' : i === stage ? 'cur' : ''; });
-    pad.className = `pad-big ${s.type}`;
+    chips.forEach((c, i) => {
+      c.className = `chip${i < stage ? ' done' : ''}`;
+      c.setAttribute('aria-current', String(i === stage));
+      c.replaceChildren(i < stage ? icon('done', 14) : '', s === SOUNDS[i] ? `${SOUNDS[i].say} · ${SOUNDS[i].hint}` : SOUNDS[i].say);
+    });
     pad.textContent = s.say;
     dots.forEach((d) => { d.className = ''; });
-    info.textContent = `${s.hint}. Tap start, then say “${s.say}” each time the circle flashes.`;
-    startBtn.textContent = `Start — say “${s.say}” ×${CUES}`;
+    info.textContent = `Say ${s.say} on each flash`;
+    setLabel(startBtn, 'Start');
     startBtn.disabled = false;
   }
 
@@ -66,12 +71,12 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
     const all = [...samples, ...extra];
     if (new Set(all.map((s) => s.y)).size < 2) {
       meterBar.style.width = `${(all.length / (CUES * 3)) * 100}%`;
-      meterLbl.textContent = `${all.length} of ${CUES * 3} sounds`;
+      meterLbl.textContent = `${all.length} / ${CUES * 3}`;
       return;
     }
     const acc = looAccuracy(all);
     meterBar.style.width = `${Math.round(acc * 100)}%`;
-    meterLbl.textContent = `${Math.round(acc * 100)}% — ${all.length} sounds`;
+    meterLbl.textContent = `${Math.round(acc * 100)}%`;
   }
 
   async function runStage(): Promise<void> {
@@ -94,7 +99,7 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
           const now = ctx.currentTime;
           const on = cues.some((c) => now >= c && now < c + 0.18);
           pad.classList.toggle('cue', on);
-          startBtn.textContent = now < cues[0] ? 'Get ready…' : `Say “${s.say}” on the flash`;
+          setLabel(startBtn, now < cues[0] ? 'Get ready…' : `Say ${s.say}`);
           cues.forEach((c, i) => {
             if (done.has(i) || now < c + 0.55) return;
             done.add(i);
@@ -125,7 +130,7 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
       samples = [...samples, ...got];
       stage++;
     } else {
-      toast(`Only heard ${got.length} of ${CUES} — try again a bit louder.`);
+      toast(`Heard ${got.length} of ${CUES}. Try again a bit louder.`);
     }
     updateMeter();
     if (stage < SOUNDS.length) showStage();
@@ -137,16 +142,12 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
     const acc = looAccuracy(samples);
     chips.forEach((c) => { c.className = 'done'; });
     stagePanel.classList.add('hidden');
-    const verdict = acc >= 0.85 ? 'Great — your sounds are easy to tell apart.'
-      : acc >= 0.65 ? 'Good. Making the three sounds more different will help.'
-        : 'Your sounds are quite similar. Try a lower “B” and a sharper “ts”, then redo.';
-    resultPanel.replaceChildren(
-      h('div', { class: 'big-num' }, `${Math.round(acc * 100)}%`),
-      h('p', { class: 'center' }, verdict),
-      h('button', { class: 'primary big wide', onClick: () => void save(profile) }, 'Save & use my sounds'),
-      h('button', { class: 'wide', onClick: () => redo() }, 'Start over'),
-    );
+    const verdict = acc >= 0.85 ? 'Easy to tell apart.'
+      : acc >= 0.65 ? 'Good. More different sounds will help.'
+        : 'Quite similar. Try a lower B and a sharper ts.';
+    resultPanel.replaceChildren(h('div', { class: 'hero num' }, `${Math.round(acc * 100)}%`), h('p', { class: 'body center' }, verdict));
     resultPanel.classList.remove('hidden');
+    startZone.replaceChildren(mainBtn('Save', () => void save(profile), { icon: 'done' }), btn2('Redo', () => redo(), 'again'));
   }
 
   function redo(): void {
@@ -154,25 +155,22 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
     stage = 0;
     resultPanel.classList.add('hidden');
     stagePanel.classList.remove('hidden');
+    startZone.replaceChildren(startBtn);
     showStage();
     updateMeter();
   }
 
   async function save(profile: Profile): Promise<void> {
     await saveProfile(profile);
-    toast('Saved — beatbox takes now use your sounds');
+    toast('Saved');
     showTester(profile);
   }
 
   function showTester(profile: Profile): void {
-    const pads = SOUNDS.map((s) => h('div', { class: s.type }, s.say, h('small', null, s.type)));
-    const status = h('p', { class: 'center small muted' }, 'Make any of your three sounds…');
-    resultPanel.replaceChildren(
-      h('h2', { class: 'center' }, 'Try it'),
-      h('div', { class: 'test-pads' }, pads),
-      status,
-      h('button', { class: 'primary big wide', onClick: () => navigate(back) }, 'Done'),
-    );
+    const pads = SOUNDS.map((s) => h('div', { class: s.type }, h('span', { class: 'h2' }, s.say), h('small', { class: 'label' }, s.hint)));
+    const status = h('p', { class: 'body center muted', 'aria-live': 'polite' }, 'Make any of your three sounds');
+    resultPanel.replaceChildren(h('h2', { class: 'h2' }, 'Try it'), h('div', { class: 'test-pads' }, pads), status);
+    startZone.replaceChildren(mainBtn('Done', () => navigate(back), { icon: 'done' }));
     void startTester(profile, pads, status);
   }
 
@@ -199,7 +197,7 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
               const el = pads[SOUNDS.findIndex((s) => s.type === hit.type)];
               el.classList.add('hit');
               setTimeout(() => el.classList.remove('hit'), 180);
-              status.textContent = `Heard ${hit.type} · ${Math.round(hit.confidence * 100)}% sure`;
+              status.textContent = `Heard ${SOUNDS.find((x) => x.type === hit.type)?.hint.toLowerCase()} · ${Math.round(hit.confidence * 100)}%`;
             }
           })
           .finally(() => { busy = false; });

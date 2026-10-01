@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""Turn the illustration masters (design/illustrations/src/*.jpg|png) into the app's WebP files.
+
+For each master: crop a white frame if the image model drew one, cut the background out (transparent,
+so the art sits on paper or white without a box), trim empty margins, and fit it into its size from the
+design spec (3x the points it is shown at). Also writes src/ui/illustrations.ts with each
+file's size in points, so <img> tags reserve the right space before the file loads.
+
+Usage: python3 scripts/make-illustrations.py   (needs Pillow and numpy)
+"""
+import statistics
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw
+
+ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / 'design/illustrations/src'
+OUT = ROOT / 'public/illustrations'
+TS = ROOT / 'src/ui/illustrations.ts'
+PAPER = (246, 244, 239)
+HARD, SOFT = 30, 48  # colour distance (sum over RGB) from paper: below HARD = background, up to SOFT = blend
+
+# name: (box width, box height) in points, from the spec's image list (D6)
+BOXES = {
+    'ill-01-splash': (320, 256),
+    'ill-03-no-tune': (160, 160),
+    'ill-04-mic-off': (160, 160),
+    'ill-06-split': (240, 192),
+    'ill-07-splitting': (200, 160),
+    'ill-08-no-songs': (200, 160),
+    'ill-09-pro': (240, 180),
+    'ill-10-headphones': (140, 140),
+    'ill-11-live': (200, 160),
+    'ill-12-share': (200, 200),
+    'ill-13-keytar': (160, 160),
+}
+
+
+def crop_frame(im: Image.Image) -> Image.Image:
+    """Some masters come inside a white passe-partout; keep only what is inside it."""
+    w, h = im.size
+    px = im.load()
+    white = lambda p: min(p) > 250
+
+    def edge(coords):
+        for i, line in enumerate(coords):
+            if sum(not white(px[x, y]) for x, y in line) > len(line) * 0.6:
+                return i
+        return 0
+
+    top = edge([[(x, y) for x in range(w // 4, 3 * w // 4)] for y in range(h // 6)])
+    bottom = edge([[(x, h - 1 - y) for x in range(w // 4, 3 * w // 4)] for y in range(h // 6)])
+    left = edge([[(x, y) for y in range(h // 4, 3 * h // 4)] for x in range(w // 6)])
+    right = edge([[(w - 1 - x, y) for y in range(h // 4, 3 * h // 4)] for x in range(w // 6)])
+    if min(top, bottom, left, right) < 8:
+        return im
+    inset = 6
+    return im.crop((left + inset, top + inset, w - right - inset, h - bottom - inset))
+
+
+def border_median(im: Image.Image) -> tuple:
+    w, h = im.size
+    px = im.load()
+    ring = [px[x, y] for x in range(0, w, 5) for y in (2, h - 3)] + [px[x, y] for y in range(0, h, 5) for x in (2, w - 3)]
+    return tuple(statistics.median(p[i] for p in ring) for i in range(3))
+
+
+def cut_out(im: Image.Image) -> Image.Image:
+    """Make the background transparent, so the art sits on paper or white cards without a visible box.
+
+    Each channel is first scaled so the background lands on paper. Only background connected to the image
+    edge is cut, so light fills inside outlines stay. Near-paper pixels become fully transparent; slightly
+    darker ones (outline halos) fade out.
+    """
+    bg = border_median(im)
+    a = np.asarray(im, dtype=np.float32) * (np.array(PAPER, dtype=np.float32) / np.maximum(1, bg))
+    a = np.clip(a, 0, 255)
+    d = np.abs(a - np.array(PAPER, dtype=np.float32)).sum(axis=2)
+    near = Image.fromarray(np.where(d < SOFT, 255, 0).astype(np.uint8)).copy()  # copy: floodfill can't write to an array-backed image
+    w, h = near.size
+    for s in [(x, y) for x in range(0, w, 16) for y in (0, h - 1)] + [(x, y) for y in range(0, h, 16) for x in (0, w - 1)]:
+        if near.getpixel(s) == 255:
+            ImageDraw.floodfill(near, s, 128)
+    region = np.asarray(near) == 128
+    alpha = 1 - np.clip((SOFT - d) / (SOFT - HARD), 0, 1) * region
+    rgba = np.dstack([np.round(a), np.round(alpha * 255)]).astype(np.uint8)
+    return Image.fromarray(rgba, 'RGBA')
+
+
+def trim(im: Image.Image) -> Image.Image:
+    box = im.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox()
+    if not box:
+        return im
+    pad = round(max(im.size) * 0.04)
+    l, t, r, b = box
+    return im.crop((max(0, l - pad), max(0, t - pad), min(im.width, r + pad), min(im.height, b + pad)))
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    sizes = {}
+    for name, (bw, bh) in BOXES.items():
+        src = next((p for p in (SRC / f'{name}.png', SRC / f'{name}.jpg') if p.exists()), None)
+        if not src:
+            print('missing', name)
+            continue
+        im = trim(cut_out(crop_frame(Image.open(src).convert('RGB'))))
+        scale = min(bw / im.width, bh / im.height)
+        pw, ph = round(im.width * scale), round(im.height * scale)  # points
+        im = im.resize((pw * 3, ph * 3), Image.LANCZOS)
+        out = OUT / f'{name}.webp'
+        im.save(out, 'WEBP', quality=82, alpha_quality=90, method=6)
+        sizes[name] = [pw, ph]
+        print(f'{name}: {pw}x{ph} pt, {out.stat().st_size // 1024} KB')
+    TS.write_text(
+        '// Generated by scripts/make-illustrations.py: each illustration\'s size in points (the file is 3x).\n'
+        'export const ILLUSTRATIONS = {\n'
+        + ''.join(f"  '{k}': [{w}, {h}],\n" for k, (w, h) in sizes.items())
+        + '} as const;\n'
+        'export type Illustration = keyof typeof ILLUSTRATIONS;\n'
+    )
+
+
+if __name__ == '__main__':
+    main()

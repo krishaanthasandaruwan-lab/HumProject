@@ -1,11 +1,13 @@
-// "My songs": open, rename, duplicate, delete, and start a new song. Stored in IndexedDB.
-import { newProject, TRACK_META, uid, type Project } from '../model/project';
-import { navigate } from '../router';
+// 16 · My songs: open, rename, duplicate, delete, and start a new song. Stored in IndexedDB.
+import { newProject, uid, type Project } from '../model/project';
+import { navigate, type Params } from '../router';
 import { settings } from '../settings';
 import { edit, flushSave, getProject, setProject } from '../state';
 import { deleteProject, listProjects, loadProject, saveProject, type ProjectMeta } from '../storage';
 import { FREE_SONG_LIMIT, isPro } from '../pro/pro';
 import { ask, confirmSheet, h, sheet, toast } from './dom';
+import { icon, type IconName } from './icons';
+import { art, backBtn, iconBtn, link, mainBtn, titleBlock } from './kit';
 import { openPaywall } from './paywall';
 
 function ago(ts: number): string {
@@ -22,13 +24,13 @@ export async function openProject(p: Project): Promise<void> {
   navigate('studio');
 }
 
-/** Free version keeps FREE_SONG_LIMIT songs; returns false (and shows the paywall) when full. */
+/** Free version keeps FREE_SONG_LIMIT songs; returns false (and shows Pro) when full. */
 export async function roomForAnother(): Promise<boolean> {
   if (isPro()) return true;
   await flushSave();
   const count = (await listProjects().catch(() => [])).length;
   if (count < FREE_SONG_LIMIT) return true;
-  openPaywall(`The free version keeps ${FREE_SONG_LIMIT} songs. Delete one, or go Pro for unlimited songs.`);
+  openPaywall(`The free version keeps ${FREE_SONG_LIMIT} songs. Delete one, or go Pro.`);
   return false;
 }
 
@@ -38,47 +40,65 @@ export async function createSong(): Promise<void> {
   await openProject(newProject(`Song ${new Date().toLocaleDateString()}`, s.lastBpm, s.lastBars));
 }
 
-export function mountProjects(root: HTMLElement): () => void {
-  const list = h('div');
-  root.append(
-    h('header', { class: 'topbar' },
-      h('h1', null, h('span', { class: 'brand' }, 'MouthBand')),
-      h('button', { class: 'icon ghost', 'aria-label': 'Settings', onClick: () => navigate('settings', { back: 'projects' }) }, '⚙︎')),
-    h('button', { class: 'primary big wide', onClick: () => void createSong() }, '＋  New song'),
-    h('h2', { style: 'margin:18px 0 4px' }, 'My songs'),
-    list,
-  );
+function card(ic: IconName, title: string, sub: string, go: () => void): HTMLButtonElement {
+  return h('button', { type: 'button', class: 'card-list', onClick: go },
+    h('span', { class: 'ico', 'aria-hidden': 'true' }, icon(ic, 20)), h('span', null, h('b', null, title), h('small', null, sub)), icon('open', 20));
+}
+
+export function mountProjects(root: HTMLElement, params: Params): () => void {
+  const list = h('div', { class: 'stack songs' });
+  const foot = h('div', { class: 'center' });
+  let alive = true;
+  root.append(h('div', { class: 'screen' },
+    h('header', { class: 'top' },
+      backBtn(() => navigate(params.back === 'hum' ? 'hum' : 'studio')),
+      iconBtn('settings', 'Settings', () => navigate('settings', { back: 'projects' }), { ghost: true })),
+    titleBlock(['My', 'songs'], { deco: 'deco' }),
+    mainBtn('New', () => newSheet(), { icon: 'add' }),
+    list, foot));
   void refresh();
+
+  function newSheet(): void {
+    const go = (fn: () => void): void => { close(); fn(); };
+    const close = sheet(h('div', { class: 'stack' },
+      card('mic', 'Hum a song', 'Hum, get three songs', () => go(() => navigate('hum'))),
+      card('add', 'Start empty', 'Record part by part', () => go(() => void createSong()))),
+    undefined, 'New');
+  }
 
   async function refresh(): Promise<void> {
     await flushSave();
     const items = await listProjects().catch(() => [] as ProjectMeta[]);
+    if (!alive) return;
     list.replaceChildren(...items.map(row));
-    if (!items.length) list.append(h('p', { class: 'muted small' }, 'No songs yet. Tap “New song” and start beatboxing.'));
+    if (!items.length) list.append(h('div', { class: 'songs-empty' }, art('ill-08-no-songs'), h('p', { class: 'body muted' }, 'No songs yet')));
+    foot.replaceChildren(isPro() ? '' : link(`${Math.min(items.length, FREE_SONG_LIMIT)} of ${FREE_SONG_LIMIT} free songs`, () => openPaywall(), true));
   }
 
   function row(m: ProjectMeta): HTMLElement {
     const current = m.id === getProject().id;
-    return h('div', { class: `card song${current ? ' current' : ''}` },
-      h('button', { class: 'song-main', onClick: () => void open(m.id) },
-        h('div', { class: 'song-name' }, m.name),
-        h('div', { class: 'small muted' },
-          `${Math.round(m.bpm)} BPM · ${m.bars} bars · ${m.kinds.map((k) => TRACK_META[k].emoji).join(' ') || 'empty'} · ${ago(m.updatedAt)}`)),
-      h('button', { class: 'icon ghost', 'aria-label': `More for ${m.name}`, onClick: () => menu(m) }, '⋯'));
+    return h('div', { class: 'card-list song', 'aria-current': String(current) },
+      h('span', { class: 'ico', 'aria-hidden': 'true' }, icon('songs', 20)),
+      h('button', { type: 'button', class: 'song-open', onClick: () => void open(m.id) },
+        h('b', null, m.name), h('small', null, `${Math.round(m.bpm)} BPM · ${m.bars} bars · ${ago(m.updatedAt)}`)),
+      iconBtn('more', `More for ${m.name}`, () => menu(m), { ghost: true }));
   }
 
   async function open(id: string): Promise<void> {
     const p = id === getProject().id ? getProject() : await loadProject(id);
     if (p) await openProject(p);
-    else toast('Could not open that song');
+    else toast('Couldn’t open that song');
   }
 
   function menu(m: ProjectMeta): void {
-    const close = sheet(h('div', { class: 'menu' },
-      h('h2', null, m.name),
-      h('button', { onClick: () => { close(); void rename(m); } }, '✏️  Rename'),
-      h('button', { onClick: () => { close(); void duplicate(m); } }, '📄  Duplicate'),
-      h('button', { onClick: () => { close(); void remove(m); } }, '🗑  Delete')));
+    const go = (fn: () => Promise<void>): void => { close(); void fn(); };
+    const item = (ic: IconName, label: string, fn: () => Promise<void>): HTMLButtonElement =>
+      h('button', { type: 'button', class: 'lrow', onClick: () => go(fn) }, h('b', null, label), h('span', { class: 'end' }, icon(ic, 20)));
+    const close = sheet(h('div', { class: 'listbox' },
+      item('rename', 'Rename', () => rename(m)),
+      item('duplicate', 'Duplicate', () => duplicate(m)),
+      item('delete', 'Delete', () => remove(m))),
+    undefined, m.name);
   }
 
   async function rename(m: ProjectMeta): Promise<void> {
@@ -111,15 +131,16 @@ export function mountProjects(root: HTMLElement): () => void {
 
   async function remove(m: ProjectMeta): Promise<void> {
     if (!(await confirmSheet(`Delete “${m.name}”?`, 'Delete', true))) return;
+    const backup = m.id === getProject().id ? structuredClone(getProject()) : await loadProject(m.id);
     await deleteProject(m.id);
     if (m.id === getProject().id) {
       const rest = await listProjects();
       const next = rest[0] ? await loadProject(rest[0].id) : undefined;
       setProject(next ?? newProject('My first song', settings().lastBpm, settings().lastBars));
     }
-    toast('Deleted');
+    toast('Deleted', backup ? { label: 'Undo', run: () => void saveProject(backup).then(refresh) } : undefined);
     await refresh();
   }
 
-  return () => undefined;
+  return () => { alive = false; };
 }

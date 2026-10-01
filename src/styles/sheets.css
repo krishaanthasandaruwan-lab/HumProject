@@ -1,0 +1,20 @@
+/* 15 Share · 16 My songs · 17 Settings · 18 Pro */
+.songs .card-list.song { grid-template-columns: 40px 1fr 44px; padding-right: 4px; }
+.songs .card-list[aria-current="true"] { border-color: var(--ink); }
+.song-open { display: block; text-align: left; min-width: 0; padding: 4px 0; }
+.song-open b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.songs-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; }
+.settings .lrow .range { margin-top: 4px; }
+
+.paywall { display: flex; flex-direction: column; gap: 16px; }
+.paywall .piano-band { margin: 4px calc(-1 * var(--side)) calc(-1 * var(--safe-bottom) - 20px); }
+.perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.perks li { display: flex; align-items: center; gap: 14px; }
+.perks .tile48 { width: 40px; height: 40px; border: var(--border); }
+.confetti { position: fixed; inset: 0; z-index: 80; pointer-events: none; overflow: hidden; }
+.confetti > i { position: absolute; top: 0; background: var(--red); border: 1.5px solid var(--ink); }
+
+.video-wrap { display: flex; justify-content: center; }
+.video-canvas { width: 46%; max-width: 220px; aspect-ratio: 9 / 16; border: var(--border); box-shadow: var(--shadow-hard); background: var(--paper); }
+.video-preview { width: 60%; max-width: 260px; margin: 0 auto; display: block; aspect-ratio: 9 / 16; border: var(--border); background: var(--ink); }
+.share-wm { justify-content: space-between; }
