@@ -126,11 +126,11 @@ export function renderMarimba(sr: number, hz: number): Float32Array<ArrayBuffer>
 }
 
 export const RENDERED: Record<string, RenderedSpec> = {
-  piano: { render: renderPiano, release: 0.18, gain: 0.32, dynamicTone: true, stand_in: 'keys' },
-  pluck: { render: (sr, hz) => renderPluck(sr, hz, 2.2, 0.6), release: 0.12, gain: 0.3, stand_in: 'keys' },
-  fingerbass: { render: (sr, hz) => renderPluck(sr, hz, 2.6, 0.25, 1.4), release: 0.08, gain: 0.55, stand_in: 'bass' },
-  bell: { render: renderBell, release: 0.6, gain: 0.26, ring: true, stand_in: 'keys' },
-  marimba: { render: renderMarimba, release: 0.3, gain: 0.34, ring: true, stand_in: 'keys' },
+  piano: { render: renderPiano, release: 0.18, gain: 0.5, dynamicTone: true, stand_in: 'keys' },
+  pluck: { render: (sr, hz) => renderPluck(sr, hz, 2.2, 0.6), release: 0.12, gain: 0.8, stand_in: 'keys' },
+  fingerbass: { render: (sr, hz) => renderPluck(sr, hz, 2.6, 0.25, 1.4), release: 0.08, gain: 0.9, stand_in: 'bass' },
+  bell: { render: renderBell, release: 0.6, gain: 0.33, ring: true, stand_in: 'keys' },
+  marimba: { render: renderMarimba, release: 0.3, gain: 0.54, ring: true, stand_in: 'keys' },
 };
 
 export const isRendered = (id: string): boolean => id in RENDERED;

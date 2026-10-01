@@ -18,7 +18,7 @@ const strings: Voice = (ctx, out, f, t, dur, vel) => {
   lp.frequency.setValueAtTime(lp.frequency.value * 0.55, t);
   lp.frequency.linearRampToValueAtTime(lp.frequency.value, t + 0.5);
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.065 * vel, 0.2, 0.3, 0.9, 0.45);
+  const end = adsr(g.gain, t, dur, 0.11 * vel, 0.2, 0.3, 0.9, 0.45);
   const oscs = [-11, -4, 4, 11].map((d) => osc(ctx, 'sawtooth', f, d));
   const lfo = vibrato(ctx, oscs.map((o) => o.detune), t, 5.3, 9, 0.3);
   for (const o of oscs) o.connect(lp);
@@ -59,7 +59,7 @@ const brass: Voice = (ctx, out, f, t, dur, vel) => {
   lp.frequency.linearRampToValueAtTime(open, t + 0.06);
   lp.frequency.exponentialRampToValueAtTime(Math.min(open, f * 3.2), t + 0.45);
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.13 * vel, 0.035, 0.2, 0.8, 0.1);
+  const end = adsr(g.gain, t, dur, 0.16 * vel, 0.035, 0.2, 0.8, 0.1);
   for (const o of oscs) o.connect(lp);
   lp.connect(g).connect(out);
   run(oscs, t, end);
@@ -80,7 +80,7 @@ const organ: Voice = (ctx, out, f, t, dur) => {
   });
   const lfo = vibrato(ctx, oscs.map((o) => o.detune), t, 6.4, 6, 0);
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.075, 0.006, 0.05, 1, 0.06);
+  const end = adsr(g.gain, t, dur, 0.105, 0.006, 0.05, 1, 0.06);
   for (const o of oscs) o.connect(g);
   g.connect(out);
   run([...oscs, lfo], t, end);
@@ -111,7 +111,7 @@ const supersaw: Voice = (ctx, out, f, t, dur, vel) => {
   lp.frequency.setValueAtTime(lp.frequency.value, t);
   lp.frequency.exponentialRampToValueAtTime(Math.max(800, lp.frequency.value * 0.5), t + 0.3);
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.045 * vel, 0.008, 0.25, 0.8, 0.18);
+  const end = adsr(g.gain, t, dur, 0.08 * vel, 0.008, 0.25, 0.8, 0.18);
   const oscs = [-23, -14, -7, 0, 7, 14, 23].map((d) => osc(ctx, 'sawtooth', f, d));
   for (const o of oscs) o.connect(lp);
   lp.connect(g).connect(out);
@@ -129,7 +129,7 @@ const chip: Voice = (ctx, out, f, t, dur, vel) => {
   o.frequency.value = f;
   const lfo = vibrato(ctx, [o.detune], t, 6, 18, 0.15);
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.16 * vel, 0.002, 0.05, 0.7, 0.03);
+  const end = adsr(g.gain, t, dur, 0.25 * vel, 0.002, 0.05, 0.7, 0.03);
   o.connect(g).connect(out);
   run([o, lfo], t, end);
 };
@@ -148,7 +148,7 @@ const bass808: Voice = (ctx, out, f, t, dur, vel) => {
   if (!curve) driven.set(ctx, (curve = driveCurve(0.5)));
   sh.curve = curve;
   const trim = ctx.createGain();
-  trim.gain.value = 0.75;
+  trim.gain.value = 0.21; // the drive adds a lot of level
   o.connect(g).connect(sh).connect(trim).connect(out);
   run([o], t, end);
 };
@@ -159,7 +159,7 @@ const sub: Voice = (ctx, out, f, t, dur, vel) => {
   const g2 = ctx.createGain();
   g2.gain.value = 0.22;
   const g = ctx.createGain();
-  const end = adsr(g.gain, t, dur, 0.45 * vel, 0.006, 0.15, 0.85, 0.07);
+  const end = adsr(g.gain, t, dur, 0.38 * vel, 0.006, 0.15, 0.85, 0.07);
   o.connect(g);
   o2.connect(g2).connect(g);
   g.connect(out);

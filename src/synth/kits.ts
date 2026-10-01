@@ -54,13 +54,13 @@ export const KITS: readonly DrumKit[] = [
   {
     id: 'acoustic', name: 'Acoustic', pro: true,
     kick: { startHz: 120, endHz: 55, pitchTime: 0.05, decay: 0.3, click: 0.7, drive: 0.15, gain: 1 },
-    snare: { bandHz: 2500, q: 0.5, decay: 0.24, toneHz: 190, toneDecay: 0.12, noise: 2, tone: 0.8, clap: 0, gain: 0.95 },
+    snare: { bandHz: 2500, q: 0.5, decay: 0.24, toneHz: 190, toneDecay: 0.12, noise: 2, tone: 0.8, clap: 0, gain: 0.6 },
     hat: { hpHz: 6000, decay: 0.06, openDecay: 0.4, gain: 0.42 },
   },
   {
     id: 'retro', name: 'Retro 80s', pro: true,
     kick: { startHz: 140, endHz: 52, pitchTime: 0.09, decay: 0.42, click: 0.4, drive: 0.3, gain: 1 },
-    snare: { bandHz: 1700, q: 0.6, decay: 0.35, toneHz: 175, toneDecay: 0.14, noise: 1.8, tone: 0.7, clap: 0.4, gain: 0.95 },
+    snare: { bandHz: 1700, q: 0.6, decay: 0.35, toneHz: 175, toneDecay: 0.14, noise: 1.8, tone: 0.7, clap: 0.4, gain: 0.7 },
     hat: { hpHz: 7500, decay: 0.05, openDecay: 0.3, gain: 0.36, ring: 0.4 },
   },
 ];
