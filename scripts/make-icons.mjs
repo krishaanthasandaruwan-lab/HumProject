@@ -1,5 +1,6 @@
 // Generates every app icon procedurally (no image assets, no deps):
-// PWA icons in public/, and — if android/ exists — launcher icons, adaptive icon layers and splash screens.
+// PWA icons in public/; if android/ exists, launcher icons, adaptive icon layers and splash screens;
+// if ios/ exists, the App Store icon (opaque RGB) and the launch-screen logo.
 // Usage: node scripts/make-icons.mjs
 import { deflateSync } from 'node:zlib';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -21,12 +22,18 @@ function chunk(type, data) {
   const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
   return Buffer.concat([len, td, crc]);
 }
-function png(w, h, rgba) {
+/** RGBA PNG, or RGB (no alpha channel — the App Store rejects icons that have one) when `rgb`. */
+function png(w, h, rgba, rgb = false) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8; ihdr[9] = 6;
-  const raw = Buffer.alloc(h * (w * 4 + 1));
-  for (let y = 0; y < h; y++) rgba.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4);
+  ihdr[8] = 8; ihdr[9] = rgb ? 2 : 6;
+  const bpp = rgb ? 3 : 4;
+  const raw = Buffer.alloc(h * (w * bpp + 1));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      for (let c = 0; c < bpp; c++) raw[y * (w * bpp + 1) + 1 + x * bpp + c] = rgba[(y * w + x) * 4 + c];
+    }
+  }
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0)),
@@ -83,7 +90,7 @@ function draw(w, h, o) {
       out[k] = r; out[k + 1] = g; out[k + 2] = b; out[k + 3] = Math.round(a * 255);
     }
   }
-  return png(w, h, out);
+  return png(w, h, out, o.opaque);
 }
 function write(file, data) {
   mkdirSync(dirname(file), { recursive: true });
@@ -132,4 +139,19 @@ if (existsSync(RES)) {
     <color name="ic_launcher_background">#7C5CFF</color>
 </resources>
 `);
+}
+
+// iOS (after `npx cap add ios`)
+const XC = 'ios/App/App/Assets.xcassets';
+if (existsSync(XC)) {
+  // iOS rounds the corners itself: a full-bleed, opaque 1024 icon.
+  write(`${XC}/AppIcon.appiconset/AppIcon-512@2x.png`, draw(1024, 1024, { bg: 'gradient', glyph: 0.85, opaque: true }));
+  // Launch screen: the logo tile at exactly the size of the web splash (112 pt), centred on #0e0f13
+  // (LaunchScreen.storyboard), so the hand-over to the web splash does not move it.
+  const images = [1, 2, 3].map((s) => {
+    const name = `splash@${s}x.png`;
+    write(`${XC}/Splash.imageset/${name}`, draw(112 * s, 112 * s, { bg: 'none', tile: { shape: 'rounded', size: 1 }, glyph: 1 }));
+    return { idiom: 'universal', filename: name, scale: `${s}x` };
+  });
+  write(`${XC}/Splash.imageset/Contents.json`, JSON.stringify({ images, info: { version: 1, author: 'xcode' } }, null, 2) + '\n');
 }

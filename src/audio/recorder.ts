@@ -92,8 +92,9 @@ export class MicRecorder {
 
   static async open(): Promise<MicRecorder> {
     const ctx = getCtx();
-    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-      throw new Error('The microphone needs HTTPS. Open the https:// address.');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      // Browsers hide the mic API on insecure pages; the iOS / Android apps always have it.
+      throw new Error(window.isSecureContext ? 'This browser cannot record audio.' : 'The microphone needs HTTPS. Open the https:// address.');
     }
     if (!ctx.audioWorklet) throw new Error('This browser does not support AudioWorklet.');
     const stream = await navigator.mediaDevices.getUserMedia({

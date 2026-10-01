@@ -46,7 +46,7 @@ async function boot(): Promise<void> {
   navigate(settings().startWithMic ? 'hum' : 'studio');
   hideSplash();
   void initBilling();
-  // The Android app ships its files inside the APK; the service worker is for the web PWA only.
+  // The iPhone and Android apps ship their files inside the app; the service worker is for the web PWA only.
   if (import.meta.env.PROD && !Capacitor.isNativePlatform()) registerSW({ immediate: true });
 }
 

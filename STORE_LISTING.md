@@ -1,77 +1,106 @@
 # MouthBand — Store listing
 
-Copy-paste material for Google Play (and later the App Store).
+Copy-paste material for the App Store (iPhone) and Google Play.
 
 ## Name and tagline
 
 | Field | Text | Limit |
 |---|---|---|
-| App name (Play title) | **MouthBand: Beatbox to Music** | 27 / 30 |
-| Subtitle (App Store) | **Your mouth is the whole band** | 28 / 30 |
-| Short description (Play) | **Beatbox the drums, hum the bass, whistle the tune — get a full song in seconds.** | 79 / 80 |
-| Category | Music & Audio | |
+| App Store name | **MouthBand: Hum to Song** | 22 / 30 |
+| App Store subtitle | **Hum it, beatbox it, get a band** | 30 / 30 |
+| Play title | **MouthBand: Hum to Song & Beats** | 30 / 30 |
+| Play short description | **Hum a tune or beatbox a beat — get a full song with drums, bass and chords.** | 75 / 80 |
+| Category | Music (App Store) · Music & Audio (Play) | |
 | Price | Free, with a one-time $0.99 in-app purchase ("MouthBand Pro") | |
-| Content rating | Everyone | |
+| Age rating | 4+ (App Store) · Everyone (Play) | |
 
 ## Keywords (App Store, 100 characters)
 
 ```
-beatbox,beat maker,hum to music,voice to instrument,drum machine,song maker,melody,music maker,loop
+hum to song,beatbox,beat maker,vocal tune,melody maker,music maker,song maker,drum machine,loop
 ```
 
-Play Store has no keyword field. Work these phrases into the full description instead: *beatbox app, beat maker, hum to song, voice to drums, music maker, make a song, TikTok music*.
+"Auto-Tune" is a registered trademark (Antares), so it stays out of the keywords and the listing; the app's own "Auto-tune" switch is just a feature label.
+Play Store has no keyword field. Work these phrases into the full description instead: *hum to song, beatbox app, beat maker, voice to instrument, music maker, make a song, TikTok music*.
 
-## Full description (Play, under 4,000 characters)
+## Promotional text (App Store, 170 characters, can change without review)
 
-Beatbox the drums. Hum the bassline. Whistle the melody. MouthBand turns your voice into a full band: real drums, bass, lead and chords, automatically in key and on the beat.
+New: hum anything and get three full arrangements to pick from — with your own voice in tune and on the beat. No studio, no theory, no uploads.
+
+## Full description (both stores, under 4,000 characters)
+
+Hum a melody. Get a song.
+
+MouthBand listens to you hum, sing or whistle — no metronome, no setup — finds the beat and the key, and plays it back as a full band: drums, bass, chords and your melody on a real instrument. Pick from three styles, keep the one you love, and share it.
 
 No instruments. No music theory. No studio. Just your mouth and 30 seconds.
 
-HOW IT WORKS
-🥁 Beatbox → Drums: say "B", "K" and "ts" and MouthBand hears a kick, a snare and a hi-hat, then snaps them to the beat.
-🎸 Hum → Bass: hum a low line and it becomes a punchy synth bass.
-🎹 Hum or whistle → Melody: your tune comes back as a lead synth, gently auto-tuned into the right key.
-✨ One tap → Chords: MouthBand finds the key of your melody and writes chords that fit.
-🎬 Share: export a "what I recorded → what came out" video made for TikTok, Reels, Shorts and WhatsApp.
+HUM → SONG
+🎤 Open the app and hum. MouthBand finds your tempo and key by itself.
+🎧 Three arrangements to choose from — Lo-fi Chill, Bright Pop, Trap, Dance, Acoustic Band or Cinematic, whichever suit your tune.
+🎙 Add your own voice on top, pulled in tune and onto the beat.
+
+BUILD IT PART BY PART
+🥁 Beatbox → Drums: say "B", "K" and "ts" and MouthBand hears a kick, a snare and a hi-hat, right on the beat.
+🎸 Hum → Bass and 🎹 Hum → Melody, snapped into the right key.
+✨ One tap → Chords that fit your melody.
+✨ Fix: one tap makes every bar of a take agree — a missed hat, a slipped beat, a wobbly note. Always undoable.
+📂 Import a voice memo or a video and MouthBand beat-matches it into your song.
 
 IT LEARNS YOUR MOUTH
-Everyone beatboxes differently. A 20-second calibration teaches MouthBand your own kick, snare and hi-hat sounds, so it recognises them far more accurately.
+Everyone beatboxes differently. A 20-second calibration teaches MouthBand your own kick, snare and hi-hat sounds.
 
-MADE FOR PLAYING AROUND
-• Fix anything: tap a drum hit to change it, drag a note to a new pitch.
-• 4 drum kits: 808, Boom-Bap, Lo-fi and Techno.
-• 4 instruments: bass, lead, keys and pad.
-• Tempo 70–140 BPM, 2, 4 or 8-bar loops, swing, quantize strength, and a mixer with mute and solo.
-• Save your songs and come back to them any time.
+SOUNDS
+• 8 drum kits: 808, Boom-Bap, Lo-fi, Trap, House, Acoustic, Techno and Retro 80s.
+• 18 instruments: piano, E-piano, guitar, bells, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit, pads and four kinds of bass.
+• Tempo, 2/4/8-bar loops, swing, quantize strength, and a mixer with mute and solo.
+
+SHARE
+🎬 Export a "what I recorded → what came out" video made for TikTok, Reels, Shorts and WhatsApp.
 
 PRIVATE BY DESIGN
-Your audio never leaves your device. All listening, analysis and sound-making happens on your phone. There is no account, no ads and no tracking.
+Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. No account, no ads, no tracking.
 
 FREE vs PRO
-Free: unlimited loops, 2 drum kits, 3 saved songs, and videos with a small "Made with MouthBand" watermark.
-Pro, $0.99 once with no subscription: no watermark, all 4 kits, WAV + MIDI export for your DAW, and unlimited saved songs.
+Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 8 instruments, 3 saved songs, and videos with a small "Made with MouthBand" watermark.
+Pro, $0.99 once — no subscription: no watermark, all 8 kits and 18 instruments, WAV + MIDI export, and unlimited saved songs.
 
 Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 
-## Screenshot captions (5)
+## Screenshot captions (6)
 
-1. **Beatbox it. Get real drums.** Show the drum grid right after a beatbox take.
-2. **Hum a tune. It comes back in key.** Show the lead piano roll with the key chip.
-3. **One tap: ✨ chords that fit.** Show the chords card with chord names and the auto bass.
-4. **It learns YOUR sounds.** Show the calibration screen with the confidence meter.
-5. **Share the before → after.** Show the export sheet with the vertical video.
+1. **Hum a tune. Get a song.** The hum screen while listening (the waveform under the big mic).
+2. **Pick your sound.** The three choices with one playing.
+3. **Your voice, in tune and on the beat.** The lead card with "My voice in the song" and the piano roll.
+4. **Beatbox it. Get real drums.** The drum grid after a beatbox take.
+5. **One tap fixes every bar.** The ✨ Fix button glowing, with the "Fixed 4 hits" toast.
+6. **Share the before → after.** The export sheet with the vertical video.
 
-Suggested size: 1080×1920 portrait. Use a dark background and bold white caption text across the top third.
+Sizes: App Store needs 6.9" iPhone shots (1320×2868 or 1290×2796); Play needs at least 1080×1920. Use the dark background and bold white caption text across the top third.
 
-## In-app product and RevenueCat setup
+## In-app purchase and RevenueCat setup
 
-1. In Play Console, go to **Monetize → Products → In-app products**. Create a product with ID **`mouthband_pro`**, named "MouthBand Pro", priced **$0.99**. It is a one-time, non-consumable purchase.
-2. In RevenueCat, create a project and add the Android app (`com.mouthband.app`). Link the Play service credentials.
-3. In RevenueCat, create entitlement **`pro`** and attach `mouthband_pro` to it.
-4. In RevenueCat, create offering **`default`**. Add a **Lifetime** package containing `mouthband_pro`, then mark the offering Current.
-5. Put the public Google SDK key (`goog_…`) in `.env.local` as `VITE_REVENUECAT_ANDROID_KEY`, then rebuild: `npm run android:sync`.
+**App Store (iPhone)**
+1. In App Store Connect, create the app (bundle ID `com.mouthband.app`).
+2. In **Monetization → In-App Purchases**, add a **Non-Consumable** with product ID **`mouthband_pro`**, reference name "MouthBand Pro", price **$0.99**. Add a display name, description and a review screenshot (the paywall).
+3. Sign the Paid Applications agreement (Business section) — purchases do not work without it.
 
-The app reads `customerInfo.entitlements.active.pro`. The "Restore purchase" button is in Settings and on the paywall.
+**Google Play (Android)**
+1. In Play Console, go to **Monetize → Products → In-app products**. Create **`mouthband_pro`**, "MouthBand Pro", **$0.99**, a one-time non-consumable purchase.
+
+**RevenueCat (both)**
+1. Create a project; add the iOS app (`com.mouthband.app`, with an App Store Connect in-app purchase key) and the Android app (`com.mouthband.app`, with the Play service credentials).
+2. Create entitlement **`pro`** and attach both `mouthband_pro` products.
+3. Create offering **`default`** with a **Lifetime** package containing the two products; mark it Current.
+4. Put the public SDK keys in `.env.local` — `VITE_REVENUECAT_IOS_KEY` (`appl_…`) and `VITE_REVENUECAT_ANDROID_KEY` (`goog_…`) — then rebuild: `npm run ios:sync` / `npm run android:sync`.
+
+The app reads `customerInfo.entitlements.active.pro`. "Restore purchase" is in Settings and on the paywall (Apple requires it).
+
+## App Review notes (App Store)
+
+> MouthBand records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for a few seconds, then pick one of the three arrangements. MouthBand Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro or by tapping any 🔒 sound; use a sandbox account.
+
+Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.plist.
 
 ## Privacy policy
 
@@ -79,13 +108,20 @@ The app reads `customerInfo.entitlements.active.pro`. The "Restore purchase" but
 
 **MouthBand does not collect personal data. Audio never leaves your device.**
 
-- **Microphone.** MouthBand uses the microphone only while you record a take or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
+- **Microphone.** MouthBand uses the microphone only while you record, hum or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
+- **Imported files** are read on your device only.
 - **Your songs and settings** are stored locally in the app's own storage on your device. Uninstalling the app deletes them.
 - **No accounts, no ads, no analytics, no tracking.** MouthBand makes no network requests except for purchases.
-- **Purchases.** If you buy MouthBand Pro, the payment is handled by Google Play. MouthBand uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.
+- **Purchases.** If you buy MouthBand Pro, the payment is handled by Apple (App Store) or Google (Play). MouthBand uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.
 - **Sharing.** Videos and audio files are only shared when you choose to share them, using your phone's share sheet.
 - **Children.** MouthBand is suitable for everyone and does not knowingly collect data from anyone.
 - **Contact.** Questions: *your-support-email@example.com* (replace before publishing).
+
+## App Privacy (App Store "nutrition label")
+
+- **Purchases → Purchase History**: collected by RevenueCat for **App Functionality** (unlocking Pro); **not linked** to the user's identity; **not used for tracking**.
+- Everything else: **Data Not Collected** (audio stays on the device).
+- Check RevenueCat's current "Apple App Privacy" guide before submitting, in case its SDK's answers have changed.
 
 ## Data safety form (Play Console)
 

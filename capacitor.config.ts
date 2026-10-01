@@ -5,6 +5,11 @@ const config: CapacitorConfig = {
   appName: 'MouthBand',
   webDir: 'dist',
   backgroundColor: '#0e0f13',
+  ios: {
+    // Safe areas are handled in CSS (viewport-fit=cover + env(safe-area-inset-*)).
+    contentInset: 'never',
+    backgroundColor: '#0e0f13',
+  },
   android: {
     // Lets `chrome://inspect` attach to debug builds only.
     webContentsDebuggingEnabled: false,

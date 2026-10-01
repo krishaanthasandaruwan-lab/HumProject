@@ -13,12 +13,16 @@
     "dev:phone": "vite --host",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
-    "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug"
+    "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:sim": "npm run build && cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination \"generic/platform=iOS Simulator\" -derivedDataPath ../ios-build -clonedSourcePackagesDirPath ../ios-build/spm -packageCachePath ../ios-build/spm-cache -disablePackageRepositoryCache CODE_SIGNING_ALLOWED=NO build"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/ios": "^8.5.2",
     "@capacitor/share": "^8.0.2",
     "@revenuecat/purchases-capacitor": "^13.6.1",
     "idb-keyval": "^6.3.0",

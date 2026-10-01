@@ -1,5 +1,6 @@
-// Share or save a file: Web Share API in browsers (download fallback); in the Android app,
-// write it to the cache and open the native share sheet (WebView has no Web Share or downloads).
+// Share or save a file: Web Share API in browsers (download fallback); in the iPhone and Android
+// apps, write it to the cache and open the native share sheet (whose "Save video" / "Save to
+// Files" options do the saving — the web views have no downloads).
 import { Capacitor } from '@capacitor/core';
 
 export type ShareOutcome = 'shared' | 'downloaded' | 'cancelled';

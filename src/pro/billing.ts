@@ -1,11 +1,19 @@
-// Google Play Billing through RevenueCat's Capacitor plugin — only inside the Android app.
-// The plugin is loaded lazily, so the web build never touches it.
+// In-app purchase (App Store on iPhone, Google Play on Android) through RevenueCat's Capacitor
+// plugin — only inside the apps. The plugin is loaded lazily, so the web build never touches it.
 import { Capacitor } from '@capacitor/core';
 import { setOwned } from './pro';
 
-const API_KEY = import.meta.env.VITE_REVENUECAT_ANDROID_KEY ?? '';
+const PLATFORM = Capacitor.getPlatform();
+const API_KEY = (PLATFORM === 'ios' ? import.meta.env.VITE_REVENUECAT_IOS_KEY : import.meta.env.VITE_REVENUECAT_ANDROID_KEY) ?? '';
 const ENTITLEMENT = import.meta.env.VITE_PRO_ENTITLEMENT || 'pro';
 export const PLAY_URL = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps/details?id=com.mouthband.app';
+const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL || '';
+
+/** Where a web visitor gets the app: the App Store on iPhone / iPad (once listed), else Google Play. */
+export function storeUrl(): string {
+  const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  return apple && APP_STORE_URL ? APP_STORE_URL : PLAY_URL;
+}
 
 type PurchasesModule = typeof import('@revenuecat/purchases-capacitor');
 type Pkg = import('@revenuecat/purchases-capacitor').PurchasesPackage;

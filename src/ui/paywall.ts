@@ -1,5 +1,5 @@
-// Paywall: one-time $0.99 unlock. On the web it points to the Android app.
-import { PLAY_URL, buyPro, canBuy, isNative, proPrice, restorePro } from '../pro/billing';
+// Paywall: one-time $0.99 unlock. On the web it points to the app stores.
+import { buyPro, canBuy, isNative, proPrice, restorePro, storeUrl } from '../pro/billing';
 import { currentScreen, navigate } from '../router';
 import { h, sheet, toast } from './dom';
 
@@ -14,7 +14,7 @@ const PERKS = [
 ];
 
 export function openPaywall(reason?: string): void {
-  const buy = h('button', { class: 'primary big wide' }, canBuy() ? 'Unlock Pro — $0.99' : isNative() ? 'Store not available' : 'Get Pro in the Android app');
+  const buy = h('button', { class: 'primary big wide' }, canBuy() ? 'Unlock Pro — $0.99' : isNative() ? 'Store not available' : 'Get Pro in the app');
   const restore = h('button', { class: 'link' }, 'Restore purchase');
   const content = h('div', { class: 'stack paywall' },
     h('div', { class: 'pw-badge' }, 'MouthBand PRO'),
@@ -22,7 +22,7 @@ export function openPaywall(reason?: string): void {
     reason ? h('p', { class: 'small muted center' }, reason) : null,
     h('ul', { class: 'pw-list' }, PERKS.map(([em, text]) => h('li', null, h('span', null, em), text))),
     buy,
-    canBuy() ? h('div', { class: 'center' }, restore) : h('p', { class: 'tiny muted center' }, 'The web version stays free. Pro is a one-time purchase in the Android app.'),
+    canBuy() ? h('div', { class: 'center' }, restore) : h('p', { class: 'tiny muted center' }, 'The web version stays free. Pro is a one-time purchase in the iPhone and Android apps.'),
   );
   const close = sheet(content);
   if (canBuy()) {
@@ -37,7 +37,7 @@ export function openPaywall(reason?: string): void {
 
   buy.addEventListener('click', async () => {
     if (!canBuy()) {
-      if (!isNative()) window.open(PLAY_URL, '_blank', 'noopener');
+      if (!isNative()) window.open(storeUrl(), '_blank', 'noopener');
       return;
     }
     buy.disabled = true;
