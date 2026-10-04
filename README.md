@@ -152,3 +152,4 @@ ios/       Capacitor iOS project (Swift Package Manager) + HummNative.swift
 android/   Capacitor Android project
 ```
 # HumProject
+# HumProject
