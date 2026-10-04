@@ -14,6 +14,10 @@ export interface Settings {
   likes: string[];
   /** The "what music do you like" question was shown. */
   tasteAsked: boolean;
+  /** The sign-in screen was shown (once, after the music question). */
+  signInAsked: boolean;
+  /** "Don't show again" on the "… is Pro · export needs Pro" notes. */
+  proNoticeOff: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -25,6 +29,8 @@ const DEFAULTS: Settings = {
   lastBars: 4,
   likes: [],
   tasteAsked: false,
+  signInAsked: false,
+  proNoticeOff: false,
 };
 
 let current: Settings = { ...DEFAULTS };

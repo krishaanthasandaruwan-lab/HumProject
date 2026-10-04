@@ -2,11 +2,26 @@
 
 Everything in the code is ready for review. These are the steps only you can do, in order.
 
+## 0. Join the paid Apple Developer Program
+
+The project is signed with a free Personal Team today (`HYKLC6A296`). The App Store, TestFlight,
+in-app purchases and Sign in with Apple all need the paid program. After joining, pick the paid team in
+Xcode › App target › Signing & Capabilities.
+
 ## 1. Decide two things before the first upload (they can't change later)
 
-- **Bundle ID / application ID.** It is `com.krishanthasandaruwan.humm` today (hidden from users). If you want
-  `com.krishanthasandaruwan.humm` or similar, say so before the first upload; after that it is fixed forever.
+- **Bundle ID / application ID.** It is `com.krishanthasandaruwan.humm` (hidden from users). Change it
+  before the first upload if you want something else; after that it is fixed forever.
 - **App name.** "HUMM: Hum to Song" must be free in App Store Connect and Play Console. Check it there first.
+
+## 1b. Sign in with Apple
+
+- In the Apple Developer portal, enable **Sign in with Apple** for the App ID `com.krishanthasandaruwan.humm`.
+- The entitlement is already in `ios/App/App/App.entitlements`, used by the **Release** configuration
+  only (so free-team Debug builds still run). With the paid team you can also set
+  `CODE_SIGN_ENTITLEMENTS = App/App.entitlements` for Debug to test sign-in from Xcode.
+- Nothing is sent to a server: the Apple ID stays in the phone's Keychain, so App Privacy answers don't
+  change. The in-app "Sign out" (Settings › Account) forgets it on the phone.
 
 ## 2. Purchases (RevenueCat)
 
@@ -24,7 +39,8 @@ control (a free GitHub Pages site, Notion, Google Sites) and paste that link in 
 
 ## 4. Build and upload — iPhone and iPad
 
-1. `npm run ios:sync` (store build: no test switches inside).
+1. `npm run ios:sync` (store build: no test switches inside). Or `npm run ios:release`, which checks the
+   keys, archives and uploads in one go.
 2. `npm run ios:open`. In Xcode: the **App** target › Signing & Capabilities › your team (already set).
 3. Version 1.0, build 1 for the first upload; raise the build number for every new upload.
 4. Product › Archive › Distribute App › App Store Connect › Upload.
@@ -37,6 +53,7 @@ App Store Connect form:
 - **Age rating**: 4+. **Category**: Music.
 - **Export compliance**: already answered in the app (no non-exempt encryption).
 - **Review notes**: copy them from `STORE_LISTING.md`.
+- **Before submitting**, replace the placeholder support email in the privacy policy (`STORE_LISTING.md`).
 
 ## 5. Build and upload — Android
 
@@ -51,6 +68,9 @@ App Store Connect form:
   only. It stops working automatically once the RevenueCat keys are in the build (step 2), so the store
   version never accepts it.
 
+- To see the free app's rules: a normal build, no tester code. The first 3 versions of a hum export
+  freely; anything with a lock (More versions, picked Pro sounds, Tracks edits, Fix, voice Effect) makes
+  export ask for Pro and lists why.
 - iPhone: `npm run ios:pro` (builds with Pro on, opens Xcode), then Run. Settings shows a "Test build:
   Pro on" switch to flip between free and Pro. **Never upload this build**: run `npm run ios:sync`
   before archiving.
@@ -58,7 +78,7 @@ App Store Connect form:
 
 ## Security checklist (done in code)
 
-- [x] No network use except the purchase check; no analytics, ads or accounts
+- [x] No network use except the purchase check; no analytics, ads or server accounts (Sign in with Apple stays on the phone)
 - [x] Content-Security-Policy in production builds; no remote scripts, fonts or images
 - [x] No `eval` / `innerHTML`; user text only set as text; export file names cleaned
 - [x] Minified, no source maps; web inspection off in the apps

@@ -1,8 +1,7 @@
-// Free vs Pro. Free download; free: 5 versions of every hum (more can be heard, not kept), videos made and
-// watched but not shared or saved, 2 drum kits, 12 instruments, 3 saved songs, 1-minute hums.
-// Pro ($0.99 once): up to 100 versions, share and save videos (no watermark), audio and MIDI files,
-// every kit and instrument, unlimited songs, 3-minute hums.
-// Pro ($0.99 once): no watermark, all kits and instruments, WAV + MIDI export, unlimited songs.
+// Free vs Pro. Everything can be used for free, and any number of songs kept; locked things (extra
+// versions of a hum, Pro sounds, Tracks, Fix, the voice effect) make a song need Pro to export
+// (pro/exports.ts). Free hums last up to a minute, and free videos carry the "Made with HUMM" mark.
+// Pro ($0.99 once): exports every song (no mark), MIDI files, 3-minute hums.
 import { get, set } from 'idb-keyval';
 import { getInstrument, getKit } from '../synth/kits';
 
@@ -10,10 +9,6 @@ import { getInstrument, getKit } from '../synth/kits';
 export const DEV_PRO = import.meta.env.VITE_DEV_PRO === 'true';
 /** Dev server and test builds get a Pro on/off switch in Settings; store builds never contain it. */
 export const TESTER_BUILD = import.meta.env.DEV || DEV_PRO;
-
-export const FREE_SONG_LIMIT = 3;
-/** Versions of a hum a free user can keep; later ones play as a preview. */
-export const FREE_VERSIONS = 5;
 const DEV_TOGGLE_KEY = 'mb-dev-pro';
 const TESTER_KEY = 'mb-tester-pro';
 

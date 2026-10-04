@@ -1,12 +1,14 @@
 // "What music do you like?": asked once on first launch (and changeable in Settings). The answer
 // shapes which three songs HUMM offers after a hum (model/variety.ts).
 import '../styles/taste.css';
+import { canSignIn } from '../account';
 import { navigate } from '../router';
 import { settings, updateSettings } from '../settings';
 import { h, sheet } from './dom';
 import { icon } from './icons';
 import { link, mainBtn, titleBlock } from './kit';
 import { styleIcon } from './parts';
+import { afterTaste } from './signin';
 
 export const TASTES: { id: string; label: string }[] = [
   { id: 'pop', label: 'Pop' }, { id: 'trap', label: 'Hip-hop' }, { id: 'rnb', label: 'R&B' }, { id: 'chill', label: 'Chill' },
@@ -55,7 +57,7 @@ export function mountWelcome(root: HTMLElement): () => void {
   const grid = tasteGrid();
   const done = (likes: string[]): void => {
     updateSettings({ likes, tasteAsked: true });
-    navigate('hum');
+    navigate(afterTaste(canSignIn(), settings().signInAsked));
   };
   root.append(h('div', { class: 'screen welcome' },
     h('header', { class: 'top' }, h('span'), link('Skip', () => done([]))),

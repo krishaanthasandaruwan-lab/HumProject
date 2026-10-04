@@ -1,22 +1,20 @@
 // 05 · Part editor: change the beats or notes of one part (route param `id`: a track id, or 'voice').
 // Drums get the grid, hummed parts the piano roll, chords their bar blocks, and "My voice" its
-// controls (voicePanel.ts).
+// controls (partEditor.ts).
 import '../styles/part.css';
-import { auditionDrum, auditionNote, player, toggleVoice } from '../app';
-import { totalSteps, trackById, TRACK_META, type Track } from '../model/project';
+import { player, toggleVoice } from '../app';
+import { trackById, type Track } from '../model/project';
 import { navigate, type Params } from '../router';
 import { edit, getProject } from '../state';
 import { fill, h, sheet, toast } from './dom';
-import { canFix, runFix } from './fix';
-import { drumGrid } from './grid';
+import { canFix, fixChip } from './fix';
 import { icon } from './icons';
 import { backBtn, btn2, chip, iconBtn } from './kit';
 import { makeChords } from './chords';
+import { partEditor } from './partEditor';
 import { PARTS, partLabel } from './parts';
-import { pianoRoll } from './pianoroll';
 import { openSounds, soundName } from './soundsSheet';
 import { playSquare } from './transport';
-import { voicePanel } from './voicePanel';
 
 export function mountPart(root: HTMLElement, params: Params): () => void {
   const id = params.id ?? 'voice';
@@ -30,8 +28,8 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
   const title = t0 ? partLabel(p(), t0) : PARTS.voice.label;
   const play = playSquare();
   const head = h('div', { class: 'part-chips chips' });
-  const editor = h('div', { class: 'part-editor' });
-  let setPlayhead: (step: number) => void = () => undefined;
+  const editor = partEditor(id);
+  const build = (): void => editor.rebuild();
   let raf = 0;
 
   root.append(h('div', { class: 'screen part' },
@@ -39,49 +37,16 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
       backBtn(() => navigate(params.back === 'tracks' ? 'tracks' : 'studio', { focus: id }), params.back === 'tracks' ? 'Tracks' : 'Studio'),
       id === 'voice' ? null : iconBtn('more', 'More', () => more(), { ghost: true })),
     h('div', { class: 'titleblock' }, h('h1', { class: 'h2' }, title), head),
-    editor,
+    editor.el,
     h('div', { class: 'part-actions' }, ...actions(), play.el)));
   renderHead();
-  build();
 
   function renderHead(): void {
     const t = track();
     if (!t) return head.replaceChildren();
     fill(head,
       chip([soundName(t), icon('down', 14)], () => openSounds(id, renderHead)),
-      canFix(id) ? chip('Fix', () => runFix(id, () => { build(); renderHead(); }), { icon: 'fix', attn: true }) : null);
-  }
-
-  function build(): void {
-    if (id === 'voice') {
-      editor.replaceChildren(voicePanel());
-      return;
-    }
-    const kind = t0!.kind;
-    if (kind === 'drums') {
-      const grid = drumGrid({
-        hits: () => track()?.hits ?? [],
-        bars: () => p().bars,
-        edit: (fn) => edit(() => fn((track()!.hits ??= []))),
-        audition: (type, v) => auditionDrum(type, track()?.preset ?? '808', v),
-      });
-      setPlayhead = (s) => grid.setPlayhead(s);
-      editor.replaceChildren(grid.el, h('p', { class: 'small muted' }, 'Tap to add · tap again to change · hold to delete'));
-      return;
-    }
-    const roll = pianoRoll({
-      notes: () => track()?.notes ?? [],
-      steps: () => totalSteps(p()),
-      keyOf: () => p().key,
-      edit: (fn) => edit(() => fn(track()?.notes ?? [])),
-      audition: (m) => auditionNote(track()?.preset ?? TRACK_META[kind].preset, m),
-    });
-    setPlayhead = (s) => roll.setPlayhead(s);
-    const labels = track()?.labels ?? [];
-    fill(editor,
-      labels.length ? h('div', { class: 'chordblocks', 'aria-label': 'Chords' }, labels.map((l) => h('span', { class: 'h3' }, l))) : null,
-      roll.el,
-      h('p', { class: 'small muted' }, 'Drag a note up or down · tap to pick it'));
+      canFix(id) ? fixChip(id, () => { build(); renderHead(); }) : null);
   }
 
   function actions(): HTMLElement[] {
@@ -134,7 +99,7 @@ export function mountPart(root: HTMLElement, params: Params): () => void {
 
   const frame = (): void => {
     play.sync();
-    setPlayhead(player.currentStep());
+    editor.setPlayhead(player.currentStep());
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);

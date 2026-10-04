@@ -7,7 +7,7 @@ import { edit, getProject } from '../state';
 import { h, toast } from './dom';
 import { swipeToDelete } from './swipe';
 import { makeChords } from './chords';
-import { canFix, runFix } from './fix';
+import { canFix, fixChip } from './fix';
 import { icon, type IconName } from './icons';
 import { chip } from './kit';
 import { PARTS, partLabel } from './parts';
@@ -82,7 +82,7 @@ export function partList(onChange: () => void): { el: HTMLElement; refresh: () =
       solo: !!t.solo,
       soloable: t,
       sub: chip([soundName(t), icon('down', 14)], () => openSounds(t.id, changed)),
-      fix: canFix(t.id) ? chip('Fix', () => runFix(t.id, changed), { icon: 'fix', attn: true }) : null,
+      fix: canFix(t.id) ? fixChip(t.id, changed) : null,
       mute: () => {
         edit(() => { t.muted = !t.muted; });
         changed();

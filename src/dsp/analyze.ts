@@ -4,7 +4,7 @@ import { classify, type Profile } from './drumClassifier';
 import { extractFeatures } from './features';
 import { detectOnsets } from './onsets';
 import { notesToGrid, retune, segmentNotes, transposeToRange } from './notes';
-import { fixOctaves, medianSmooth, trackPitch } from './pitch';
+import { fixOctaves, HUM_CLARITY, medianSmooth, trackPitch } from './pitch';
 import { hitsToGrid } from './quantize';
 
 export interface BeatboxInput {
@@ -82,7 +82,7 @@ export interface MelodyResult {
 
 export function analyzeMelody(i: MelodyInput): MelodyResult {
   const hop = 256;
-  const raw = trackPitch(i.audio, i.sampleRate, { hop, maxHz: i.mode === 'bass' ? 900 : 2600 });
+  const raw = trackPitch(i.audio, i.sampleRate, { hop, maxHz: i.mode === 'bass' ? 900 : 2600, minClarity: HUM_CLARITY });
   const frames = fixOctaves(medianSmooth(raw));
   const segs = retune(segmentNotes(frames, hop / i.sampleRate)).map((n) => ({ ...n, start: n.start - i.preroll, end: n.end - i.preroll }));
   let notes = notesToGrid(segs, i.bpm, i.bars * 16, i.swing);

@@ -101,7 +101,7 @@ export class Player {
       live.add(t.id);
       const g = trackGain(p, t);
       let bus = this.buses.get(t.id);
-      if (bus && bus.preset !== t.preset) {
+      if (bus && (bus.preset !== t.preset || bus.fx !== !!t.voice?.fx)) {
         const old = bus;
         old.out.gain.setTargetAtTime(0, now, 0.02);
         setTimeout(() => old.dispose(), 400);
@@ -114,6 +114,8 @@ export class Player {
         bus.out.gain.setTargetAtTime(g, now, 0.02);
         bus.gain = g;
       }
+      const level = t.voice?.level ?? 0.8;
+      if (Math.abs(bus.voice.gain.value - level) > 1e-3) bus.voice.gain.setTargetAtTime(level, now, 0.02);
     }
     for (const [id, bus] of this.buses) {
       if (!live.has(id)) {

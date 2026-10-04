@@ -7,12 +7,11 @@ import { art, iconBtn, link, mainBtn, setLabel } from './kit';
 import { INSTRUMENTS, KITS } from '../synth/kits';
 
 const PERKS: [IconName, string][] = [
-  ['share', 'Share and save your videos'],
-  ['sparkles', 'Up to 100 versions of every hum'],
-  ['drums', `All ${KITS.length} drum kits`],
-  ['chords', `All ${INSTRUMENTS.length} instruments`],
-  ['audio', 'Audio and MIDI files'],
-  ['songs', 'Unlimited songs'],
+  ['share', 'Export every song in high quality'],
+  ['sparkles', 'Every version of every hum'],
+  ['fix', 'Fix and Tracks in the songs you export'],
+  ['drums', `All ${KITS.length} drum kits and ${INSTRUMENTS.length} instruments`],
+  ['midi', 'MIDI files, no watermark'],
 ];
 
 /** Red confetti squares fall once (skipped with Reduce Motion). */

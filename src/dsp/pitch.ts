@@ -21,6 +21,11 @@ export interface PitchOptions {
 
 export const hzToMidi = (hz: number): number => 69 + 12 * Math.log2(hz / 440);
 
+/** Clarity a frame needs to count as sung when turning a hum into notes. Real voices are breathier than
+ * clean tones: on 40 real singers (vocadito) 0.75 hears 13% more of the notes than 0.9, with no more
+ * wrong ones, and the hum benchmark is unchanged. */
+export const HUM_CLARITY = 0.75;
+
 export function trackPitch(signal: Float32Array, sr: number, o: PitchOptions = {}): PitchFrame[] {
   const size = o.frameSize ?? 2048;
   const hop = o.hop ?? 256;

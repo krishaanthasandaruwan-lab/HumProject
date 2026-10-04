@@ -3,8 +3,10 @@
 .hum-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; min-height: 340px; }
 .hum-timer { font-size: 1.375rem; min-height: 28px; visibility: hidden; }
 .hum-status { min-height: 44px; max-width: 30ch; color: var(--graphite); }
-.hum-status.hint-in { animation: hintIn 3.4s var(--ease) both; }
-@keyframes hintIn { 0% { opacity: 0; transform: translateY(6px); } 12%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.hum-status.hint-in { animation: hintIn var(--hint-ms, 3.4s) var(--ease) both; }
+@keyframes hintIn { 0% { opacity: 0; transform: translateY(6px); } 4%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.hum-status.nudge { animation: nudge .36s var(--ease); }
+@keyframes nudge { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 .hum-wave { width: 100%; max-width: 360px; height: 56px; visibility: hidden; }
 .hum-think, .hum-problem { display: none; flex-direction: column; align-items: center; gap: 14px; }
 .hum-think .spinner { margin-top: -6px; }
@@ -50,4 +52,10 @@
 .partsq > i.voice { border-color: var(--red); }
 .partsq > i.voice.on { background: var(--red); border-color: var(--ink); }
 .choices .chips { align-items: center; }
+/* Your voice and the instruments, balanced above the two buttons: icon, name, slider, (Effect). */
+.choice-mix { display: flex; flex-direction: column; gap: 4px; padding: 6px 12px; background: var(--white); border: var(--border-soft); border-radius: var(--r-card); }
+.mixline { display: grid; grid-template-columns: 22px 92px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; }
+.mixline .ico { display: grid; place-items: center; color: var(--ink); }
+.mixline .range { height: 32px; }
+.mixline .chip { height: 30px; padding: 0 10px; }
 .choices-status { min-height: 20px; display: flex; align-items: center; gap: 8px; }

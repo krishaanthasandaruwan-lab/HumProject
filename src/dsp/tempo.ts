@@ -35,6 +35,7 @@ export function eventEnvelope(events: TimedEvent[], duration: number, fps = ENV_
 }
 
 const fold = (bpm: number, lo: number, hi: number): number => {
+  if (!(bpm > 0) || !Number.isFinite(bpm)) return Math.sqrt(lo * hi); // never loop on a tempo that can't be folded
   let b = bpm;
   while (b < lo) b *= 2;
   while (b > hi) b /= 2;
@@ -78,12 +79,13 @@ export function estimateTempo(env: Float32Array, fps = ENV_FPS, lo = MIN_BPM, hi
       best = lag;
     }
   }
-  // Parabolic interpolation around the peak for a fractional lag.
+  // Parabolic interpolation around the peak for a fractional lag. It stays within half a lag of the
+  // peak: where the curve is nearly flat the formula can run off to hundreds of lags (even below zero).
   const a = r[best - 1];
   const b = r[best];
   const c = r[best + 1];
   const den = a - 2 * b + c;
-  const lag = den < 0 ? best + (0.5 * (a - c)) / den : best;
+  const lag = den < 0 ? best + Math.max(-0.5, Math.min(0.5, (0.5 * (a - c)) / den)) : best;
   return { bpm: fold((60 * fps) / lag, lo, hi), confidence: Math.max(0, Math.min(1, b / zero)) };
 }
 

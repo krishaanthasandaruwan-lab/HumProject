@@ -3,7 +3,11 @@
 // and every fix can be undone.
 import { fixDrums, fixNotes, type FixReport } from '../model/autofix';
 import { stepDur, trackById, type DrumHit, type Note, type Track } from '../model/project';
+import { markTool, unmarkTool } from '../pro/exports';
+import { isPro } from '../pro/pro';
+import { settings, updateSettings } from '../settings';
 import { edit, getProject } from '../state';
+import { chip } from './kit';
 import { toast } from './dom';
 
 interface Plan {
@@ -25,6 +29,11 @@ function plan(id: string): Plan | null {
   return { report: r.report, apply: (tr) => { tr.notes = r.notes; } };
 }
 
+/** The red Fix chip for a part (with the Pro lock when it would make the song need Pro to export). */
+export function fixChip(id: string, refresh: () => void): HTMLElement {
+  return chip('Fix', () => runFix(id, refresh), { icon: 'fix', attn: true, lock: !isPro() });
+}
+
 /** True when Fix would change something in this part. */
 export function canFix(id: string): boolean {
   return !!plan(id)?.report.changes;
@@ -42,21 +51,31 @@ export function runFix(id: string, refresh: () => void): void {
   }
   const hits: DrumHit[] | undefined = t.hits?.map((x) => ({ ...x }));
   const notes: Note[] | undefined = t.notes?.map((x) => ({ ...x }));
-  edit(() => pl.apply(t));
+  // Fix is a Pro tool: free to use, but the song then needs Pro to export (pro/exports.ts).
+  let marked = false;
+  edit((pp) => {
+    pl.apply(t);
+    marked = !isPro() && markTool(pp, 'fix');
+  });
   navigator.vibrate?.(10);
   refresh();
   const { filled, shiftSteps, changes } = pl.report;
   const ms = Math.round(Math.abs(shiftSteps) * stepDur(p.bpm) * 1000);
   const what = filled ? `Filled ${filled} empty ${filled === 1 ? 'bar' : 'bars'}` : `Fixed ${changes} ${t.kind === 'drums' ? 'hits' : 'notes'}`;
   const timing = ms ? ` · ${ms} ms ${shiftSteps > 0 ? 'late' : 'early'}` : '';
-  toast(`${what}${timing}`, {
+  const undo = {
     label: 'Undo',
     run: () => {
-      edit(() => {
+      edit((pp) => {
         if (hits) t.hits = hits;
         if (notes) t.notes = notes;
+        if (marked) unmarkTool(pp, 'fix');
       });
       refresh();
     },
-  });
+  };
+  // The Pro note (and its "Don't show again") rides on Fix's own message, until it is switched off.
+  const note = marked && !settings().proNoticeOff;
+  toast(`${what}${timing}${note ? ' · export needs Pro' : ''}`,
+    note ? [undo, { label: 'Don’t show again', run: () => updateSettings({ proNoticeOff: true }) }] : undo);
 }

@@ -1,5 +1,9 @@
 # MouthBand — Your mouth is the whole band
 
+> **Historical.** This is the original spec the project started from (1 October 2026). The app is now
+> called HUMM and has moved well beyond it — pricing, screens and features differ. For the current state
+> and the full story, read [docs/HISTORY.md](docs/HISTORY.md) and [README.md](README.md).
+
 > **Beatbox the drums. Hum the bassline. Whistle the melody.**
 > MouthBand turns your voice into real drums, bass, lead and chords, automatically in key and on the beat.
 > Then it exports a **"what I recorded → what came out"** video, made for TikTok and Reels.

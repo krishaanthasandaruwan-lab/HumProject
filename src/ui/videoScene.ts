@@ -49,9 +49,10 @@ export interface SceneData {
   watermark: boolean;
 }
 
-export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: number): void } {
-  canvas.width = VIDEO_W;
-  canvas.height = VIDEO_H;
+/** `scale`: 1 draws 720 × 1280, 1.5 draws the same frame at 1080 × 1920. */
+export function createScene(canvas: HTMLCanvasElement, d: SceneData, scale = 1): { draw(t: number): void } {
+  canvas.width = Math.round(VIDEO_W * scale);
+  canvas.height = Math.round(VIDEO_H * scale);
   const g = canvas.getContext('2d') as CanvasRenderingContext2D;
   const p = d.project;
   const sd = stepDur(p.bpm);
@@ -190,6 +191,7 @@ export function createScene(canvas: HTMLCanvasElement, d: SceneData): { draw(t: 
   }
 
   function draw(t: number): void {
+    g.setTransform(scale, 0, 0, scale, 0, 0);
     g.fillStyle = PAPER;
     g.fillRect(0, 0, VIDEO_W, VIDEO_H);
     // grille + drum-pad squares in the corners

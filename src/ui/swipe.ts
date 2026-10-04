@@ -23,6 +23,11 @@ export function swipeToDelete(row: HTMLElement, onDelete: () => void, label: str
   };
   row.style.touchAction = 'pan-y';
   row.addEventListener('pointerdown', (e) => {
+    // A slider in the row (volume) slides; it never swipes the row away.
+    if ((e.target as HTMLElement).closest('input')) {
+      mode = 'idle';
+      return;
+    }
     x0 = e.clientX;
     y0 = e.clientY;
     dx = 0;

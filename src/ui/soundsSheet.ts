@@ -1,4 +1,5 @@
-// 06 · Sounds: swap a part's instrument, or the drum kit. Locked sounds still play a taste, then open Pro.
+// 06 · Sounds: swap a part's instrument, or the drum kit. Locked (Pro) sounds can be used too; a song with
+// one the person picked needs Pro to export.
 import { auditionDrum, auditionNote } from '../app';
 import { prepareProject } from '../audio/prepare';
 import { trackById, TRACK_META, type Track } from '../model/project';
@@ -6,9 +7,9 @@ import { instrumentLocked, kitLocked } from '../pro/pro';
 import { edit, getProject } from '../state';
 import { getInstrument, getKit, instrumentsFor, KITS } from '../synth/kits';
 import { h, sheet } from './dom';
+import { proNotice } from './proNotice';
 import { icon } from './icons';
 import { mainBtn } from './kit';
-import { openPaywall } from './paywall';
 import { partLabel } from './parts';
 
 /** The name of the sound a part plays now (for the sound chip). */
@@ -38,19 +39,29 @@ export function openSounds(id: string, onChange?: () => void): void {
       it.locked ? h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 12)) : null));
   const sync = (): void => tiles.forEach((t, i) => t.setAttribute('aria-pressed', String(items[i].id === current())));
 
+  /** Any sound can be used; a locked (Pro) one makes the song need Pro to export (pro/exports.ts). */
   function pick(id: string, locked: boolean, name: string): void {
     taste(id);
-    if (locked) {
-      openPaywall(drums ? `The ${name} kit is part of Pro.` : `${name} is part of Pro.`);
-      return;
-    }
+    const t = track();
+    if (!t || t.preset === id) return;
+    const before = { preset: t.preset, picked: t.picked };
     edit(() => {
-      const t = track();
-      if (t) t.preset = id;
+      t.preset = id;
+      t.picked = true;
     });
     sync();
     onChange?.();
     if (!drums) void prepareProject(getProject()).catch(() => undefined);
+    if (locked) {
+      proNotice(`${name} is Pro · export needs Pro`, () => {
+        edit(() => {
+          t.preset = before.preset;
+          t.picked = before.picked;
+        });
+        sync();
+        onChange?.();
+      });
+    }
   }
 
   const close = sheet(h('div', { class: 'stack' },

@@ -1,0 +1,52 @@
+/* The Tracks screen (landscape): the parts rail on the left, the picked part's editor filling the rest.
+   Rail tiles use the app's card language — white, 2px ink border — and the picked one gets the hard
+   shadow and red strip of the playing song on Pick your sound. A part's icon goes ink on its notes. */
+.tracks { gap: 10px; }
+.tracks .top { gap: 12px; min-height: 48px; }
+.tracks-title { flex: 1; min-width: 0; }
+.tracks-title .h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracks-chips { flex: none; flex-wrap: nowrap; }
+.tracks .playsq { width: 48px; height: 48px; margin: 0; box-shadow: 3px 3px 0 var(--ink); }
+.tracks-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 18px; }
+
+/* The rail never scrolls: tiles share its height (between 38 and 58 px each). */
+.rail { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 8px 2px; }
+.rail-part { position: relative; flex: 1 1 0; min-height: 38px; max-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center;
+  background: var(--white); border: var(--border); transition: box-shadow var(--t-ui) var(--ease), padding var(--t-ui) var(--ease); }
+.rail-part.rail-all { grid-template-columns: minmax(0, 1fr); border-style: solid; background: var(--paper); }
+.rail-part.rail-all.sel { background: var(--white); }
+.rail.dense .rail-txt small { display: none; }
+.rail.dense .ico { width: 30px; height: 30px; }
+.rail-part.sel { box-shadow: var(--shadow-hard); padding-left: 10px; }
+.rail-part.sel::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--red); border-right: var(--border); }
+.rail-pick, .rail-suggest { display: flex; align-items: center; gap: 10px; height: 100%; min-height: 0; padding: 4px 2px 4px 10px; text-align: left; color: var(--ink); -webkit-touch-callout: none; }
+.rail-suggest { flex: 1 1 0; min-height: 38px; max-height: 58px; }
+.rail .ico { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: var(--border); background: var(--white);
+  transition: background 60ms linear, color 60ms linear; }
+.rail-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rail-txt b { font: 600 .9375rem/1.15 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-txt small { font: 400 .75rem/1.2 var(--font-body); color: var(--graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-mute { width: 40px; height: 40px; }
+.rail-mute[aria-pressed="true"] { background: transparent; color: var(--graphite); }
+.rail-part.muted .rail-txt b { color: var(--graphite); }
+.rail-part.muted .ico { background: var(--mist); border-color: var(--stone); color: var(--graphite); }
+.rail-part.solo .ico { background: var(--red); }
+.rail-part.hit .ico { background: var(--ink); color: var(--white); }
+.rail-suggest { width: 100%; border: 2px dashed var(--stone); }
+.rail-suggest .ico { border-style: dashed; }
+
+.tracks-stage { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 2px 2px 12px; }
+.tracks-stage .part-editor { gap: 10px; }
+
+/* On a phone held upright (and only where the app can't turn the screen itself) the whole page is
+   turned a quarter, so it always reads as landscape. */
+.screen.tracks.turned {
+  position: fixed; top: 0; left: 0; z-index: 30; margin: 0; background: var(--paper);
+  width: 100vh; height: 100vw; width: 100dvh; height: 100dvw;
+  transform-origin: top left; transform: translateX(100vw) rotate(90deg); transform: translateX(100dvw) rotate(90deg);
+  padding: calc(var(--safe-right) + 8px) calc(var(--safe-bottom) + 12px) calc(var(--safe-left) + 8px) calc(var(--safe-top) + 12px);
+}
+body.ui-turned .sheet-wrap { inset: auto; top: 0; left: 0; width: 100vh; height: 100vw; width: 100dvh; height: 100dvw;
+  transform-origin: top left; transform: translateX(100vw) rotate(90deg); transform: translateX(100dvw) rotate(90deg); }
+body.ui-turned .sheet { max-height: 92vw; max-height: 92dvw; }
+body.ui-turned .toast { top: 50%; bottom: auto; left: calc(var(--safe-left) + 44px); width: min(520px, 90vh); transform: translate(-50%, -50%) rotate(90deg); animation: none; }

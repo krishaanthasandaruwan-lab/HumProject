@@ -31,8 +31,9 @@ import { mountHum } from './ui/hum';
 import { mountChoices } from './ui/choices';
 import { mountPart } from './ui/part';
 import { mountTracks } from './ui/tracks';
-import { hideSplash } from './ui/splash';
 import { mountWelcome } from './ui/taste';
+import { afterTaste, mountSignIn } from './ui/signin';
+import { canSignIn, loadAccount } from './account';
 import { loadPro } from './pro/pro';
 import { initBilling } from './pro/billing';
 import { loadSettings, settings } from './settings';
@@ -50,8 +51,9 @@ registerScreen('choices', mountChoices);
 registerScreen('part', mountPart);
 registerScreen('tracks', mountTracks);
 registerScreen('welcome', mountWelcome);
+registerScreen('signin', mountSignIn);
 
-/** Storage that never answers (a stuck IndexedDB) must not keep the app on its splash forever. */
+/** Storage that never answers (a stuck IndexedDB) must not keep the app on a blank screen forever. */
 const atMost = <T,>(ms: number, job: Promise<T>): Promise<T | void> =>
   Promise.race([job, new Promise<void>((resolve) => setTimeout(resolve, ms))]);
 
@@ -59,9 +61,10 @@ async function boot(): Promise<void> {
   installUnlock();
   setAudioSession('playback'); // iOS: play through the speaker even when the ring switch is on silent
   await atMost(4000, loadSettings());
-  await atMost(4000, Promise.all([openInitialProject(), loadProfile(), loadPro()]));
-  navigate(settings().tasteAsked ? 'hum' : 'welcome'); // the mic is home; first launch asks one question
-  hideSplash();
+  await atMost(4000, Promise.all([openInitialProject(), loadProfile(), loadPro(), loadAccount()]));
+  // The mic is home. First launch asks what music they like, then offers sign-in once.
+  const s = settings();
+  navigate(s.tasteAsked ? afterTaste(canSignIn(), s.signInAsked) : 'welcome');
   void initBilling();
   // The iPhone and Android apps ship their files inside the app; the service worker is for the web PWA only.
   if (import.meta.env.PROD && !Capacitor.isNativePlatform()) registerSW({ immediate: true });

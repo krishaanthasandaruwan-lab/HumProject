@@ -1,5 +1,6 @@
 // 17 · Settings: the few things people may want to change. Nobody needs it to start; the rarely
 // needed recording options sit closed under Advanced.
+import { account, canSignIn, signIn, signOut } from '../account';
 import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { edit } from '../state';
@@ -60,12 +61,35 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
   }
   renderPro();
 
+  // Sign in with Apple (or out). The Apple ID only ever stays on this phone.
+  const acct = h('div');
+  const renderAccount = (): void => {
+    const a = account();
+    if (!a && !canSignIn()) return acct.replaceChildren();
+    acct.replaceChildren(group('Account',
+      a
+        ? listRow('Signed in with Apple', icon('done', 20), { sub: a.name || a.email || 'Your Apple ID, on this phone' })
+        : listRow('Sign in with Apple', icon('open', 20), { sub: 'So HUMM knows it’s you', onClick: async () => {
+          const r = await signIn();
+          if (r === 'ok') toast('Signed in');
+          else if (r === 'failed') toast('Couldn’t sign in with Apple');
+          renderAccount();
+        } }),
+      a ? listRow('Sign out', icon('close', 20), { sub: 'Forgets your Apple ID on this phone. Your songs stay.', onClick: async () => {
+        await signOut();
+        toast('Signed out');
+        renderAccount();
+      } }) : null));
+  };
+  renderAccount();
+
   root.append(h('div', { class: 'screen settings' },
     h('header', { class: 'top' }, backBtn(() => navigate(back))),
     titleBlock(['Settings']),
     group('Music',
       listRow('Music I like', icon('open', 20), { sub: tasteSummary(), onClick: () => openTaste(() => navigate('settings', params)) }),
       switchRow('snapToScale', 'Snap to key', 'Keeps hummed notes in the key.', (on) => edit((pp) => refreshKey(pp, on)))),
+    acct,
     pro,
     group('HUMM',
       listRow('Rate HUMM', icon('open', 20), { sub: 'Tell others what you think', onClick: () => void rateApp() }),

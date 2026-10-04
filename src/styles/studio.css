@@ -40,7 +40,9 @@
 .actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
   max-width: 560px; margin: 0 auto; padding: 4px 8px calc(var(--safe-bottom) + 4px); background: var(--white); border-top: var(--border); }
 .actionbar .slot { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 46px; justify-content: flex-end; color: var(--ink); }
-.actionbar .slot > svg { width: 22px; height: 22px; }
+.actionbar .slot > svg, .actionbar .slot-ico > svg { width: 22px; height: 22px; }
+.slot-ico { position: relative; display: grid; place-items: center; }
+.slot-ico .lockb { position: absolute; top: -6px; right: -12px; width: 16px; height: 16px; }
 .actionbar .caption { font-size: .625rem; }
 .actionbar .playsq { width: 56px; height: 56px; margin-top: -24px; }
 .playsq { width: 64px; height: 64px; margin-top: -30px; display: grid; place-items: center; flex: none;

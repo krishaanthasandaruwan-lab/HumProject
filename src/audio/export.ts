@@ -60,6 +60,8 @@ export interface RecordVideoOptions {
   audio: AudioBuffer;
   onProgress?: (fraction: number) => void;
   signal?: AbortSignal;
+  /** Video quality (bits per second); 3.5 Mbps by default. */
+  videoBitsPerSecond?: number;
 }
 
 /** Plays the soundtrack (audible + into the recorder) while drawing frames; returns the video. */
@@ -75,7 +77,7 @@ export async function recordVideo(o: RecordVideoOptions): Promise<{ blob: Blob; 
   src.connect(getMaster());
   const video = canvas.captureStream(30);
   const stream = new MediaStream([...video.getVideoTracks(), ...dest.stream.getAudioTracks()]);
-  const rec = new MediaRecorder(stream, { mimeType: type.mime, videoBitsPerSecond: 3_500_000, audioBitsPerSecond: 160_000 });
+  const rec = new MediaRecorder(stream, { mimeType: type.mime, videoBitsPerSecond: o.videoBitsPerSecond ?? 3_500_000, audioBitsPerSecond: 192_000 });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
   const stopped = new Promise<void>((r) => { rec.onstop = () => r(); });

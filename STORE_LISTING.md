@@ -40,12 +40,15 @@ HUM → SONG
 🎧 Three arrangements to choose from — Lo-fi Chill, Bright Pop, Trap, Dance, Acoustic Band or Cinematic, whichever suit your tune.
 🎙 Add your own voice on top, pulled in tune and onto the beat.
 
+🎚 Turn your voice up over the band — or the band down — before you keep a version.
+
 BUILD IT PART BY PART
 🥁 Beatbox → Drums: say "B", "K" and "ts" and HUMM hears a kick, a snare and a hi-hat, right on the beat.
-🎸 Hum → Bass and 🎹 Hum → Melody, snapped into the right key.
+🎸 Hum → Bass and 🎹 Hum → Melody, snapped into the right key, shown in a simple step grid.
 ✨ One tap → Chords that fit your melody.
 ✨ Fix: one tap makes every bar of a take agree — a missed hat, a slipped beat, a wobbly note. Always undoable.
 📂 Import a voice memo or a video and HUMM beat-matches it into your song.
+↔️ Turn your phone sideways for Tracks: every part, bar by bar.
 
 SOUNDS
 • 16 drum kits, from 808 and Boom-Bap to Rock, Jazz Brush, Drill, Reggaeton, Afrobeat and UK Garage.
@@ -54,14 +57,14 @@ SOUNDS
 • Tempo, 2/4/8-bar loops, swing, quantize strength, and a mixer with mute and solo.
 
 SHARE
-🎬 Export a "what I recorded → what came out" video made for TikTok, Reels, Shorts and WhatsApp.
+🎵 Export your song as audio, or as a "what I recorded → what came out" video in 1080p, made for TikTok, Reels, Shorts and WhatsApp.
 
 PRIVATE BY DESIGN
-Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. No account, no ads, no tracking.
+Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. Optional Sign in with Apple stays on your phone too. No ads, no tracking.
 
 FREE vs PRO
-Free: hum → song, auto-arrangements, voice tuning, Fix and import; 2 drum kits, 12 instruments, 3 saved songs, 1-minute hums, and videos with a small "Made with HUMM" watermark.
-Pro, $0.99 once — no subscription: no watermark, all 16 kits and 37 instruments, WAV + MIDI export, 3-minute hums and unlimited saved songs.
+Free: hum as much as you like, keep every song, and export the first three versions of every hum as audio or video (with a small "Made with HUMM" mark). Try everything else too — every sound, Tracks, Fix, the voice effect and up to 100 versions; they carry a lock and need Pro to export.
+Pro, $0.99 once — no subscription: export every song with any sound or tool, no watermark, MIDI files and 3-minute hums.
 
 Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 
@@ -69,7 +72,7 @@ Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 
 1. **Hum a tune. Get a song.** The hum screen while listening (the waveform under the big mic).
 2. **Pick your sound.** The three choices with one playing.
-3. **Your voice, in tune and on the beat.** The lead card with "My voice in the song" and the piano roll.
+3. **Your voice, in tune and on the beat.** Pick your sound with the My voice and Instruments sliders.
 4. **Beatbox it. Get real drums.** The drum grid after a beatbox take.
 5. **One tap fixes every bar.** The ✨ Fix button glowing, with the "Fixed 4 hits" toast.
 6. **Share the before → after.** The export sheet with the vertical video.
@@ -96,7 +99,7 @@ The app reads `customerInfo.entitlements.active.pro`. "Restore purchase" is in S
 
 ## App Review notes (App Store)
 
-> HUMM records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for a few seconds, then pick one of the three arrangements. HUMM Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro or by tapping any 🔒 sound; use a sandbox account.
+> HUMM records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for at least 10 seconds, then pick one of the three arrangements and tap Use this. Sign in with Apple is optional (Skip) and the identity is only stored on the device. HUMM Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro, or from Share when a song uses a locked feature (e.g. pick an extra version with More, then Share); use a sandbox account.
 
 Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.plist.
 
@@ -108,6 +111,7 @@ Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.
 
 - **Microphone.** HUMM uses the microphone only while you record, hum or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
 - **Imported files** are read on your device only.
+- **Sign in with Apple** is optional. If you use it, your Apple user ID (and, the first time, the name and email Apple shares) are stored only on your device, in its Keychain. They are not sent to us or anyone else. Settings → Sign out removes them.
 - **Your songs and settings** are stored locally in the app's own storage on your device. Uninstalling the app deletes them.
 - **No accounts, no ads, no analytics, no tracking.** HUMM makes no network requests except for purchases.
 - **Purchases.** If you buy HUMM Pro, the payment is handled by Apple (App Store) or Google (Play). HUMM uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.

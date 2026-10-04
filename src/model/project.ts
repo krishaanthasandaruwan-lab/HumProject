@@ -36,10 +36,16 @@ export interface Track {
   generated?: boolean; // made by auto-chords rather than recorded
   labels?: string[]; // chord names per bar (chords track)
   /** Your own voice as a layer in the mix: beat-matched onto the grid, optionally auto-tuned. */
-  voice?: { on: boolean; tune: boolean; level: number; only?: boolean };
+  voice?: { on: boolean; tune: boolean; level: number; only?: boolean; /** The voice effect (Pro). */ fx?: boolean };
   /** Flat [seconds into rawVoice, grid step] pairs: where each note was sung → where it belongs. */
   anchors?: number[];
+  /** The person picked this sound themselves (a Pro sound picked this way needs Pro to export). */
+  picked?: boolean;
 }
+
+/** Locked things in a song; without Pro, such a song plays but doesn't export. 'more': it is one of the
+ * extra versions of a hum (from More); 'tracks' / 'fix' / 'fx': Tracks, Fix or the voice effect was used. */
+export type ProTool = 'more' | 'tracks' | 'fix' | 'fx';
 
 export interface Key {
   tonic: number; // pitch class 0-11, 0 = C
@@ -58,6 +64,8 @@ export interface Project {
   tracks: Track[];
   /** Hearted: shown first in My songs. */
   favorite?: boolean;
+  /** Locked things in this song (an extra version, Tracks, Fix). */
+  proTools?: ProTool[];
   createdAt: number;
   updatedAt: number;
 }

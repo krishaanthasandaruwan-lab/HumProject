@@ -62,16 +62,19 @@ export function segmented<T extends string | number>(
 
 let toastEl: HTMLDivElement | null = null;
 let toastTimer = 0;
-/** Ink toast, one line, above the bottom bar. `action` adds a red UNDO-style button. */
-export function toast(msg: string, action?: { label: string; run: () => void }, ms = 3000): void {
+type ToastAction = { label: string; run: () => void };
+
+/** Ink toast, one line, above the bottom bar. `action` adds red UNDO-style buttons (one or two). */
+export function toast(msg: string, action?: ToastAction | ToastAction[], ms = 3000): void {
   toastEl?.remove();
   clearTimeout(toastTimer);
   const lifted = !!document.querySelector('.actionbar:not(.hidden), .part-actions');
-  const el = h('div', { class: `toast${lifted ? ' lifted' : ''}`, role: 'status' }, h('span', null, msg));
-  if (action) el.appendChild(h('button', { type: 'button', onClick: () => { action.run(); el.remove(); } }, action.label));
+  const actions = action ? (Array.isArray(action) ? action : [action]) : [];
+  const el = h('div', { class: `toast${lifted ? ' lifted' : ''}${actions.length > 1 ? ' two' : ''}`, role: 'status' }, h('span', null, msg));
+  for (const a of actions) el.appendChild(h('button', { type: 'button', onClick: () => { a.run(); el.remove(); } }, a.label));
   document.body.appendChild(el);
   toastEl = el;
-  toastTimer = window.setTimeout(() => el.remove(), action ? ms + 2000 : ms);
+  toastTimer = window.setTimeout(() => el.remove(), actions.length ? ms + 2000 : ms);
 }
 
 /** Bottom sheet: paper, grabber, H2 title, content. Returns a close function. */

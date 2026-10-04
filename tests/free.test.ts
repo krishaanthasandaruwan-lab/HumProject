@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeFree } from '../src/dsp/free';
+import { boostQuiet } from '../src/dsp/level';
+import { CONDITIONS, randomTune } from './humBench';
+import { humTake } from './humSynth';
 import { hatTs, hum, kickB, mixAt, SR, silence, snareK } from './signals';
 
 const TUNE: [number, number, number][] = [[0, 4, 60], [4, 4, 62], [8, 2, 64], [10, 6, 67]]; // step, length, midi per bar
@@ -39,6 +42,17 @@ describe('free-tempo hum (no metronome)', () => {
       expect(r.anchors[2 * k + 1]).toBe(n.start);
       expect(Math.abs(r.anchors[2 * k] - n.start * 0.15)).toBeLessThan(0.04); // sung at 100 BPM, 0.15 s per 16th
     });
+  });
+});
+
+describe('a hum that used to freeze the beat finder', () => {
+  it('finishes with a tempo in range (the lag interpolation once ran off below zero)', () => {
+    const tune = randomTune(144);
+    const take = humTake(tune.notes, tune.bpm, CONDITIONS.sharp, 51);
+    const r = analyzeFree({ audio: boostQuiet(take.audio, take.sr), sampleRate: take.sr, kind: 'lead' });
+    expect(r.bpm).toBeGreaterThanOrEqual(70);
+    expect(r.bpm).toBeLessThanOrEqual(140);
+    expect(r.notes.length).toBeGreaterThan(10);
   });
 });
 

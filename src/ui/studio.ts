@@ -6,6 +6,7 @@ import { player } from '../app';
 import { keyName } from '../dsp/key';
 import { demoProject } from '../model/demo';
 import { STEPS_PER_BAR, totalSteps, type TrackKind } from '../model/project';
+import { isPro } from '../pro/pro';
 import { navigate, type Params } from '../router';
 import { edit, getProject, setProject } from '../state';
 import { ask, h, toast } from './dom';
@@ -31,13 +32,15 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
   const parts = partList(() => renderMap());
   const body = h('div', { class: 'studio-body' });
   const play = playSquare();
-  const slot = (ic: IconName, label: string, go: () => void): HTMLButtonElement =>
-    h('button', { type: 'button', class: 'slot', onClick: go }, icon(ic, 24), h('span', { class: 'caption' }, label));
+  const slot = (ic: IconName, label: string, go: () => void, locked = false): HTMLButtonElement =>
+    h('button', { type: 'button', class: 'slot', onClick: go },
+      h('span', { class: 'slot-ico' }, icon(ic, 24), locked ? h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 10)) : null),
+      h('span', { class: 'caption' }, label));
   const bar = h('nav', { class: 'actionbar', 'aria-label': 'Song' },
     slot('record', 'Record', () => navigate('record', { kind: nextKind() })),
     slot('mix', 'Mix', () => openMixer(() => refresh())),
     h('div', { class: 'slot' }, play.el, h('span', { class: 'caption' }, 'Play')),
-    slot('tracks', 'Tracks', () => { keepPlaying = true; navigate('tracks'); }),
+    slot('tracks', 'Tracks', () => { keepPlaying = true; navigate('tracks'); }, !isPro()),
     slot('share', 'Share', () => { player.stop(); openExport(); }));
 
   root.classList.add('with-bar');

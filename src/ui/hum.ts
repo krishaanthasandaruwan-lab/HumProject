@@ -16,19 +16,21 @@ import { chooseImport } from './importSheet';
 import { clock, limitSheet, maxSeconds } from './limits';
 import { drawScope } from './waveform';
 
-const MIN_SECONDS = 10; // never stops by itself before this
-const QUIET_STOP = 3; // after that, stops by itself after this much quiet
+const MIN_SECONDS = 10; // a hum is at least this long: neither the mic button nor the quiet stops it sooner
+const QUIET_STOP = 4; // after that, stops by itself after this much silence
+const TOO_SHORT = `Hum at least ${MIN_SECONDS} seconds`;
 
 type State = 'ready' | 'listening' | 'thinking' | 'no-tune' | 'mic-off' | 'error';
 
-/** What HUMM can do, one line at a time under the mic while it waits. */
+/** What HUMM can do, one line at a time under the mic while it waits. The first one stays longest. */
 const HINTS = [
-  'Tap and hum a tune',
+  'Tap the mic to start a new project',
   'Beatbox a beat. Get real drums.',
   'Record a street seller’s shout. Make it a song.',
   'Whistle, sing or hum. It all becomes music.',
   'Import a video. Its sound becomes a song.',
 ];
+const HINT_MS = (i: number): number => (i === 0 ? 10_000 : 3400);
 
 export function mountHum(root: HTMLElement): () => void {
   let mic: MicRecorder | null = null;
@@ -39,14 +41,21 @@ export function mountHum(root: HTMLElement): () => void {
   let raf = 0;
   let gate = new LevelGate();
   let hint = 0;
-  const hintTimer = window.setInterval(() => {
-    if (stage.dataset.state !== 'ready') return;
-    hint = (hint + 1) % HINTS.length;
-    status.classList.remove('hint-in');
-    void status.offsetWidth; // restart the fade
-    status.textContent = HINTS[hint];
-    status.classList.add('hint-in');
-  }, 3400);
+  let hintTimer = 0;
+  const nextHint = (): void => {
+    hintTimer = window.setTimeout(() => {
+      if (stage.dataset.state === 'ready') {
+        hint = (hint + 1) % HINTS.length;
+        status.classList.remove('hint-in');
+        void status.offsetWidth; // restart the fade
+        status.style.setProperty('--hint-ms', `${HINT_MS(hint)}ms`);
+        status.textContent = HINTS[hint];
+        status.classList.add('hint-in');
+      }
+      nextHint();
+    }, HINT_MS(hint));
+  };
+  nextHint();
   let alive = true;
   const scope = new Float32Array(2048);
 
@@ -66,7 +75,7 @@ export function mountHum(root: HTMLElement): () => void {
   const stage = h('div', { class: 'hum-stage' }, timer, micBtn, status, canvas, thinking, problem);
 
   root.append(h('div', { class: 'screen hum' },
-    h('header', { class: 'top' }, mark(), link('Skip', () => navigate('studio'))),
+    h('header', { class: 'top' }, mark(), link('Existing projects', () => navigate('projects'))),
     titleBlock(['Hum a', 'melody'], { hl: 1 }),
     stage,
     tiles));
@@ -75,8 +84,8 @@ export function mountHum(root: HTMLElement): () => void {
   function show(s: State, text = ''): void {
     stage.dataset.state = s;
     tiles.classList.toggle('faded', s === 'listening' || s === 'thinking');
-    micBtn.setAttribute('aria-label', s === 'listening' ? 'Done' : 'Start humming');
-    status.textContent = text || ({ ready: HINTS[hint], listening: 'Tap when done', thinking: 'Finding the beat…' } as Record<string, string>)[s] || '';
+    micBtn.setAttribute('aria-label', s === 'listening' ? 'Keep humming' : 'Start humming');
+    status.textContent = text || ({ ready: HINTS[hint], listening: TOO_SHORT, thinking: 'Finding the beat…' } as Record<string, string>)[s] || '';
     if (s === 'no-tune' || s === 'mic-off' || s === 'error') {
       const off = s === 'mic-off';
       fill(problem,
@@ -89,7 +98,10 @@ export function mountHum(root: HTMLElement): () => void {
 
   async function toggle(): Promise<void> {
     if (stage.dataset.state === 'thinking') return;
-    if (mic) return void finish();
+    if (mic) {
+      if (getCtx().currentTime - startedAt < MIN_SECONDS) return void tooShort();
+      return void finish();
+    }
     try {
       await unlockAudio();
       setAudioSession('play-and-record');
@@ -119,9 +131,10 @@ export function mountHum(root: HTMLElement): () => void {
     drawScope(canvas, scope);
     let s = 0;
     for (let i = 0; i < scope.length; i++) s += scope[i] * scope[i];
-    const { loud, meter } = gate.update(Math.sqrt(s / scope.length), dt);
+    const { silent, meter } = gate.update(Math.sqrt(s / scope.length), dt);
     micBtn.style.setProperty('--level', meter.toFixed(3));
-    if (loud) {
+    // Soft humming is humming too: only real silence counts towards stopping by itself.
+    if (!silent) {
       heard += dt;
       quiet = 0;
     } else quiet += dt;
@@ -129,8 +142,20 @@ export function mountHum(root: HTMLElement): () => void {
     const max = maxSeconds();
     timer.textContent = isPro() ? clock(t) : `${clock(t)} / ${clock(max)}`;
     if (t >= max) return void finish(!isPro());
+    if (t >= MIN_SECONDS && status.textContent === TOO_SHORT) {
+      status.textContent = 'Tap when done';
+      micBtn.setAttribute('aria-label', 'Done');
+    }
     if (t >= MIN_SECONDS && heard > 1.5 && quiet > QUIET_STOP) return void finish();
     raf = requestAnimationFrame(frame);
+  }
+
+  /** Tapped before the minimum: keep listening and say why. */
+  function tooShort(): void {
+    navigator.vibrate?.([10, 60, 10]);
+    status.classList.remove('nudge');
+    void status.offsetWidth; // restart the shake
+    status.classList.add('nudge');
   }
 
   async function finish(limited = false): Promise<void> {
@@ -171,8 +196,14 @@ export function mountHum(root: HTMLElement): () => void {
       const audio = boostQuiet(heardAudio, sampleRate); // soft humming counts too
       const job = runDsp('free', { audio, sampleRate, kind: 'lead' });
       void sleep(1400).then(() => { if (alive && stage.dataset.state === 'thinking') status.textContent = 'Building your band…'; });
-      const r = await job;
+      let r = await job;
       if (!alive) return;
+      // Soft, breathy or far from the phone: listen again, more sensitively, before giving up.
+      if (r.notes.length < 4 || !r.key) {
+        const again = await runDsp('free', { audio, sampleRate, kind: 'lead', sensitive: true });
+        if (!alive) return;
+        if (again.notes.length > r.notes.length && again.key) r = again;
+      }
       if (r.notes.length < 2 || !r.key) {
         show('no-tune', r.voiced < 0.05 ? 'Hum a little louder, close to the phone.' : 'Hum steady notes with small breaks between them.');
         return;
@@ -188,7 +219,7 @@ export function mountHum(root: HTMLElement): () => void {
 
   return () => {
     alive = false;
-    clearInterval(hintTimer);
+    clearTimeout(hintTimer);
     cancelAnimationFrame(raf);
     if (mic) {
       mic.close();

@@ -8,7 +8,7 @@ import { extractFeatures } from './features';
 import { detectKey, snapToScale } from './key';
 import { notesToGrid, retune, segmentNotes, transposeToRange, type RawNote } from './notes';
 import { detectOnsets } from './onsets';
-import { fixOctaves, medianSmooth, trackPitch } from './pitch';
+import { fixOctaves, HUM_CLARITY, medianSmooth, trackPitch } from './pitch';
 import { hitsToGrid } from './quantize';
 import { beatMatch, makeStepMap, makeTimeMap, type TimedEvent } from './tempo';
 
@@ -20,6 +20,8 @@ export interface FreeInput {
   bpm?: number;
   bars?: number;
   profile?: Profile | null;
+  /** A second, more sensitive listen for soft or breathy humming that the first pass hardly heard. */
+  sensitive?: boolean;
 }
 
 export interface FreeResult {
@@ -61,9 +63,10 @@ export function analyzeFree(i: FreeInput): FreeResult {
     events = onsets.map((o) => ({ time: o.time, weight: o.strength }));
   } else {
     const hop = 256;
-    const frames = fixOctaves(medianSmooth(trackPitch(i.audio, sr, { hop, maxHz: i.kind === 'bass' ? 900 : 2600 })));
+    const minClarity = i.sensitive ? 0.6 : HUM_CLARITY;
+    const frames = fixOctaves(medianSmooth(trackPitch(i.audio, sr, { hop, maxHz: i.kind === 'bass' ? 900 : 2600, minClarity })));
     voiced = frames.length ? frames.filter((f) => f.midi !== null).length / frames.length : 0;
-    segs = retune(segmentNotes(frames, hop / sr));
+    segs = retune(segmentNotes(frames, hop / sr, i.sensitive ? { minNoteSec: 0.1, gapSec: 0.05 } : {}));
     events = melodicEvents(segs, i.audio, sr);
   }
 

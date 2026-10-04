@@ -8,6 +8,9 @@
 }
 .toast.lifted { bottom: calc(var(--safe-bottom) + 76px); }
 @media (orientation: landscape) and (max-height: 540px) { .toast.lifted { bottom: calc(var(--safe-bottom) + 56px); } }
+.toast.two { flex-wrap: wrap; row-gap: 2px; }
+.toast.two > span { flex: 1 1 100%; }
+.toast.two > button:nth-of-type(1) { margin-left: auto; }
 .toast > button { flex: none; min-height: 44px; min-width: 44px; margin: -6px -4px; padding: 0 6px; color: var(--red); font: 700 .875rem/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } }
 

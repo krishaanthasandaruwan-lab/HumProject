@@ -1,5 +1,4 @@
-// Recently deleted: deleted songs wait 30 days; restore one, or delete it for good.
-import { roomForAnother } from './projects';
+// Recently deleted: deleted songs wait 30 days; restore one, delete one for good, or delete them all.
 import { deleteForever, listTrash, restoreProject, TRASH_DAYS, type TrashMeta } from '../storage';
 import { confirmSheet, h, sheet, toast } from './dom';
 import { icon } from './icons';
@@ -19,6 +18,7 @@ export async function trashRow(onChange: () => void): Promise<HTMLElement | null
 
 async function openTrash(onChange: () => void): Promise<void> {
   const list = h('div', { class: 'listbox' });
+  const deleteAll = h('button', { type: 'button', class: 'btn-del', onClick: () => void forgetAll() }, icon('delete', 20), 'Delete all');
   const render = async (): Promise<void> => {
     const items = await listTrash();
     if (!items.length) {
@@ -34,7 +34,6 @@ async function openTrash(onChange: () => void): Promise<void> {
       h('small', null, `${daysLeft(m)} ${daysLeft(m) === 1 ? 'day' : 'days'} left`))));
   };
   async function restore(m: TrashMeta): Promise<void> {
-    if (!(await roomForAnother())) return;
     await restoreProject(m.id);
     toast('Restored');
     onChange();
@@ -45,6 +44,14 @@ async function openTrash(onChange: () => void): Promise<void> {
     await deleteForever(m.id);
     await render();
   }
-  const close = sheet(list, onChange, 'Recently deleted');
+  async function forgetAll(): Promise<void> {
+    const items = await listTrash();
+    const what = items.length === 1 ? '1 song' : `all ${items.length} songs`;
+    if (!(await confirmSheet(`Delete ${what} for good?`, 'Delete all for good', true))) return;
+    for (const m of items) await deleteForever(m.id);
+    toast(items.length === 1 ? 'Deleted' : `${items.length} songs deleted`);
+    await render();
+  }
+  const close = sheet(h('div', { class: 'stack' }, list, deleteAll), onChange, 'Recently deleted');
   await render();
 }

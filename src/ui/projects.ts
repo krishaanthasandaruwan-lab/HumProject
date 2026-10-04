@@ -5,11 +5,9 @@ import { nextSongName } from '../songName';
 import { settings } from '../settings';
 import { edit, flushSave, getProject, setProject } from '../state';
 import { listProjects, loadProject, restoreProject, saveProject, trashProject, type ProjectMeta } from '../storage';
-import { FREE_SONG_LIMIT, isPro } from '../pro/pro';
 import { ask, confirmSheet, h, sheet, toast } from './dom';
 import { icon, type IconName } from './icons';
-import { art, backBtn, iconBtn, link, mainBtn, titleBlock } from './kit';
-import { openPaywall } from './paywall';
+import { art, backBtn, iconBtn, mainBtn, titleBlock } from './kit';
 import { trashRow } from './trash';
 import { swipeToDelete } from './swipe';
 
@@ -27,18 +25,7 @@ export async function openProject(p: Project): Promise<void> {
   navigate('studio');
 }
 
-/** Free version keeps FREE_SONG_LIMIT songs; returns false (and shows Pro) when full. */
-export async function roomForAnother(): Promise<boolean> {
-  if (isPro()) return true;
-  await flushSave();
-  const count = (await listProjects().catch(() => [])).length;
-  if (count < FREE_SONG_LIMIT) return true;
-  openPaywall(`The free version keeps ${FREE_SONG_LIMIT} songs. Delete one, or go Pro.`);
-  return false;
-}
-
 export async function createSong(): Promise<void> {
-  if (!(await roomForAnother())) return;
   const s = settings();
   await openProject(newProject(await nextSongName(), s.lastBpm, s.lastBars));
 }
@@ -77,7 +64,7 @@ export function mountProjects(root: HTMLElement): () => void {
     if (!items.length) list.append(h('div', { class: 'songs-empty' }, art('ill-08-no-songs'), h('p', { class: 'body muted' }, 'No songs yet')));
     const bin = await trashRow(() => void refresh());
     if (!alive) return;
-    foot.replaceChildren(...[bin, isPro() ? null : link(`${Math.min(items.length, FREE_SONG_LIMIT)} of ${FREE_SONG_LIMIT} free songs`, () => openPaywall(), true)].filter((x): x is HTMLElement => !!x));
+    foot.replaceChildren(...[bin].filter((x): x is HTMLElement => !!x));
   }
 
   function row(m: ProjectMeta): HTMLElement {
@@ -138,7 +125,6 @@ export function mountProjects(root: HTMLElement): () => void {
   }
 
   async function duplicate(m: ProjectMeta): Promise<void> {
-    if (!(await roomForAnother())) return;
     const src = m.id === getProject().id ? getProject() : await loadProject(m.id);
     if (!src) return;
     const copy: Project = structuredClone(src);
