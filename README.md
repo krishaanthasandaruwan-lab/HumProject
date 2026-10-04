@@ -1,141 +1,154 @@
 # HUMM 🎤 → 🥁🎸🎹
 
 **Hum a melody — get a song. Beatbox the drums. Hum the bassline.**
-Open the app, hum anything with no metronome: HUMM finds the beat and the key and plays it back as three different songs (as hummed, slower, faster — up to 100 with "More", in 20 styles), with your own voice auto-tuned on top if you like. Or build a song part by part: beatbox the drums, hum the bass and the lead, add chords. It exports a *"what I recorded → what came out"* video for TikTok and Reels.
+Open the app, tap the mic and hum anything with no metronome: HUMM finds the beat and the key and plays it back as three different songs (as hummed, slower, faster — up to 100 with "More", in 20 styles), with your own voice auto-tuned on top if you like. Every mic tap starts a new project. Build on it part by part: beatbox the drums, hum the bass and the lead, add chords. Export the song as audio, or as a *"what I recorded → what came out"* video for TikTok and Reels.
 
-It is a Vite + TypeScript PWA with no framework and no server. All audio analysis and synthesis runs on the device — no AI service, no uploads. It is wrapped with Capacitor for the App Store (iPhone) and Google Play. The original spec is in [BUILD_PLAN.md](BUILD_PLAN.md); how it fits together is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and the store release steps in [docs/RELEASE.md](docs/RELEASE.md).
+It is a Vite + TypeScript app with no UI framework and no server. All audio analysis and synthesis runs on the device — no AI service, no uploads. It is wrapped with Capacitor for the App Store (iPhone, iPad) and Google Play.
+
+Docs:
+- [docs/HISTORY.md](docs/HISTORY.md) — everything that was built and decided, in order, and how to continue. **Start here if you are new to the project (person or AI).**
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code fits together.
+- [docs/RELEASE.md](docs/RELEASE.md) — the store release steps.
+- [STORE_LISTING.md](STORE_LISTING.md) — store texts, privacy policy, purchase setup.
+- [BUILD_PLAN.md](BUILD_PLAN.md) — the original "MouthBand" spec the app started from (historical).
+- [design/DESIGN_SPEC.md](design/DESIGN_SPEC.md) — screens, look and images.
 
 ## Quick start
 
+Node 22.12+ is required (Vitest 5 and Capacitor 8). On the development Mac, Node 24 LTS lives in `~/.local/node` (on the PATH through `~/.zshrc`).
+
 ```bash
-npm install
+npm ci               # install exactly what package-lock.json says
 npm run dev          # https://localhost:5173 (self-signed certificate; accept the warning)
 npm test             # unit tests on synthetic signals
 npm run typecheck
-npm run build        # production PWA in dist/
+npm run build        # production web build in dist/
 ```
 
 ### Test on your phone
-
-The microphone needs HTTPS on phones, so the dev server uses a self-signed certificate.
 
 ```bash
 npm run dev:phone    # same as: npm run dev -- --host
 ```
 
-1. Put the phone on the same Wi-Fi and open the `Network:` URL that Vite prints (for example `https://192.168.1.20:5173`).
-2. Accept the certificate warning. On Chrome, tap "Advanced" and then "Proceed". On Safari, tap "Show details" and then "visit this website".
-3. Allow the microphone. **Wear headphones** so the speaker doesn't leak into the mic.
-4. On iPhone, turn off the silent switch the first time. HUMM also asks iOS for "playback" audio, which ignores the switch on iOS 16.4+.
+Open the `Network:` URL on a phone on the same Wi-Fi, accept the certificate warning, allow the microphone, and wear headphones so the speaker doesn't leak into the mic. To run the real iPhone app, see "iPhone" below.
 
 ## What to try
 
-1. **Hum → song.** The logo, then straight to the mic. Tap, hum a tune (it stops by itself after a pause), and pick one of three arrangements (Lo-fi Chill, Bright Pop, Trap, Dance, Acoustic Band or Cinematic — whichever suit your tempo and key). **🎤 Add my voice** layers your own voice on top, auto-tuned to the notes and moved onto the beat. **Use this song** opens it in the studio. **Skip** goes straight to the studio; **📂 Use a recording instead** takes a voice memo or video.
-2. **Drums.** Tap **🎙 Beatbox**. You get a 1-bar count-in, then say *B ts K ts* in time. The hits land on the drum grid. Tap a lit cell to cycle kick → snare → hat → off, or hold a cell to delete it.
-3. **Calibration.** Tap **🎯 Calibrate** on the record screen: say *B*, *K* and *ts* five times each. The confidence meter shows how well your sounds separate, and a live tester lets you check it.
-4. **Bass / lead.** Tap **🎙 Hum** on the Bass or Lead card. The notes appear in a piano roll, and the key is detected and snapped. Drag a note up or down, or tap it to delete. Under the instrument chips, **🎤 My voice in the song** adds your recording to the mix (with **Auto-tune** and **Voice only**); it follows your piano-roll edits and tempo changes.
-5. **✨ Fix.** Every recorded part has a Fix button. It glows when bars disagree (a missed hat, a kick heard as a snare, hits that keep flipping to the next step because the latency is off). Tapping it makes the bars follow the pattern most of them agree on, pulls systematically late or early timing back, and cleans up melody glitches. Nothing changes until you tap it, and the toast has Undo.
-6. **Import.** On the record screen, **📂 Import a recording** brings in an audio or video file as drums, bass or lead. It is beat-matched: it fits your song's tempo, or sets it when the song is empty.
-7. **Chords.** Tap **✨ Add chords**. It picks one chord per bar, adds a root bass if you didn't hum one, and starts playback.
-8. **Mixer.** 🎚 gives you volume, mute and solo per track, plus swing, quantize strength and the key.
-9. **Share.** 📤 makes the before → after vertical video (MP4 where supported, otherwise WebM), with WAV and MIDI export. Saved songs are under **‹ My songs** (rename, duplicate, delete).
+1. **Hum → song.** First launch asks what music you like, then offers Sign in with Apple once (skippable). The mic screen says "Tap the mic to start a new project". Hum for at least 10 seconds (the mic won't stop sooner; it stops by itself after ~4 s of real silence, or when you tap). Soft humming counts: quiet takes are lifted and, if needed, listened to a second time more sensitively. "Existing projects" (top right) opens your songs.
+2. **Pick your sound.** Three versions play — the first three of every hum are free to export; "More" adds up to 100, and the extra ones carry a lock (free to play and edit, Pro to export). Above the buttons: **My voice** volume and **Effect** (Pro: soft reverb and polish on your voice only), and **Instruments** volume (the band, without changing your voice). **Use this** opens the song in the Studio; a song can't go back to this screen — record more later from Record.
+3. **Studio.** Parts list (tap to edit, hold to solo, swipe to remove), sound chips, Fix, mute. Bottom bar: Record · Mix · Play · Tracks · Share.
+4. **Drums.** Record › Drums: 1-bar count-in, then say *B ts K ts* in time. The hits land on the drum grid; tap a cell to cycle kick → snare → hat → off, hold to delete.
+5. **Bass / melody / chords.** Shown in the same grid look as the drums: one block per bar, a row per note of the key, chord names on the bars. Tap an empty cell to add a note, tap a note to take it out.
+6. **Tracks (landscape only).** Parts down a fixed rail on the left (Drums, Bass, Melody, Chords, My voice, All), the picked part's grid on the right; "All" shows every part bar by bar. Parts light up on their notes while playing.
+7. **✨ Fix.** Makes the bars of a take agree (missed hats, flipped steps, systematic lateness, melody glitches). Always with Undo.
+8. **Import.** A voice memo or video, beat-matched into the song.
+9. **Share.** Audio (WAV), the before → after video in 1080 × 1920, and MIDI (Pro). A song that uses something locked shows "Pro features in this song" with the exact list.
+10. **My songs.** Rename, duplicate, heart, delete; Recently deleted keeps songs 30 days and has **Delete all**.
 
 ## Free vs Pro
 
+Everything can be **used** for free. What decides Pro is **exporting**.
+
 | | Free | Pro ($0.99 once) |
 |---|---|---|
-| Loops | unlimited | unlimited |
-| Drum kits | 808, Boom-Bap | all 16 (+ Lo-fi, Techno, Trap, House, Acoustic, Retro 80s, Rock, Jazz Brush, Drill, Reggaeton, Afrobeat, Funk, Electro, UK Garage) |
-| Instruments | 12 (synth bass, 808 bass, square lead, piano, E-piano, pad, guitar, bells, kalimba, ukulele, whistle, poly synth) | all 37 (+ sub, finger, upright, acid, wobble and reese bass, strings, choir, organ, flute, brass, marimba, supersaw, 8-bit, harp, vibraphone, steel drum, music box, clarinet, sax, violin, accordion, pan flute, harmonica, synth brass) |
-| Hum → song, auto-tune, beat match, Fix, import | ✓ | ✓ |
+| Hum → song, beat match, auto-tune, import, record parts, edit | ✓ | ✓ |
+| Versions per hum | up to 100; the first 3 free to export, the rest locked | all exportable |
+| Saved songs | unlimited | unlimited |
+| Pro sounds (14 kits, 25 instruments), Tracks, Fix, voice Effect | usable, shown with a lock | ✓ |
+| Export (audio, 1080p video) | ✓ if the song uses nothing locked | ✓ always |
+| MIDI export | — | ✓ |
 | Video watermark | "Made with HUMM" | none |
-| WAV + MIDI export | — | ✓ |
-| Saved songs | 3 | unlimited |
 | Hum or import length | 1 minute | 3 minutes |
-| Songs to pick from after a hum | up to 100 ("More") | up to 100 |
 
-- **Test builds.** `VITE_DEV_PRO=true npm run build` unlocks everything (the `DEV_PRO` flag). On an iPhone: `npm run ios:sync:pro`, then Run in Xcode.
-- **Dev server.** In `npm run dev`, Settings has a "pretend I bought Pro" switch.
-- **Purchases** only exist in the apps, through RevenueCat (App Store on iPhone, Google Play Billing on Android). The web version links to the store listings.
-- The three hum → song choices may use Pro sounds; the song keeps them, but picking a locked sound yourself opens the paywall.
+A song needs Pro to export when it is an extra version from More, or the person **added** a locked thing while editing: picked a Pro sound themselves, changed notes in Tracks, used Fix, or turned on the voice Effect. Pro sounds that came with a generated version don't count. Using a locked thing shows "… is Pro · export needs Pro" with Undo and "Don't show again". Rules live in `src/pro/exports.ts`.
+
+- **Test builds.** `VITE_DEV_PRO=true` (e.g. `npm run ios:pro`) builds with Pro on and a Pro switch in Settings — never upload one. The dev server has the same switch.
+- **Tester code.** Until RevenueCat keys are in the build, Settings › Tester code unlocks Pro on one phone.
+- **Purchases** only exist in the apps, through RevenueCat.
 
 ## iPhone (Capacitor 8)
 
-Requirements are a Mac with Xcode 26 (iOS 26 SDK) and an Apple Developer account for running on a phone and for the App Store. The app runs on iPhone and iPad, in every orientation, iOS 15+.
+Needs a Mac with Xcode 26+ and an Apple account. The team in the project is a free Personal Team (`HYKLC6A296`); the App Store, TestFlight, in-app purchase and Sign in with Apple need the paid Apple Developer Program.
 
 ```bash
-cp .env.example .env.local        # add VITE_REVENUECAT_IOS_KEY (see STORE_LISTING.md)
-npm run ios:sync                  # build web + copy into ios/
-npm run ios:open                  # open in Xcode: Signing & Capabilities → pick your Team, then Run ▶ on your iPhone
-npm run ios:sim                   # command-line compile check for the simulator (no signing)
-npm run ios:pro                   # test build with Pro on (Settings has a Pro on/off switch) — never upload this one
+npm run ios:sync      # build web + copy into ios/
+npm run ios:open      # open in Xcode, pick the phone, Run ▶
+npm run ios:sim       # command-line compile check for the simulator (no signing)
+npm run ios:pro       # test build with Pro on — never upload
 ```
 
-- **Microphone.** `NSMicrophoneUsageDescription` is in `Info.plist`. Capacitor grants WebKit's own capture request, so iOS asks only once.
-- **Audio.** `AppDelegate` sets the `.playback` session (sound with the silent switch on); the web code switches to play-and-record only while the mic is listening.
-- **Sharing.** The share sheet does the saving ("Save Video" needs `NSPhotoLibraryAddUsageDescription`, which is set; "Save to Files" needs nothing).
-- **Icons and the launch screen** come from `node scripts/make-icons.mjs` (an opaque 1024 icon — the App Store rejects alpha — and the launch logo at exactly the web splash's size, so the hand-over doesn't jump).
-- **Build caches.** `ios:sim` keeps DerivedData and Swift packages in `../ios-build`, outside the repo. Xcode's own builds use `~/Library/Developer/Xcode/DerivedData` (a few GB).
-- **Release.** In Xcode: Product → Archive → Distribute App → App Store Connect. Step by step: [docs/RELEASE.md](docs/RELEASE.md); the listing, privacy answers and the in-app purchase are in [STORE_LISTING.md](STORE_LISTING.md).
-- **Privacy manifest.** `ios/App/App/PrivacyInfo.xcprivacy` (no tracking; purchase history for app functionality).
+From the command line (phone connected and unlocked; find the id with `xcrun devicectl list devices`):
+
+```bash
+xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -destination 'id=<DEVICE-ID>' \
+  -derivedDataPath ../ios-build -clonedSourcePackagesDirPath ../ios-build/spm -packageCachePath ../ios-build/spm-cache \
+  -disablePackageRepositoryCache -allowProvisioningUpdates build
+xcrun devicectl device install app --device <DEVICE-ID> ../ios-build/Build/Products/Debug-iphoneos/App.app
+xcrun devicectl device process launch --terminate-existing --device <DEVICE-ID> com.krishanthasandaruwan.humm
+```
+
+- **Free Personal Team limits:** at most 3 apps installed this way per phone, and they stop opening after 7 days (run again).
+- **Sign in with Apple** is in the Release entitlements only (`ios/App/App/App.entitlements`); in Debug builds the button reports it couldn't sign in — Skip works.
+- **Native code:** `ios/App/App/HummNative.swift` (Sign in with Apple, Keychain), registered by `MainViewController` in `SceneDelegate.swift`.
+- **Microphone, audio session, sharing, icons, privacy manifest:** as before — `NSMicrophoneUsageDescription`, `.playback` session in `AppDelegate`, share sheet, `ios/App/App/PrivacyInfo.xcprivacy`. App icons: the "Hm" mark in Ink on Stage Red, from `design/icon/hm-reference.jpg` — `node scripts/make-icon-mark.mjs && node scripts/make-icons.mjs` (web, iOS, Android). There is no splash screen: the app opens on plain paper, then the mic.
+- **Release:** `npm run ios:release` or Xcode › Archive. Steps: [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Android (Capacitor 8)
 
-Requirements are Android Studio (SDK 36) and about 3 GB of free disk space for Gradle's caches.
-
-Capacitor 8 compiles with **JDK 21**. The project pins Gradle's daemon to JDK 21 and downloads one automatically if missing (`android/gradle/gradle-daemon-jvm.properties` and the foojay resolver in `android/settings.gradle`). The Gradle version Capacitor ships (8.14) cannot run on Java 25. If Android Studio reports an incompatible Gradle JDK, go to Settings → Build → Gradle → Gradle JDK and pick a JDK 21.
+Needs Android Studio (SDK 36) and JDK 21 (not installed on the current dev Mac). Sign in with Apple is hidden on Android; the app otherwise works the same.
 
 ```bash
-cp .env.example .env.local        # add your RevenueCat key (see STORE_LISTING.md)
-npm run android:sync              # build web + copy into android/
-npm run android:open              # open in Android Studio, then Run ▶ on a device
-# or a debug APK from the command line:
-npm run android:apk              # -> android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:sync
+npm run android:open
+npm run android:apk   # -> android/app/build/outputs/apk/debug/app-debug.apk
 ```
-
-- **Permissions.** `RECORD_AUDIO` and `MODIFY_AUDIO_SETTINGS` are in the manifest. Capacitor's WebView client turns `getUserMedia` into the Android runtime permission prompt.
-- **Sharing.** Android's WebView has neither Web Share nor blob downloads, so the app writes the file to the cache and opens the native share sheet with `@capacitor/share` and `@capacitor/filesystem`.
-- **Icons and splash** are generated by `node scripts/make-icons.mjs`. Re-run it after `cap add android`.
-- **Release.** In Android Studio, use Build → Generate Signed App Bundle. Then upload the `.aab` to Play Console. The listing, privacy policy and product setup are in [STORE_LISTING.md](STORE_LISTING.md).
 
 ## How it works
 
 | Stage | File | Method |
 |---|---|---|
-| Recording | `src/audio/recorder.ts`, `take.ts` | AudioWorklet capture with frame stamps, voice processing off. Output + input latency plus a manual offset are compensated. There is a 150 ms pre-roll so hits on beat 1 are caught. |
-| Metronome leak | `src/dsp/declick.ts` | Without headphones the click reaches the mic and would read as a hit on empty beats. Its two tones are notched out (zero phase, so nothing moves in time), and the few milliseconds a notch can't remove are blanked where the click sounds on its own. |
-| Onsets | `src/dsp/onsets.ts` | Spectral flux on log-spaced bands (1024/256, Hann), median×1.5+δ threshold, 70 ms gap, envelope refinement. |
-| Drum classification | `features.ts`, `drumClassifier.ts` | 60 ms features (RMS, centroid, flatness, ZCR, <200 Hz and >5 kHz shares, MFCC 1–8 via Meyda). Rules by default; a personal z-scored weighted k-NN (k=3) after calibration. |
-| Quantize | `quantize.ts` | Swung 16th grid. The residual is stored, so the strength slider works live. Velocity comes from RMS. |
-| Pitch | `pitch.ts`, `notes.ts` | Pitchy (McLeod), clarity > 0.9, 5-frame median, octave folding, segmentation, bass folded into MIDI 28–52. A note's pitch is the median of its settled part (after the scoop); the same note hummed again splits at the dip in loudness; the singer's own tuning (how flat or sharp they hum overall) is measured and taken out before rounding. `tests/humBench.ts` scores this on human-like hums (`BENCH=1 npx vitest run tests/humBench.test.ts`). |
-| Soft voices | `level.ts` | Quiet takes are lifted before analysis (never turned down, at most +30 dB); the mic screen's "is someone humming" follows the room's noise floor. |
-| Key and snap | `key.ts` | Krumhansl–Schmuckler over 24 keys. Snapping works from the unrounded pitch, so it can be switched off. |
-| Chords | `harmony.ts` | Chord-tone fit per bar, progression bonuses and Viterbi. Voice-led pad or keys, and a root bass that follows the kick. |
-| Beat match | `tempo.ts`, `free.ts` | For free-tempo hums and imports: tempo from the onset envelope's autocorrelation at beat, half-bar, bar and two-bar lags (log-normal prior around 100 BPM), beats by dynamic programming (Ellis 2007), then a beat map so notes land on the right steps even when you drift. |
-| Auto-tune + voice layer | `voice.ts`, `audio/voiceLayer.ts` | TD-PSOLA: grains one pitch period apart are re-spaced to the target notes' periods (auto-tune) and placed at their beat-matched times, in one pass. Formants stay, so it still sounds like you. |
-| Fix | `model/autofix.ts` | Circular mean of the timing residuals (systematic lateness), majority vote per step over 1-, 2- or 4-bar periods, melody octave/glitch/split cleanup. |
-| Hum → song | `model/styles.ts`, `autoArrange.ts` | Six styles (drum grooves with fills, bass and chord rhythms, lead instrument and register), the same Viterbi chords as "Add chords", the three best for your tempo and key. |
-| Synth | `src/synth/*` | Every sound is synthesized: 16 drum kits and 37 instruments — oscillator voices, plus piano (inharmonic partials), guitar, harp, ukulele, finger and upright bass (Karplus–Strong), bells, marimba, kalimba, vibraphone, steel drum and music box (modal) rendered note by note in the worker — with a generated-IR reverb. 20 arrangement styles (`styles.ts`, `styles2.ts`). |
-| Playback | `scheduler.ts`, `engine.ts` | 25 ms lookahead timer scheduling 100 ms ahead on the audio clock. |
-| Export | `render.ts`, `export.ts`, `wav.ts`, `midi.ts`, `ui/videoScene.ts` | OfflineAudioContext to WAV; a hand-written SMF format 1; canvas captureStream plus MediaStreamDestination through MediaRecorder. |
+| Recording | `audio/recorder.ts`, `take.ts` | AudioWorklet capture with frame stamps, voice processing off, latency compensated, 150 ms pre-roll. |
+| Hum length | `ui/hum.ts`, `dsp/level.ts` | At least 10 s; stops by itself only after ~4 s of real silence (`LevelGate.silent`). |
+| Soft voices | `dsp/level.ts` | Quiet takes lifted up to +40 dB; a second, more sensitive analysis (`sensitive: true`) if the first hears fewer than 4 notes. |
+| Metronome leak | `dsp/declick.ts` | Click tones notched out (zero phase), lone clicks blanked. |
+| Onsets | `dsp/onsets.ts` | Spectral flux on log bands, adaptive threshold, 70 ms gap, envelope refinement. |
+| Drums | `features.ts`, `drumClassifier.ts` | 60 ms features + MFCC; rules, or personal k-NN after calibration (the calibration screen exists but is not linked at the moment). |
+| Pitch | `pitch.ts`, `notes.ts` | Pitchy (McLeod). Hum analysis uses clarity ≥ 0.75 (`HUM_CLARITY`; tested on 40 real singers), median smoothing, octave folding, segmentation, singer-tuning removal. |
+| Key | `key.ts` | Krumhansl–Schmuckler, scale snap (switchable). |
+| Beat match | `tempo.ts`, `free.ts` | Onset-envelope autocorrelation (log-normal prior around 100 BPM), Ellis DP beat tracker, beat map. |
+| Chords | `harmony.ts` | Chord-tone fit per bar, progression bonuses, Viterbi. |
+| Voice layer | `voice.ts`, `audio/voiceLayer.ts` | TD-PSOLA: beat-matched and auto-tuned voice. |
+| Voice level / Effect | `audio/engine.ts` | Per-part voice gain (live); Effect = high-pass, de-mud, presence, air, compressor, soft room. |
+| Fix | `model/autofix.ts` | Timing bias, majority vote per step, melody cleanup. |
+| Hum → song | `model/styles*.ts`, `autoArrange.ts`, `variety.ts` | 20 styles; three versions (as hummed, slower, faster), More up to 100. |
+| Synth | `src/synth/*` | 16 kits, 37 instruments, all synthesized. |
+| Playback | `scheduler.ts`, `engine.ts` | 25 ms lookahead, 100 ms ahead on the audio clock. |
+| Export | `render.ts`, `export.ts`, `wav.ts`, `midi.ts`, `ui/videoScene.ts` | Offline render to WAV; SMF format 1; canvas + MediaRecorder video at 1080 × 1920, 8 Mbps. |
+| Free / Pro | `pro/pro.ts`, `pro/exports.ts`, `pro/billing.ts` | Who may export what; RevenueCat. |
+| Account | `account.ts`, `native/humm.ts` | Sign in with Apple, kept in the Keychain on the phone. |
 
-Heavy DSP runs in a Web Worker (`src/dsp/worker.ts`), so the UI never blocks.
+Heavy DSP runs in a Web Worker (`dsp/worker.ts`).
 
 ## Project layout
 
 ```
 src/
-  main.ts  router.ts  state.ts  storage.ts  settings.ts  profile.ts  share.ts  app.ts  cache.ts  songName.ts
+  main.ts router.ts state.ts storage.ts settings.ts profile.ts share.ts app.ts cache.ts songName.ts account.ts
   audio/   context recorder take metronome scheduler engine render export wav midi importAudio voiceLayer prepare
   dsp/     fft onsets features featureIndex drumClassifier quantize pitch notes level key harmony tempo free voice declick analyze api worker client
-  synth/   fx env drums kits instruments voices rendered renderCache
-  model/   project music arrange demo autofix styles autoArrange variety
-  pro/     pro billing
-  ui/      hum choices taste studio partRows tracks timeline laneDraw part soundsSheet songSheet mixer record recordProcess recordImport importSheet limits swipe chords
-           calibrate export videoScene projects trash settings paywall splash dom kit icons parts fix transport grid pianoroll waveform
-  styles/  base ui overlay sheets landscape hum taste studio part record calibrate
-tests/     DSP, model and export tests on synthetic signals
-scripts/   make-icons.mjs (app icon, launch mark), make-illustrations.py (art → public/illustrations)
+  synth/   fx env drums kits instruments voices voices2 rendered renderCache
+  model/   project music arrange demo autofix styles styles2 autoArrange variety
+  pro/     pro exports billing
+  native/  humm (native plugin bridge) orientation (landscape lock) review
+  ui/      hum choices taste signin studio partRows tracks trackRail partEditor grid noteGrid allGrid part soundsSheet
+           songSheet mixer record recordProcess recordImport importSheet limits swipe chords calibrate export videoScene
+           projects trash settings paywall proNotice about dom kit icons parts fix transport waveform
+           (unused, safe to delete: timeline.ts, laneDraw.ts, pianoroll.ts, styles/timeline.css)
+  styles/  base ui overlay sheets landscape hum taste signin studio part record calibrate tracks
+tests/     DSP, model, export, rules tests on synthetic signals (23 files)
+scripts/   make-icon-mark.mjs, make-icons.mjs, make-illustrations.py, ios-release.sh
+ios/       Capacitor iOS project (Swift Package Manager) + HummNative.swift
 android/   Capacitor Android project
-ios/       Capacitor iOS project (Swift Package Manager)
 ```
+# HumProject
