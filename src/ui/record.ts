@@ -18,6 +18,7 @@ import { PARTS } from './parts';
 import { importRecording, type ImportKind } from './recordImport';
 import { commit, processTake } from './recordProcess';
 import { drawScope } from './waveform';
+import { maxSeconds } from './limits';
 
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 const HINTS: Record<ImportKind, string> = { drums: 'B = kick · K = snare · ts = hat', bass: 'Hum low, one note at a time', lead: 'Hum or whistle the tune' };
@@ -33,6 +34,9 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   let band: Player | null = null;
   let raf = 0;
   let alive = true;
+  const lifetime = new AbortController();
+  const projectId = getProject().id;
+  let importing = false;
   const scope = new Float32Array(2048);
   const empty = !getProject().tracks.some((t) => t !== replace && hasContent(t));
 
@@ -128,6 +132,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
   }
 
   async function toggleRecord(): Promise<void> {
+    if (importing || recBtn.disabled) return;
     if (abort) return void abort.abort();
     const takeKind = kind;
     busy(true, true);
@@ -138,7 +143,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
     let take: Take | null = null;
     try {
       take = await captureTake({
-        bpm: p.bpm, bars: p.bars, clickDuringTake: settings().clickDuringTake, manualLatencyMs: settings().latencyMs, signal: abort.signal,
+        bpm: p.bpm, bars: p.bars, clickDuringTake: settings().clickDuringTake, manualLatencyMs: settings().latencyMs, signal: abort.signal, maxSeconds: maxSeconds(),
         onPlan: (pl, m) => { plan = pl; mic = m; band?.start(pl.recStart); },
       });
     } catch (err) {
@@ -154,15 +159,15 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       beats.forEach((d) => d.classList.remove('on'));
       busy(false);
     }
-    if (!take || !alive) return;
+    if (!take || !alive || getProject().id !== projectId) return;
     navigator.vibrate?.(15);
     busy(true);
     recBtn.disabled = true;
     spinner.classList.remove('hidden');
     status.textContent = 'Listening back…';
     try {
-      const res = await processTake(take, takeKind, replace ? replace.preset : undefined);
-      if (!alive) return;
+      const res = await processTake(take, takeKind, replace ? replace.preset : undefined, lifetime.signal);
+      if (!alive || getProject().id !== projectId) return;
       if (res.ok) commit(res.track, res.message, res.after, replace ? replace.id : undefined);
       else status.textContent = res.message;
     } catch (err) {
@@ -178,16 +183,20 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
 
   /** A recording made elsewhere, beat-matched into this song (recordImport.ts). */
   async function importTake(): Promise<void> {
-    if (abort) return;
+    if (abort || importing || recBtn.disabled) return;
+    importing = true;
     busy(true);
     recBtn.disabled = true;
     try {
       const res = await importRecording(kind, (on, text) => {
         spinner.classList.toggle('hidden', !on);
         if (text) status.textContent = text;
-      }, replace ? replace.id : undefined);
-      if (res && alive) commit(res.track, res.message, res.after, replace ? replace.id : undefined);
+      }, replace ? replace.id : undefined, lifetime.signal);
+      if (res && alive && getProject().id === projectId) commit(res.track, res.message, res.after, replace ? replace.id : undefined);
+    } catch (error) {
+      if (alive) status.textContent = `Couldn’t import: ${(error as Error).message}`;
     } finally {
+      importing = false;
       if (alive) {
         busy(false);
         recBtn.disabled = false;
@@ -198,6 +207,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
 
   return () => {
     alive = false;
+    lifetime.abort();
     cancelAnimationFrame(raf);
     abort?.abort();
     band?.stop();

@@ -1,5 +1,5 @@
 // 18 · Pro: explain Pro in five lines and sell it in one tap ($0.99 once). On the web it points to the stores.
-import { buyPro, canBuy, isNative, proPrice, restorePro, storeUrl } from '../pro/billing';
+import { buyPro, canBuy, isNative, proPrice, restorePro, restoreMessage, storeUrl } from '../pro/billing';
 import { reload } from '../router';
 import { h, sheet, toast } from './dom';
 import { icon, type IconName } from './icons';
@@ -29,7 +29,9 @@ export function confetti(): void {
 }
 
 export function openPaywall(reason?: string): void {
-  const buy = mainBtn(canBuy() ? 'Unlock · $0.99' : isNative() ? 'Store not available' : 'Get Pro in the app', undefined, { icon: 'pro' });
+  const buy = mainBtn(canBuy() ? 'Loading price…' : isNative() ? 'Store not available' : 'Get Pro in the app', undefined, { icon: 'pro' });
+  buy.disabled = isNative();
+  let alive = true;
   const restore = link('Restore');
   const content = h('div', { class: 'paywall' },
     h('div', { class: 'row' }, h('span', { class: 'pro' }, 'PRO'), h('span', { class: 'grow' }), iconBtn('close', 'Close', () => close(), { ghost: true })),
@@ -41,8 +43,12 @@ export function openPaywall(reason?: string): void {
     h('p', { class: 'small muted center' }, canBuy() ? 'One time. No subscription.' : 'The web version stays free. Pro is a one-time purchase in the iPhone and Android apps.'),
     canBuy() ? h('div', { class: 'center' }, restore) : null,
     h('div', { class: 'piano-band', 'aria-hidden': 'true' }));
-  const close = sheet(content, undefined);
-  if (canBuy()) void proPrice().then((price) => { if (price) setLabel(buy, `Unlock · ${price}`); });
+  const close = sheet(content, () => { alive = false; }, 'Unlock Pro');
+  if (canBuy()) void proPrice().then((price) => {
+    if (!alive) return;
+    setLabel(buy, price ? `Unlock · ${price}` : 'Store not available');
+    buy.disabled = !price;
+  });
 
   const unlocked = (): void => {
     navigator.vibrate?.(20);
@@ -54,23 +60,27 @@ export function openPaywall(reason?: string): void {
 
   buy.addEventListener('click', async () => {
     if (!canBuy()) {
-      if (!isNative()) window.open(storeUrl(), '_blank', 'noopener');
+      if (!isNative() && storeUrl()) window.open(storeUrl(), '_blank', 'noopener');
+      else toast('The app listing is not available yet.');
       return;
     }
     buy.disabled = true;
     buy.classList.add('busy');
     const res = await buyPro();
+    if (!alive) return;
     buy.disabled = false;
     buy.classList.remove('busy');
     if (res === 'ok') unlocked();
     else if (res === 'unavailable') toast('Can’t reach the store. Try again.');
     else if (res === 'error') toast('The purchase didn’t go through.');
+    else if (res === 'pending') toast('Your purchase is awaiting approval.');
   });
   restore.addEventListener('click', async () => {
     restore.disabled = true;
-    const ok = await restorePro();
+    const result = await restorePro();
+    if (!alive) return;
     restore.disabled = false;
-    if (ok) unlocked();
-    else toast('No earlier purchase found.');
+    if (result === 'ok') unlocked();
+    else toast(restoreMessage(result));
   });
 }

@@ -1,15 +1,16 @@
 // 17 · Settings: the few things people may want to change. Nobody needs it to start; the rarely
 // needed recording options sit closed under Advanced.
-import { account, canSignIn, signIn, signOut } from '../account';
+import { account, signOut } from '../account';
 import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { edit } from '../state';
-import { canBuy, restorePro } from '../pro/billing';
+import { canBuy, restorePro, restoreMessage } from '../pro/billing';
 import { endTesterPro, isPro, redeemTesterCode, setDevPro, STORE_READY, TESTER_BUILD, testerPro } from '../pro/pro';
 import { openPaywall } from './paywall';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
-import { ask, h, toast } from './dom';
+import { ask, h, segmented, toast } from './dom';
+import { setTheme, type Theme } from '../theme';
 import { icon } from './icons';
 import { backBtn, group, listRow, range, titleBlock, toggle } from './kit';
 import { openTaste, tasteSummary } from './taste';
@@ -46,10 +47,10 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
       isPro()
         ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: testerPro() ? 'Tester code.' : TESTER_BUILD ? 'Test build.' : 'Thank you!' })
         : listRow('Unlock Pro', icon('open', 20), { sub: 'One time. No subscription.', onClick: () => openPaywall() }),
-      canBuy() && !isPro() ? listRow('Restore purchase', icon('open', 20), { onClick: async () => { toast((await restorePro()) ? 'Welcome back to Pro' : 'No purchase found'); renderPro(); } }) : null,
+      canBuy() && !isPro() ? listRow('Restore purchase', icon('open', 20), { onClick: async () => { toast(restoreMessage(await restorePro())); renderPro(); } }) : null,
       dev ? listRow('Test build: Pro on', dev, { sub: 'Only in test builds. Switch off to see the free app.' }) : null,
       // Until store purchases are set up, a tester code unlocks Pro on this phone.
-      !STORE_READY && !isPro() ? listRow('Tester code', icon('open', 20), { sub: 'Unlock Pro on this phone for testing', onClick: () => void enterCode() }) : null,
+      TESTER_BUILD && !STORE_READY && !isPro() ? listRow('Tester code', icon('open', 20), { sub: 'Unlock Pro on this phone for testing', onClick: () => void enterCode() }) : null,
       testerPro() ? listRow('Turn off tester Pro', icon('close', 20), { sub: 'Back to the free app', onClick: () => { endTesterPro(); renderPro(); } }) : null));
   };
   async function enterCode(): Promise<void> {
@@ -61,31 +62,27 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
   }
   renderPro();
 
-  // Sign in with Apple (or out). The Apple ID only ever stays on this phone.
+  // Let previous testers remove their stored identity; this release offers no account creation.
   const acct = h('div');
   const renderAccount = (): void => {
     const a = account();
-    if (!a && !canSignIn()) return acct.replaceChildren();
+    if (!a) return acct.replaceChildren();
     acct.replaceChildren(group('Account',
-      a
-        ? listRow('Signed in with Apple', icon('done', 20), { sub: a.name || a.email || 'Your Apple ID, on this phone' })
-        : listRow('Sign in with Apple', icon('open', 20), { sub: 'So HUMM knows it’s you', onClick: async () => {
-          const r = await signIn();
-          if (r === 'ok') toast('Signed in');
-          else if (r === 'failed') toast('Couldn’t sign in with Apple');
-          renderAccount();
-        } }),
-      a ? listRow('Sign out', icon('close', 20), { sub: 'Forgets your Apple ID on this phone. Your songs stay.', onClick: async () => {
+      listRow('Apple identity from a test build', icon('done', 20), { sub: a.name || a.email || 'Stored on this phone' }),
+      listRow('Remove Apple identity', icon('close', 20), { sub: 'Forgets your Apple ID on this phone. Your songs stay.', onClick: async () => {
         await signOut();
         toast('Signed out');
         renderAccount();
-      } }) : null));
+      } })));
   };
   renderAccount();
 
   root.append(h('div', { class: 'screen settings' },
     h('header', { class: 'top' }, backBtn(() => navigate(back))),
     titleBlock(['Settings']),
+    group('Appearance', segmented<Theme>([
+      { value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' },
+    ], settings().theme, (value) => { setTheme(value); navigate('settings', params); }, 'Color theme').el),
     group('Music',
       listRow('Music I like', icon('open', 20), { sub: tasteSummary(), onClick: () => openTaste(() => navigate('settings', params)) }),
       switchRow('snapToScale', 'Snap to key', 'Keeps hummed notes in the key.', (on) => edit((pp) => refreshKey(pp, on)))),

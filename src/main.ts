@@ -38,6 +38,11 @@ import { loadPro } from './pro/pro';
 import { initBilling } from './pro/billing';
 import { loadSettings, settings } from './settings';
 import { loadProfile } from './profile';
+import { applyTheme } from './theme';
+import { listTrash } from './storage';
+import { installSaveStatus } from './ui/saveStatus';
+import { pruneSharedFiles } from './cache';
+import { installNativeTextScale } from './native/humm';
 // Last, so the sideways layouts win over each screen's own styles.
 import './styles/landscape.css';
 
@@ -59,13 +64,18 @@ const atMost = <T,>(ms: number, job: Promise<T>): Promise<T | void> =>
 
 async function boot(): Promise<void> {
   installUnlock();
+  installSaveStatus();
+  installNativeTextScale();
   setAudioSession('playback'); // iOS: play through the speaker even when the ring switch is on silent
-  await atMost(4000, loadSettings());
-  await atMost(4000, Promise.all([openInitialProject(), loadProfile(), loadPro(), loadAccount()]));
-  // The mic is home. First launch asks what music they like, then offers sign-in once.
+  await atMost(4000, loadSettings().then(() => applyTheme()));
+  applyTheme();
+  await atMost(4000, Promise.allSettled([openInitialProject(), loadProfile(), loadPro(), loadAccount()]));
+  // The mic is home. First launch asks what music they like; this release has no account service.
   const s = settings();
   navigate(s.tasteAsked ? afterTaste(canSignIn(), s.signInAsked) : 'welcome');
   void initBilling();
+  void listTrash().catch(() => undefined);
+  void pruneSharedFiles().catch(() => undefined);
   // The iPhone and Android apps ship their files inside the app; the service worker is for the web PWA only.
   if (import.meta.env.PROD && !Capacitor.isNativePlatform()) registerSW({ immediate: true });
 }

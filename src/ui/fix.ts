@@ -55,7 +55,7 @@ export function runFix(id: string, refresh: () => void): void {
   let marked = false;
   edit((pp) => {
     pl.apply(t);
-    marked = !isPro() && markTool(pp, 'fix');
+    marked = markTool(pp, 'fix');
   });
   navigator.vibrate?.(10);
   refresh();
@@ -75,7 +75,7 @@ export function runFix(id: string, refresh: () => void): void {
     },
   };
   // The Pro note (and its "Don't show again") rides on Fix's own message, until it is switched off.
-  const note = marked && !settings().proNoticeOff;
+  const note = marked && !isPro() && !settings().proNoticeOff;
   toast(`${what}${timing}${note ? ' · export needs Pro' : ''}`,
     note ? [undo, { label: 'Don’t show again', run: () => updateSettings({ proNoticeOff: true }) }] : undo);
 }

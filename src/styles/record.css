@@ -2,7 +2,7 @@
 .rtiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .rtile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 84px;
   background: var(--white); border: var(--border); transition: background var(--t-ui) var(--ease), transform var(--t-press) var(--ease); }
-.rtile[aria-pressed="true"] { background: var(--red); box-shadow: var(--shadow-hard); }
+.rtile[aria-pressed="true"] { background: var(--red); color: var(--accent-ink); box-shadow: var(--shadow-hard); }
 .rtile:disabled:not([aria-pressed="true"]) { opacity: .4; }
 .rec-hint { margin-top: -4px; }
 .rec-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 8px 0 4px; }
@@ -17,7 +17,7 @@
   transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease), background var(--t-ui); }
 .recbtn .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--red); border: 2px solid var(--ink); }
 .recbtn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 4px 4px 0 var(--ink); }
-.recbtn.live { background: var(--red); }
+.recbtn.live { background: var(--red); color: var(--accent-ink); }
 .recbtn.live .dot { border-radius: 0; background: var(--ink); }
 .recbtn:disabled { opacity: .5; }
 .rec-status { min-height: 20px; text-align: center; }

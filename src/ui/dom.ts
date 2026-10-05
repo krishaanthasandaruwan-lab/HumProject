@@ -1,5 +1,7 @@
 // Tiny DOM helpers — no framework. Toasts, sheets and the two small dialogs (rename, confirm delete).
 import { icon } from './icons';
+import { getProject } from '../state';
+import { containModal } from './modalFocus';
 
 export type Child = Node | string | number | false | null | undefined | Child[];
 export type Props = Record<string, unknown>;
@@ -14,7 +16,12 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     for (const [k, v] of Object.entries(props)) {
       if (v === undefined || v === null || v === false) continue;
       if (k.startsWith('on') && typeof v === 'function') {
-        el.addEventListener(k.slice(2).toLowerCase(), v as EventListener);
+        el.addEventListener(k.slice(2).toLowerCase(), (event) => {
+          try {
+            const result = (v as (e: Event) => unknown)(event);
+            if (result instanceof Promise) void result.catch(() => toast('Couldn’t finish. Please try again.'));
+          } catch { toast('Couldn’t finish. Please try again.'); }
+        });
       } else if (k === 'class') {
         el.className = String(v);
       } else if (k === 'style') {
@@ -62,16 +69,22 @@ export function segmented<T extends string | number>(
 
 let toastEl: HTMLDivElement | null = null;
 let toastTimer = 0;
-type ToastAction = { label: string; run: () => void };
+type ToastAction = { label: string; run: () => void | Promise<unknown> };
+window.addEventListener('humm:project-change', () => { toastEl?.remove(); clearTimeout(toastTimer); });
 
 /** Ink toast, one line, above the bottom bar. `action` adds red UNDO-style buttons (one or two). */
 export function toast(msg: string, action?: ToastAction | ToastAction[], ms = 3000): void {
+  const projectId = getProject().id;
   toastEl?.remove();
   clearTimeout(toastTimer);
   const lifted = !!document.querySelector('.actionbar:not(.hidden), .part-actions');
   const actions = action ? (Array.isArray(action) ? action : [action]) : [];
   const el = h('div', { class: `toast${lifted ? ' lifted' : ''}${actions.length > 1 ? ' two' : ''}`, role: 'status' }, h('span', null, msg));
-  for (const a of actions) el.appendChild(h('button', { type: 'button', onClick: () => { a.run(); el.remove(); } }, a.label));
+  for (const a of actions) el.appendChild(h('button', { type: 'button', onClick: async () => {
+    if (getProject().id !== projectId) return el.remove();
+    await a.run();
+    el.remove();
+  } }, a.label));
   document.body.appendChild(el);
   toastEl = el;
   toastTimer = window.setTimeout(() => el.remove(), actions.length ? ms + 2000 : ms);
@@ -85,19 +98,18 @@ export function sheet(content: HTMLElement, onClose?: () => void, title?: string
     closed = true;
     wrap.classList.add('out');
     setTimeout(() => wrap.remove(), 200);
-    document.removeEventListener('keydown', onKey);
+    releaseFocus();
     onClose?.();
   };
-  const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
-  const box = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title ?? null },
+  const box = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title ?? 'Options' },
     h('div', { class: 'sheet-grip', 'aria-hidden': 'true' }),
     title ? h('div', { class: 'sheet-top' }, h('h2', { class: 'h2' }, title),
       h('button', { type: 'button', class: 'icon-btn ghost', 'aria-label': 'Close', onClick: () => close() }, icon('close', 22))) : null,
     content);
   const wrap = h('div', { class: 'sheet-wrap', onClick: (e: Event) => { if (e.target === wrap) close(); } }, box);
   dragToClose(box, close);
-  document.addEventListener('keydown', onKey);
   document.body.appendChild(wrap);
+  const releaseFocus = containModal(box, wrap, close);
   return close;
 }
 

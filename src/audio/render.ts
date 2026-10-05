@@ -23,7 +23,9 @@ export async function renderMix(p: Project, o: RenderOptions = {}): Promise<Audi
   const tail = o.tail ?? 1.2;
   const sd = stepDur(p.bpm);
   const Ctx = Offline();
-  const ctx = new Ctx(2, Math.ceil((loops * steps * sd + tail) * sr), sr);
+  const frames = Math.ceil((loops * steps * sd + tail) * sr);
+  if (!Number.isFinite(frames) || frames <= 0 || frames * 8 > 128 * 1024 * 1024) throw new Error('This song is too long to export. Shorten it or increase its tempo.');
+  const ctx = new Ctx(2, frames, sr);
   const master = ctx.createGain();
   master.gain.value = MASTER_GAIN;
   master.connect(makeLimiter(ctx)).connect(ctx.destination);

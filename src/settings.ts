@@ -1,7 +1,9 @@
 // Per-device settings, persisted in IndexedDB (idb-keyval).
 import { get, set } from 'idb-keyval';
+import type { Theme } from './theme';
 
 export interface Settings {
+  theme: Theme;
   /** Manual latency correction in ms, added to the auto-measured round trip. */
   latencyMs: number;
   clickDuringTake: boolean;
@@ -21,6 +23,7 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
+  theme: 'system',
   latencyMs: 0,
   clickDuringTake: true,
   bandDuringTake: true,
@@ -34,11 +37,24 @@ const DEFAULTS: Settings = {
 };
 
 let current: Settings = { ...DEFAULTS };
+let revision = 0;
+const mirroredTheme = (): Theme | undefined => {
+  try {
+    const value = localStorage.getItem('humm-theme');
+    if (value === 'system' || value === 'light' || value === 'dark') return value;
+  } catch { /* localStorage is optional */ }
+};
+current.theme = mirroredTheme() ?? current.theme;
 
 export async function loadSettings(): Promise<Settings> {
+  const started = revision;
   try {
     const saved = await get<Partial<Settings>>('settings');
-    if (saved) current = { ...DEFAULTS, ...saved };
+    if (saved && started === revision) {
+      current = { ...DEFAULTS, ...saved };
+      if (!['system', 'light', 'dark'].includes(current.theme)) current.theme = 'system';
+      current.theme = mirroredTheme() ?? current.theme;
+    }
   } catch {
     /* private mode / blocked storage: defaults are fine */
   }
@@ -50,6 +66,7 @@ export function settings(): Readonly<Settings> {
 }
 
 export function updateSettings(patch: Partial<Settings>): void {
+  revision++;
   current = { ...current, ...patch };
-  set('settings', current).catch(() => undefined);
+  set('settings', current).catch(() => window.dispatchEvent(new Event('humm:settings-error')));
 }

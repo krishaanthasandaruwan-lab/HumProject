@@ -5,9 +5,12 @@ import { prepareQuickly } from '../audio/prepare';
 import { addChords } from '../model/arrange';
 import { edit, getProject } from '../state';
 import { toast } from './dom';
+import { screenGeneration } from '../router';
 
 /** Harmonize the melody with chords (and a root bass when none was hummed), with Undo. */
 export function makeChords(onChange: () => void): void {
+  const generation = screenGeneration();
+  const project = getProject();
   let res: ReturnType<typeof addChords> | undefined;
   edit((p) => { res = addChords(p); });
   if (!res) return;
@@ -21,7 +24,7 @@ export function makeChords(onChange: () => void): void {
     },
   });
   void unlockAudio().then(async () => {
-    await prepareQuickly(getProject());
-    if (!player.playing) player.start();
-  });
+    await prepareQuickly(project);
+    if (generation === screenGeneration() && project.id === getProject().id && !player.playing && !document.hidden) player.start();
+  }).catch(() => toast('Couldn’t start playback. Please try again.'));
 }

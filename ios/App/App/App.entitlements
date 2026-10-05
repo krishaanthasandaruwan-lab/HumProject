@@ -2,11 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Sign in with Apple. Used by Release (store) builds only: a free Personal Team can't sign this
-	     capability, so Debug builds leave it out and still run on a phone. -->
-	<key>com.apple.developer.applesignin</key>
-	<array>
-		<string>Default</string>
-	</array>
+	<!-- The first release has no account creation or Sign in with Apple. -->
 </dict>
 </plist>

@@ -2,18 +2,16 @@
 # Build HUMM for the App Store and upload it to App Store Connect (TestFlight first).
 # Needs: the paid Apple Developer Program team selected in Xcode (App target › Signing), the app
 # record com.krishanthasandaruwan.humm in App Store Connect, and the RevenueCat keys in .env.local.
-# Usage: npm run ios:release            (archive + upload)
-#        npm run ios:release -- --no-upload   (archive only, to check signing)
+# Usage: npm run ios:release               (archive only)
+#        npm run ios:release -- --upload   (archive + upload)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# 1. Store purchases must be set up: without the keys the app would show a tester-code unlock.
-if ! grep -qE '^VITE_REVENUECAT_IOS_KEY=appl_' .env.local 2>/dev/null; then
-  echo "Stop: VITE_REVENUECAT_IOS_KEY (appl_…) is missing in .env.local. See docs/RELEASE.md, step 2." >&2
-  exit 1
-fi
-if grep -qE '^VITE_DEV_PRO=true' .env.local 2>/dev/null; then
-  echo "Stop: VITE_DEV_PRO=true is in .env.local — that is a test build. Remove it first." >&2
+# Validate the effective configuration, including shell overrides and .env.release files.
+npm run release:check
+SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+if (( ${SDK%%.*} < 26 )); then
+  echo "Stop: App Store submissions require the iOS 26 SDK or later. Installed SDK: $SDK" >&2
   exit 1
 fi
 
@@ -23,7 +21,7 @@ OUT=../ios-build/release
 mkdir -p "$OUT"
 
 # 2. Web app + native project (store build: no test switches).
-npm run build
+npm run build:release
 npx cap sync ios
 
 # 3. Archive (signed by Xcode's automatic signing with your team).
@@ -32,7 +30,7 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
   -derivedDataPath ../ios-build -clonedSourcePackagesDirPath ../ios-build/spm \
   -allowProvisioningUpdates CURRENT_PROJECT_VERSION="$BUILD" archive
 
-if [[ "${1:-}" == "--no-upload" ]]; then
+if [[ "${1:-}" != "--upload" ]]; then
   echo "Archived build $BUILD in $OUT/HUMM.xcarchive (not uploaded)."
   exit 0
 fi

@@ -2,7 +2,7 @@
 // the user has not hummed one.
 import { bassFromChords, chooseChords, chordName, voiceChords } from '../dsp/harmony';
 import { detectKey } from '../dsp/key';
-import { getTrack, newTrack, putTrack, type Key, type Project, type Track } from './project';
+import { getTrack, inheritTrack, MAX_TRACKS, newTrack, putTrack, type Key, type Project, type Track } from './project';
 
 export interface ChordsResult {
   names: string[];
@@ -11,17 +11,12 @@ export interface ChordsResult {
   undo: (p: Project) => void;
 }
 
-function inherit(from: Track | undefined, to: Track): void {
-  if (!from) return;
-  to.volume = from.volume;
-  to.muted = from.muted;
-  to.solo = from.solo;
-}
-
 export function addChords(p: Project): ChordsResult {
   const lead = getTrack(p, 'lead');
   const bass = getTrack(p, 'bass');
   const hummedBass = bass && !bass.generated && (bass.notes?.length ?? 0) > 0 ? bass : undefined;
+  const needed = Number(!getTrack(p, 'chords')) + Number(!hummedBass && !bass);
+  if (p.tracks.length + needed > MAX_TRACKS) throw new Error('Delete a part before adding chords to this song.');
   const melody = (lead?.notes?.length ? lead.notes : hummedBass?.notes) ?? [];
   const key: Key = p.key ?? detectKey(melody)?.key ?? { tonic: 9, mode: 'minor' };
   p.key = key;
@@ -33,7 +28,7 @@ export function addChords(p: Project): ChordsResult {
   chordTrack.generated = true;
   chordTrack.notes = voiceChords(chords, preset === 'keys' ? 'keys' : 'pad');
   chordTrack.labels = chords.map(chordName);
-  inherit(prevChords, chordTrack);
+  inheritTrack(prevChords, chordTrack);
   putTrack(p, chordTrack);
 
   let bassTrack: Track | undefined;
@@ -42,7 +37,7 @@ export function addChords(p: Project): ChordsResult {
     bassTrack = newTrack('bass', bass?.preset ?? 'bass');
     bassTrack.generated = true;
     bassTrack.notes = bassFromChords(chords, kicks);
-    inherit(bass, bassTrack);
+    inheritTrack(bass, bassTrack);
     putTrack(p, bassTrack);
   }
 

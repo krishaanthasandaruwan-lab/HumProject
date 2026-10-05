@@ -28,11 +28,11 @@ export function allGrid(o: { project: () => Project; open: (id: string) => void 
     for (let b = 0; b < p.bars; b++) {
       const rows = parts.map((t, r) => {
         const name = partLabel(p, t);
-        const row = h('div', { class: `grid-row${t.muted ? ' muted' : ''}`, 'data-id': t.id, title: name },
+        const row = h('div', { class: `grid-row${t.muted ? ' muted' : ''}`, 'data-id': t.id, title: name, role: 'group', 'aria-label': `${name}, bar ${b + 1}` },
           h('button', { type: 'button', class: 'grid-lbl', 'aria-label': `Open ${name}`, onClick: () => o.open(t.id) }, icon(PARTS[t.kind].icon, 14)));
         for (let s = 0; s < STEPS_PER_BAR; s++) {
           const step = b * STEPS_PER_BAR + s;
-          const c = h('div', { class: `cell${s % 4 === 0 ? ' beat' : ''}` });
+          const c = h('div', { class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'aria-hidden': 'true' });
           row.appendChild(c);
           (cells[step] ??= [])[r] = c;
         }

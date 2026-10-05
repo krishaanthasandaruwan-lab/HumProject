@@ -2,6 +2,8 @@ import { defineConfig } from 'vitest/config';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
+import { loadEnv } from 'vite';
+import { releaseProblems } from './scripts/release-config.ts';
 import pkg from './package.json' with { type: 'json' };
 
 /** Production builds get a Content-Security-Policy: the app may only load its own files (no remote
@@ -29,10 +31,27 @@ function contentSecurityPolicy(): Plugin {
 }
 
 // HTTPS is required for microphone access on phones (getUserMedia needs a secure context).
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env };
+  if (mode === 'release') {
+    const problems = releaseProblems(env);
+    if (problems.length) throw new Error('Release configuration is incomplete:\n' + problems.join('\n'));
+  } else if (mode !== 'testing' && env.VITE_DEV_PRO === 'true') {
+    throw new Error('VITE_DEV_PRO=true requires an explicit testing build. Use npm run build:testing.');
+  }
+  return {
   plugins: [
     basicSsl(),
     contentSecurityPolicy(),
+    {
+      name: 'humm-release-marker',
+      apply: 'build',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'humm-release.json', source: JSON.stringify({
+          ready: mode === 'release', mode, version: pkg.version,
+        }) });
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
@@ -58,9 +77,10 @@ export default defineConfig({
   ],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   build: { target: 'es2022', sourcemap: false },
-  worker: { format: 'es' },
+  worker: { format: 'iife' },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
   },
+  };
 });

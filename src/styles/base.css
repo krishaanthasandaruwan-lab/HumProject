@@ -1,4 +1,4 @@
-/* Tokens, reset and screen anatomy (design spec C2–C5, C9). One light look: paper, ink and Stage Red. */
+/* Tokens, reset and screen anatomy. Warm paper/ink swap in dark mode; Stage Red stays unchanged. */
 :root {
   --ink: #111111;
   --paper: #F6F4EF;
@@ -10,6 +10,8 @@
   --stone: #D9D6CF;
   --mist: #ECE9E3;
   --ok: #1F9D55;
+  --accent-ink: #111111;
+  --paper-rgb: 246 244 239;
 
   --font-display: 'Anton', Impact, 'Arial Narrow', sans-serif;
   --font-label: 'Barlow Condensed', 'Arial Narrow', sans-serif;
@@ -35,6 +37,19 @@
   --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
   color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --ink: #F6F4EF;
+  --paper: #111111;
+  --white: #191919;
+  --graphite: #BCB8B1;
+  --stone: #484540;
+  --mist: #242321;
+  --red-ink: #FF8F83;
+  --red-tint: #392421;
+  --paper-rgb: 17 17 17;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +82,7 @@ svg { flex: none; }
 .caption { font: 500 .6875rem/1.27 var(--font-body); }
 .num { font-family: var(--font-label); font-weight: 700; font-variant-numeric: tabular-nums; }
 .muted { color: var(--graphite); }
-.hl { display: inline-block; background: var(--red); color: var(--ink); padding: .04em .12em 0; line-height: .98; }
+.hl { display: inline-block; background: var(--red); color: var(--accent-ink); padding: .04em .12em 0; line-height: .98; }
 
 /* ---- screen anatomy (C4): top row, title block, content, action zone ---- */
 .screen { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; overflow-x: hidden;
@@ -83,7 +98,7 @@ svg { flex: none; }
 .titleblock .deco, .titleblock .grille { position: absolute; top: 4px; right: 0; }
 .titleblock .body { color: var(--graphite); max-width: 32ch; }
 .action { margin-top: auto; display: flex; flex-direction: column; gap: 14px; padding-top: 12px; }
-.screen > .action { position: sticky; bottom: 0; z-index: 5; padding: 16px 0 6px; background: linear-gradient(rgb(246 244 239 / 0), var(--paper) 22%); }
+.screen > .action { position: sticky; bottom: 0; z-index: 5; padding: 16px 0 6px; background: linear-gradient(rgb(var(--paper-rgb) / 0), var(--paper) 22%); }
 .center { text-align: center; }
 .row { display: flex; align-items: center; gap: 10px; }
 .row.wrap { flex-wrap: wrap; }

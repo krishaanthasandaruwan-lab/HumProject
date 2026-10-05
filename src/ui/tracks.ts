@@ -85,14 +85,30 @@ export function mountTracks(root: HTMLElement): () => void {
   }
 
   // Tracks is a Pro tool: the first change to notes or hits made here marks the song (with Undo).
-  const before = content(p());
-  let marked = isPro();
+  let before = content(p());
+  let snapshot = p().tracks.map((t) => ({ id: t.id, hits: t.hits?.map((x) => ({ ...x })), notes: t.notes?.map((x) => ({ ...x })) }));
+  let marked = !!p().proTools?.includes('tracks');
+  let restoring = false;
   const markOnce = (): void => {
-    if (marked || content(p()) === before) return;
+    if (restoring || marked || content(p()) === before) return;
     marked = true;
     let added = false;
     edit((pp) => { added = markTool(pp, 'tracks'); });
-    if (added) proNotice('Tracks is Pro · export needs Pro', () => edit((pp) => unmarkTool(pp, 'tracks')));
+    if (added && !isPro()) proNotice('Tracks is Pro · export needs Pro', () => {
+      restoring = true;
+      edit((pp) => {
+        for (const saved of snapshot) {
+          const track = trackById(pp, saved.id);
+          if (track) { track.hits = saved.hits?.map((x) => ({ ...x })); track.notes = saved.notes?.map((x) => ({ ...x })); }
+        }
+        unmarkTool(pp, 'tracks');
+      });
+      marked = false;
+      before = content(p());
+      snapshot = p().tracks.map((t) => ({ id: t.id, hits: t.hits?.map((x) => ({ ...x })), notes: t.notes?.map((x) => ({ ...x })) }));
+      restoring = false;
+      editor.rebuild();
+    });
   };
 
   // Edits change what lights up, whether Fix can help, and (in All) what the grid shows.
@@ -104,7 +120,7 @@ export function mountTracks(root: HTMLElement): () => void {
   });
 
   // Landscape only: lock the app's screen where we can; otherwise turn the page on a phone held upright.
-  const upright = matchMedia('(orientation: portrait) and (max-width: 600px)');
+  const upright = matchMedia('(orientation: portrait)');
   const turn = (): void => {
     screen.classList.toggle('turned', upright.matches);
     document.body.classList.toggle('ui-turned', upright.matches); // sheets and messages turn with the page

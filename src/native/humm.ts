@@ -1,17 +1,9 @@
-// HUMM's own native plugin (ios/App/App/HummNative.swift): Sign in with Apple and a Keychain store.
-// Where it isn't there (the web, Android) the store falls back to localStorage and sign-in is unavailable.
+// Native appearance, accessibility text size and a Keychain store for legacy test identities.
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-export interface AppleUser {
-  user: string;
-  email?: string;
-  givenName?: string;
-  familyName?: string;
-}
-
 interface HummNativePlugin {
-  signInWithApple(): Promise<AppleUser>;
-  appleCredentialState(o: { user: string }): Promise<{ state: 'authorized' | 'revoked' | 'notFound' | 'unknown' }>;
+  setAppearance(o: { theme: 'system' | 'light' | 'dark' }): Promise<void>;
+  textScale(): Promise<{ scale: number }>;
   keychainGet(o: { key: string }): Promise<{ value: string | null }>;
   keychainSet(o: { key: string; value: string }): Promise<void>;
   keychainRemove(o: { key: string }): Promise<void>;
@@ -21,9 +13,18 @@ const native = registerPlugin<HummNativePlugin>('HummNative');
 
 /** The native plugin is in this build (the iPhone / iPad app). */
 export const hasNative = (): boolean => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('HummNative');
+export const setNativeAppearance = (theme: 'system' | 'light' | 'dark'): Promise<void> => native.setAppearance({ theme });
 
-export const signInWithApple = (): Promise<AppleUser> => native.signInWithApple();
-export const appleCredentialState = (user: string): Promise<string> => native.appleCredentialState({ user }).then((r) => r.state);
+export function installNativeTextScale(): void {
+  if (!hasNative()) return;
+  const apply = (): void => { void native.textScale().then(({ scale }) => {
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    document.documentElement.style.fontSize = `${16 * scale}px`;
+    window.dispatchEvent(new Event('resize'));
+  }).catch(() => undefined); };
+  window.addEventListener('humm:text-scale', apply);
+  apply();
+}
 
 const LOCAL = 'mb-secure:';
 
@@ -39,18 +40,10 @@ export const secureStore = {
   },
   async set(key: string, value: string): Promise<void> {
     if (hasNative()) return native.keychainSet({ key, value });
-    try {
-      localStorage.setItem(LOCAL + key, value);
-    } catch {
-      /* private mode: kept for this session only */
-    }
+    localStorage.setItem(LOCAL + key, value);
   },
   async remove(key: string): Promise<void> {
     if (hasNative()) return native.keychainRemove({ key });
-    try {
-      localStorage.removeItem(LOCAL + key);
-    } catch {
-      /* ignore */
-    }
+    localStorage.removeItem(LOCAL + key);
   },
 };

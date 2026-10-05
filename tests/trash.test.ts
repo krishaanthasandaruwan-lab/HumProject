@@ -1,18 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const db = new Map<string, unknown>();
-vi.mock('idb-keyval', () => ({
-  get: async (k: string) => structuredClone(db.get(k)),
-  set: async (k: string, v: unknown) => { db.set(k, structuredClone(v)); },
-  del: async (k: string) => { db.delete(k); },
-}));
+import 'fake-indexeddb/auto';
+import { clear, get } from 'idb-keyval';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 const { deleteForever, listProjects, listTrash, restoreProject, saveProject, trashProject, TRASH_DAYS } = await import('../src/storage');
 const { newProject } = await import('../src/model/project');
 const { nextSongName } = await import('../src/songName');
 
 describe('Recently deleted', () => {
-  beforeEach(() => db.clear());
+  beforeEach(() => clear());
 
   it('moves a deleted song to the bin and back', async () => {
     const p = newProject('Song 1');
@@ -33,7 +28,7 @@ describe('Recently deleted', () => {
     await trashProject(a.id);
     await trashProject(b.id);
     expect(await listTrash(Date.now() + (TRASH_DAYS + 1) * 86400e3)).toHaveLength(0);
-    expect(db.has(`trash:${a.id}`)).toBe(false);
+    expect(await get(`trash:${a.id}`)).toBeUndefined();
     const c = newProject('C');
     await saveProject(c);
     await trashProject(c.id);
@@ -43,7 +38,7 @@ describe('Recently deleted', () => {
 });
 
 describe('song names', () => {
-  beforeEach(() => db.clear());
+  beforeEach(() => clear());
 
   it('numbers new songs after the highest one', async () => {
     expect(await nextSongName()).toBe('Song 1');

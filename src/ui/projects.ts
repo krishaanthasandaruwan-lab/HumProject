@@ -1,6 +1,6 @@
 // 16 · My songs: open, rename, duplicate, delete, and start a new song. Stored in IndexedDB.
-import { newProject, uid, type Project } from '../model/project';
-import { navigate } from '../router';
+import { cloneProject, newProject, uid, type Project } from '../model/project';
+import { navigate, screenGeneration } from '../router';
 import { nextSongName } from '../songName';
 import { settings } from '../settings';
 import { edit, flushSave, getProject, setProject } from '../state';
@@ -20,14 +20,18 @@ function ago(ts: number): string {
 }
 
 export async function openProject(p: Project): Promise<void> {
+  const generation = screenGeneration();
   await flushSave();
+  if (generation !== screenGeneration()) return;
   setProject(p);
   navigate('studio');
 }
 
 export async function createSong(): Promise<void> {
+  const generation = screenGeneration();
   const s = settings();
-  await openProject(newProject(await nextSongName(), s.lastBpm, s.lastBars));
+  const name = await nextSongName();
+  if (generation === screenGeneration()) await openProject(newProject(name, s.lastBpm, s.lastBars));
 }
 
 function card(ic: IconName, title: string, sub: string, go: () => void): HTMLButtonElement {
@@ -46,23 +50,23 @@ export function mountProjects(root: HTMLElement): () => void {
     titleBlock(['My', 'songs'], { deco: 'deco' }),
     mainBtn('New', () => newSheet(), { icon: 'add' }),
     list, foot));
-  void refresh();
+  void refresh().catch(() => toast('Couldn’t load your songs. Check storage and try again.'));
 
   function newSheet(): void {
     const go = (fn: () => void): void => { close(); fn(); };
     const close = sheet(h('div', { class: 'stack' },
       card('mic', 'Hum a song', 'Hum, get three songs', () => go(() => navigate('hum'))),
-      card('add', 'Start empty', 'Record part by part', () => go(() => void createSong()))),
+      card('add', 'Start empty', 'Record part by part', () => go(() => { void createSong().catch(() => toast('Couldn’t save your current song. Please retry.')); }))),
     undefined, 'New');
   }
 
   async function refresh(): Promise<void> {
     await flushSave();
-    const items = await listProjects().catch(() => [] as ProjectMeta[]);
+    const items = await listProjects();
     if (!alive) return;
-    list.replaceChildren(...items.map((m) => swipeToDelete(row(m), () => void remove(m, true), `Delete ${m.name}`)));
+    list.replaceChildren(...items.map((m) => swipeToDelete(row(m), () => void remove(m, true).catch(() => toast('Couldn’t delete your song. Check storage and try again.')), `Delete ${m.name}`)));
     if (!items.length) list.append(h('div', { class: 'songs-empty' }, art('ill-08-no-songs'), h('p', { class: 'body muted' }, 'No songs yet')));
-    const bin = await trashRow(() => void refresh());
+    const bin = await trashRow(() => void refresh().catch(() => toast('Couldn’t refresh your songs. Please retry.')));
     if (!alive) return;
     foot.replaceChildren(...[bin].filter((x): x is HTMLElement => !!x));
   }
@@ -71,9 +75,9 @@ export function mountProjects(root: HTMLElement): () => void {
     const current = m.id === getProject().id;
     return h('div', { class: 'card-list song', 'aria-current': String(current) },
       h('span', { class: 'ico', 'aria-hidden': 'true' }, icon('songs', 20)),
-      h('button', { type: 'button', class: 'song-open', onClick: () => void open(m.id) },
+      h('button', { type: 'button', class: 'song-open', onClick: () => open(m.id) },
         h('b', null, m.name), h('small', null, `${Math.round(m.bpm)} BPM · ${m.bars} bars · ${ago(m.updatedAt)}`)),
-      h('button', { type: 'button', class: 'icon-btn ghost heart', 'aria-pressed': String(!!m.favorite), 'aria-label': `Favorite ${m.name}`, onClick: () => void favorite(m) }, icon('heart', 20)),
+      h('button', { type: 'button', class: 'icon-btn ghost heart', 'aria-pressed': String(!!m.favorite), 'aria-label': `Favorite ${m.name}`, onClick: () => favorite(m) }, icon('heart', 20)),
       iconBtn('more', `More for ${m.name}`, () => menu(m), { ghost: true }));
   }
 
@@ -99,7 +103,7 @@ export function mountProjects(root: HTMLElement): () => void {
   }
 
   function menu(m: ProjectMeta): void {
-    const go = (fn: () => Promise<void>): void => { close(); void fn(); };
+    const go = (fn: () => Promise<void>): void => { close(); void fn().catch(() => toast('Couldn’t update your songs. Check storage and try again.')); };
     const item = (ic: IconName, label: string, fn: () => Promise<void>): HTMLButtonElement =>
       h('button', { type: 'button', class: 'lrow', onClick: () => go(fn) }, h('b', null, label), h('span', { class: 'end' }, icon(ic, 20)));
     const close = sheet(h('div', { class: 'listbox' },
@@ -127,7 +131,7 @@ export function mountProjects(root: HTMLElement): () => void {
   async function duplicate(m: ProjectMeta): Promise<void> {
     const src = m.id === getProject().id ? getProject() : await loadProject(m.id);
     if (!src) return;
-    const copy: Project = structuredClone(src);
+    const copy: Project = cloneProject(src);
     copy.id = uid();
     copy.name = `${src.name} (copy)`;
     copy.createdAt = copy.updatedAt = Date.now();
@@ -146,7 +150,7 @@ export function mountProjects(root: HTMLElement): () => void {
       const next = rest[0] ? await loadProject(rest[0].id) : undefined;
       setProject(next ?? newProject(await nextSongName(), settings().lastBpm, settings().lastBars));
     }
-    toast('Moved to Recently deleted', { label: 'Undo', run: () => void restoreProject(m.id).then(refresh) });
+    toast('Moved to Recently deleted', { label: 'Undo', run: () => restoreProject(m.id).then(refresh) });
     await refresh();
   }
 

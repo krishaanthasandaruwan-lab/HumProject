@@ -1,87 +1,36 @@
 import UIKit
 import Capacitor
-import AuthenticationServices
 import Security
 
-/// HUMM's own native bits, for the web code: Sign in with Apple, and a small store in the iPhone's
-/// Keychain (kept on this device only, and kept when the app is deleted and installed again).
+/// Native appearance and a device-only Keychain store. The first release has no Apple sign-in.
 @objc(HummNativePlugin)
-public class HummNativePlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+public class HummNativePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "HummNativePlugin"
     public let jsName = "HummNative"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "signInWithApple", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "appleCredentialState", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setAppearance", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "textScale", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "keychainGet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "keychainSet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "keychainRemove", returnType: CAPPluginReturnPromise),
     ]
-
-    private var pendingSignIn: CAPPluginCall?
-
-    // MARK: Sign in with Apple
-
-    @objc func signInWithApple(_ call: CAPPluginCall) {
+    private var textObserver: NSObjectProtocol?
+    public override func load() {
+        textObserver = NotificationCenter.default.addObserver(forName: UIContentSizeCategory.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.bridge?.triggerJSEvent(eventName: "humm:text-scale", target: "window")
+        }
+    }
+    @objc func textScale(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { call.resolve(["scale": UIFontMetrics(forTextStyle: .body).scaledValue(for: 16) / 16]) }
+    }
+    @objc func setAppearance(_ call: CAPPluginCall) {
+        guard let theme = call.getString("theme"), ["system", "light", "dark"].contains(theme) else { call.reject("Invalid appearance"); return }
         DispatchQueue.main.async {
-            if self.pendingSignIn != nil {
-                call.reject("A sign-in is already open", "busy")
-                return
-            }
-            let request = ASAuthorizationAppleIDProvider().createRequest()
-            request.requestedScopes = [.fullName, .email]
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            self.pendingSignIn = call
-            controller.performRequests()
+            UserDefaults.standard.set(theme, forKey: "humm.theme")
+            (self.bridge?.viewController as? MainViewController)?.applyAppearance()
+            call.resolve()
         }
     }
-
-    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return bridge?.viewController?.view.window ?? ASPresentationAnchor()
-    }
-
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        guard let call = pendingSignIn else { return }
-        pendingSignIn = nil
-        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            call.reject("No Apple ID came back", "failed")
-            return
-        }
-        // Apple shares the name and email only on the very first sign-in; later ones carry just the user id.
-        var result: [String: Any] = ["user": credential.user]
-        if let email = credential.email { result["email"] = email }
-        if let given = credential.fullName?.givenName { result["givenName"] = given }
-        if let family = credential.fullName?.familyName { result["familyName"] = family }
-        call.resolve(result)
-    }
-
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        guard let call = pendingSignIn else { return }
-        pendingSignIn = nil
-        if (error as? ASAuthorizationError)?.code == .canceled {
-            call.reject("Cancelled", "cancelled")
-        } else {
-            call.reject(error.localizedDescription, "failed")
-        }
-    }
-
-    /// Whether the person is still signed in (they can stop using Sign in with Apple for HUMM in iOS Settings).
-    @objc func appleCredentialState(_ call: CAPPluginCall) {
-        guard let user = call.getString("user"), !user.isEmpty else {
-            call.reject("No user", "failed")
-            return
-        }
-        ASAuthorizationAppleIDProvider().getCredentialState(forUserID: user) { state, _ in
-            switch state {
-            case .authorized: call.resolve(["state": "authorized"])
-            case .revoked: call.resolve(["state": "revoked"])
-            case .notFound: call.resolve(["state": "notFound"])
-            default: call.resolve(["state": "unknown"])
-            }
-        }
-    }
-
     // MARK: Keychain
 
     private func keyQuery(_ key: String) -> [String: Any] {
@@ -130,9 +79,22 @@ public class HummNativePlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationContr
     }
 }
 
-/// The app's web view, with HUMM's own plugin registered next to the Capacitor ones.
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(HummNativePlugin())
+        bridge?.registerPluginInstance(HummMediaPlugin())
+        applyAppearance()
+    }
+    func applyAppearance() {
+        let theme = UserDefaults.standard.string(forKey: "humm.theme") ?? "system"
+        overrideUserInterfaceStyle = theme == "dark" ? .dark : theme == "light" ? .light : .unspecified
+        view.backgroundColor = UIColor(named: "HummBackground")
+        webView?.isOpaque = false
+        webView?.backgroundColor = .clear
+        webView?.scrollView.backgroundColor = .clear
+        setNeedsStatusBarAppearanceUpdate()
+    }
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        traitCollection.userInterfaceStyle == .dark ? .lightContent : .darkContent
     }
 }

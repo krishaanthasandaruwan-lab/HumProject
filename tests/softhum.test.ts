@@ -26,6 +26,6 @@ describe('very soft humming', () => {
       console.log(`level ${level} noise ${noise}: notes normal ${normal / 3}, sensitive ${sensitive / 3}, error ${(err / 3).toFixed(3)}`);
       expect(Math.max(normal, sensitive) / 3).toBeGreaterThan(10);
       expect(err / 3).toBeLessThan(0.35);
-    });
+    }, 15_000); // six full DSP analyses; allow slower CI/phone-development hosts without changing accuracy checks
   }
 });

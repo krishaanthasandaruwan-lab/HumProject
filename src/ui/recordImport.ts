@@ -4,10 +4,10 @@ import { decodeAudioFile, sliceSeconds } from '../audio/importAudio';
 import { boostQuiet } from '../dsp/level';
 import { runDsp } from '../dsp/client';
 import { refreshKey } from '../model/music';
-import { getTrack, newTrack, stepDur, swingOffset, type Note, type Project, type Track } from '../model/project';
+import { getTrack, inheritTrack, newTrack, stepDur, swingOffset, type Note, type Project, type Track } from '../model/project';
 import { getProfile } from '../profile';
 import { settings } from '../settings';
-import { edit, getProject } from '../state';
+import { getProject } from '../state';
 import { chooseImport } from './importSheet';
 import { maxSeconds } from './limits';
 
@@ -31,23 +31,27 @@ export function voiceAnchors(notes: Note[], bpm: number, bars: number, swing: nu
 }
 
 /** `replaceId`: the part being re-recorded (its own audio doesn't count as "the rest of the song"). */
-export async function importRecording(k: ImportKind, progress: (busy: boolean, text?: string) => void, replaceId?: string): Promise<Imported | null> {
-  const file = await chooseImport();
-  if (!file) return null;
+export async function importRecording(k: ImportKind, progress: (busy: boolean, text?: string) => void, replaceId?: string, signal?: AbortSignal): Promise<Imported | null> {
+  const p = getProject();
+  const file = await chooseImport(signal);
+  if (!file || signal?.aborted) return null;
   progress(true, 'Opening your recording…');
   try {
-    const decoded = await decodeAudioFile(file, maxSeconds());
+    const decoded = await decodeAudioFile(file, maxSeconds(), signal);
     const { sampleRate } = decoded;
     const audio = k === 'drums' ? decoded.audio : boostQuiet(decoded.audio, sampleRate); // soft humming counts too
     progress(true, 'Finding the beat…');
-    const p = getProject();
+    if (getProject().id !== p.id) return null;
     const others = p.tracks.some((t) => t.id !== replaceId && hasContent(t));
-    const r = await runDsp('free', { audio, sampleRate, kind: k, profile: getProfile(), ...(others ? { bpm: p.bpm, bars: p.bars } : {}) });
+    const r = await runDsp('free', { audio, sampleRate, kind: k, profile: getProfile(), ...(others ? { bpm: p.bpm, bars: p.bars } : {}) }, { signal });
     if (!r.hits.length && !r.notes.length) {
       progress(false, k === 'drums' ? 'Didn’t hear any beatbox hits in that file.' : 'Didn’t catch a clear tune in that file.');
       return null;
     }
-    const track = newTrack(k, (replaceId ? p.tracks.find((t) => t.id === replaceId)?.preset : undefined) ?? getTrack(p, k)?.preset);
+    if (getProject().id !== p.id) return null;
+    const source = (replaceId ? p.tracks.find((t) => t.id === replaceId) : undefined) ?? getTrack(p, k);
+    const track = newTrack(k, source?.preset);
+    inheritTrack(source, track);
     track.rawVoice = sliceSeconds(audio, sampleRate, r.loopStart, r.loopEnd);
     track.rawRate = sampleRate;
     if (k === 'drums') track.hits = r.hits;
@@ -55,21 +59,18 @@ export async function importRecording(k: ImportKind, progress: (busy: boolean, t
       track.notes = r.notes;
       track.anchors = r.anchors;
     }
-    if (!others) {
-      edit((pp) => {
-        pp.bpm = r.bpm;
-        pp.bars = r.bars;
-      });
-    }
     const count = k === 'drums' ? `${r.hits.length} hits` : `${r.notes.length} notes`;
     progress(false, '');
     return {
       track,
       message: `Imported ${count}${others ? '' : ` · ${Math.round(r.bpm)} BPM`}`,
-      after: k === 'drums' ? undefined : (pp) => refreshKey(pp, settings().snapToScale),
+      after: (pp) => {
+        if (!others) { pp.bpm = r.bpm; pp.bars = r.bars; }
+        if (k !== 'drums') refreshKey(pp, settings().snapToScale);
+      },
     };
   } catch (err) {
-    progress(false, (err as Error).message);
+    if (!signal?.aborted) progress(false, (err as Error).message);
     return null;
   }
 }

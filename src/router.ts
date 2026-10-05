@@ -6,6 +6,8 @@ const screens = new Map<string, Screen>();
 let cleanup: (() => void) | void;
 let current = '';
 let currentParams: Params = {};
+let generation = 0;
+export const screenGeneration = (): number => generation;
 
 export function registerScreen(name: string, screen: Screen): void {
   screens.set(name, screen);
@@ -15,6 +17,8 @@ export function navigate(name: string, params: Params = {}): void {
   const screen = screens.get(name);
   const root = document.getElementById('app');
   if (!screen || !root) return;
+  generation++;
+  window.dispatchEvent(new Event('humm:navigate'));
   try {
     cleanup?.();
   } catch (err) {

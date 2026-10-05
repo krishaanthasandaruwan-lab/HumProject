@@ -9,17 +9,19 @@ import { prepareVoices } from './voiceLayer';
 export function projectSounds(p: Project): { id: string; midi: number }[] {
   const out = new Map<string, { id: string; midi: number }>();
   for (const t of p.tracks) {
-    if (!isRendered(t.preset)) continue;
+    if (!isRendered(t.preset) || t.muted) continue;
     for (const n of t.notes ?? []) out.set(`${t.preset}:${n.midi}`, { id: t.preset, midi: n.midi });
   }
   return [...out.values()];
 }
 
-export async function prepareProject(p: Project): Promise<void> {
-  await Promise.all([prepareSounds(projectSounds(p), getCtx().sampleRate), prepareVoices(p)]);
+export async function prepareProject(p: Project, signal?: AbortSignal): Promise<void> {
+  await Promise.all([prepareSounds(projectSounds(p), getCtx().sampleRate, signal), prepareVoices(p, signal)]);
 }
 
 /** Wait for the sounds, but never longer than `ms` — stand-in voices cover anything still missing. */
-export function prepareQuickly(p: Project, ms = 1500): Promise<void> {
-  return Promise.race([prepareProject(p).catch(() => undefined), new Promise<void>((r) => setTimeout(r, ms))]);
+export async function prepareQuickly(p: Project, ms = 1500, signal?: AbortSignal): Promise<void> {
+  let timer = 0;
+  try { await Promise.race([prepareProject(p, signal), new Promise<void>((r) => { timer = window.setTimeout(r, ms); })]); }
+  finally { clearTimeout(timer); }
 }

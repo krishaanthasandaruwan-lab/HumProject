@@ -129,7 +129,7 @@ production build and iOS device build work, the app runs on the owner's iPhone 1
 - A spoken "Made with HUMM" tag in previews: needs a voice clip (the owner records one, or the
   iPhone's own voice); Mac system voices may not be used commercially.
 - A Settings switch to bring the Pro notes back after "Don't show again".
-- The calibration screen exists but isn't linked; split a song (stems), live hum and dark mode are
+- The calibration screen exists but isn't linked; split a song (stems) and live hum are
   designed (`design/DESIGN_SPEC.md`) but not built.
 - Android: JDK 21 and the Android SDK aren't installed on the current Mac.
 - Store: join the paid Apple Developer Program, RevenueCat keys, public privacy-policy URL, real
@@ -160,3 +160,23 @@ Gotchas met on this Mac:
   when it's unclear.
 - Show results on the real phone when possible. Keep messages short and concrete.
 - Don't add credits or attribution text to the app or docs.
+
+## 4–5 October 2026 — audit remediation
+
+The owner authorized fixing audit findings while preserving musical logic, layout and artwork,
+adding dark mode with the same orange accent, and keeping work local without pushing to GitHub.
+They will add privacy/support/store configuration later and chose to skip optional Apple sign-in.
+
+- Hardened entitlement verification and production unlock controls, export checks and paid provenance.
+  Restore/pending purchases and prices now reflect store outcomes.
+- Fixed project-bound Undo, atomic/serialized persistence, failed-save recovery, microphone
+  single-flight/cleanup, stale import/navigation callbacks and capture limits.
+- Added bounded iOS media imports, DSP cancellation/deadlines, lazy/bounded preparation/cache,
+  video cleanup, original-recording sharing choice and temporary-file retention limits.
+- Added accessible grids/keyboard navigation, nested-sheet focus, scrollable Tracks rail,
+  iPad portrait fallback, theme preferences and native appearance/Dynamic Type.
+- Removed first-release account creation/capability; kept old test identity removal. Updated
+  privacy disclosures, release gates and the development dependency advisory.
+
+See [AUDIT_REMEDIATION.md](AUDIT_REMEDIATION.md) for final evidence and remaining owner/device gates.
+No GitHub push, signed archive, App Store upload or purchase was made.

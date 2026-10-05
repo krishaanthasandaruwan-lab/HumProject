@@ -1,16 +1,17 @@
 // Import: a sound file, or a video whose sound is taken out (most phone recordings are videos).
-import { pickAudioFile } from '../audio/importAudio';
+import { pickAudioFile, type AudioFile } from '../audio/importAudio';
 import { h, sheet } from './dom';
 import { icon, type IconName } from './icons';
 
-export function chooseImport(): Promise<File | null> {
+export function chooseImport(signal?: AbortSignal): Promise<AudioFile | null> {
   return new Promise((resolve) => {
+    if (signal?.aborted) { resolve(null); return; }
     let picked = false;
     const pick = (kind: 'audio' | 'video'): void => {
       picked = true;
       close();
       // Still inside the tap, so the system picker is allowed to open.
-      void pickAudioFile(kind).then(resolve);
+      void pickAudioFile(kind, signal).then(resolve, () => resolve(null));
     };
     const row = (ic: IconName, title: string, sub: string, kind: 'audio' | 'video'): HTMLButtonElement =>
       h('button', { type: 'button', class: 'card-list', onClick: () => pick(kind) },
@@ -18,6 +19,7 @@ export function chooseImport(): Promise<File | null> {
     const close = sheet(h('div', { class: 'stack' },
       row('video', 'From a video', 'Takes the sound out of a video', 'video'),
       row('audio', 'From a sound file', 'Voice memo, MP3, M4A or WAV', 'audio')),
-    () => { if (!picked) resolve(null); }, 'Import');
+    () => { signal?.removeEventListener('abort', close); if (!picked) resolve(null); }, 'Import');
+    signal?.addEventListener('abort', close, { once: true });
   });
 }

@@ -29,7 +29,7 @@
 .partrow.muted { color: var(--graphite); }
 .partrow.muted .pname { color: var(--graphite); }
 .partrow.muted .ico { background: var(--mist); border-color: var(--stone); color: var(--graphite); }
-.partrow.solo .ico { background: var(--red); }
+.partrow.solo .ico { background: var(--red); color: var(--accent-ink); }
 .partrow.flash { background: var(--red-tint); }
 .partrow.suggest { width: 100%; text-align: left; grid-template-areas: "ico name" "ico sub"; grid-template-columns: 40px 1fr; }
 .partrow.suggest .ico { border-style: dashed; }
@@ -56,7 +56,7 @@
 .snd { position: relative; min-height: 64px; padding: 8px 6px; display: grid; place-items: center; text-align: center;
   background: var(--white); border: var(--border); font: 700 .875rem/1.15 var(--font-label); letter-spacing: .04em; text-transform: uppercase;
   transition: background var(--t-ui) var(--ease); }
-.snd[aria-pressed="true"] { background: var(--red); box-shadow: var(--shadow-hard); }
+.snd[aria-pressed="true"] { background: var(--red); color: var(--accent-ink); box-shadow: var(--shadow-hard); }
 .snd .lockb { position: absolute; top: -2px; right: -2px; }
 .center-row { justify-items: center; }
 .mixrow { display: grid; grid-template-columns: 32px 64px 1fr 40px 40px; gap: 8px; align-items: center; padding: 10px 12px; }

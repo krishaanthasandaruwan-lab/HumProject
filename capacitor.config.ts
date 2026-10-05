@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
     SystemBars: {
       insetsHandling: 'css', // edge-to-edge with correct env(safe-area-inset-*) values
       initialViewportFitValueHint: 'cover',
-      style: 'LIGHT', // dark status-bar icons on our light UI
+      style: 'DEFAULT', // follows system until the stored appearance preference is applied
     },
   },
 };

@@ -2,6 +2,9 @@
 
 Copy-paste material for the App Store (iPhone) and Google Play.
 
+Updated 5 October 2026. Verify store pricing, live privacy/support details and current screenshots
+before publishing. iOS is the first release target; Android declarations need a separate review.
+
 ## Name and tagline
 
 | Field | Text | Limit |
@@ -11,7 +14,7 @@ Copy-paste material for the App Store (iPhone) and Google Play.
 | Play title | **HUMM: Hum to Song & Beats** | 30 / 30 |
 | Play short description | **Hum a tune or beatbox a beat — get a full song with drums, bass and chords.** | 75 / 80 |
 | Category | Music (App Store) · Music & Audio (Play) | |
-| Price | Free, with a one-time $0.99 in-app purchase ("HUMM Pro") | |
+| Price | Free, with a one-time non-consumable ("HUMM Pro"); intended US price $0.99, confirm in store | |
 | Age rating | 4+ (App Store) · Everyone (Play) | |
 
 ## Keywords (App Store, 100 characters)
@@ -60,11 +63,11 @@ SHARE
 🎵 Export your song as audio, or as a "what I recorded → what came out" video in 1080p, made for TikTok, Reels, Shorts and WhatsApp.
 
 PRIVATE BY DESIGN
-Your audio never leaves your phone. All listening, analysis and sound-making happens on the device. Optional Sign in with Apple stays on your phone too. No ads, no tracking.
+All listening, analysis and sound-making happens on your device. Audio and songs stay there until you choose to share a copy. No account or sign-in, no ads, no advertising tracking. Purchase services verify Pro and provide purchase reporting.
 
 FREE vs PRO
 Free: hum as much as you like, keep every song, and export the first three versions of every hum as audio or video (with a small "Made with HUMM" mark). Try everything else too — every sound, Tracks, Fix, the voice effect and up to 100 versions; they carry a lock and need Pro to export.
-Pro, $0.99 once — no subscription: export every song with any sound or tool, no watermark, MIDI files and 3-minute hums.
+Pro, one purchase — no subscription: export every song with any sound or tool, no watermark, MIDI files and 3-minute recordings. The purchase screen shows your store's localized price.
 
 Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 
@@ -77,7 +80,11 @@ Tip: wear headphones while recording so the speaker doesn't leak into the mic.
 5. **One tap fixes every bar.** The ✨ Fix button glowing, with the "Fixed 4 hits" toast.
 6. **Share the before → after.** The export sheet with the vertical video.
 
-Sizes: App Store needs 6.9" iPhone shots (1320×2868 or 1290×2796); Play needs at least 1080×1920. Use the dark background and bold white caption text across the top third.
+App Store: use accepted 6.9-inch iPhone sizes such as 1320×2868 and 13-inch iPad sizes such as
+2064×2752 or 2048×2732, with landscape equivalents where needed. Capture the current candidate in
+both themes; iPad shots are required because the app supports iPad. Six shots are a marketing choice.
+Check [Apple's specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
+before upload. Existing pre-remediation images are historical QA evidence, not final store assets.
 
 ## In-app purchase and RevenueCat setup
 
@@ -93,41 +100,66 @@ Sizes: App Store needs 6.9" iPhone shots (1320×2868 or 1290×2796); Play needs 
 1. Create a project; add the iOS app (`com.krishanthasandaruwan.humm`, with an App Store Connect in-app purchase key) and the Android app (`com.krishanthasandaruwan.humm`, with the Play service credentials).
 2. Create entitlement **`pro`** and attach both `humm_pro` products.
 3. Create offering **`default`** with a **Lifetime** package containing the two products; mark it Current.
-4. Put the public SDK keys in `.env.local` — `VITE_REVENUECAT_IOS_KEY` (`appl_…`) and `VITE_REVENUECAT_ANDROID_KEY` (`goog_…`) — then rebuild: `npm run ios:sync` / `npm run android:sync`.
+4. Put public SDK keys in ignored `.env.local`. Also set the real privacy URL/support email, entitlement
+   and product ID as described in [docs/RELEASE.md](docs/RELEASE.md). For the iOS upload candidate run
+   `npm run release:check`, `npm run build:release`, then `npx cap sync ios` before archiving.
 
-The app reads `customerInfo.entitlements.active.pro`. "Restore purchase" is in Settings and on the paywall (Apple requires it).
+The app requires an active configured product and verified RevenueCat entitlement. Local owned/tester
+flags do not grant production Pro. Restore is in Settings and the paywall when the native store is
+configured; unavailable/error/pending responses are distinguished from successful ownership.
 
 ## App Review notes (App Store)
 
-> HUMM records the user's humming and beatboxing with the microphone and turns it into music. All analysis and synthesis run on the device; nothing is uploaded. To try it: tap the mic and hum for at least 10 seconds, then pick one of the three arrangements and tap Use this. Sign in with Apple is optional (Skip) and the identity is only stored on the device. HUMM Pro ($0.99 non-consumable) can be bought from Settings → Unlock Pro, or from Share when a song uses a locked feature (e.g. pick an extra version with More, then Share); use a sandbox account.
+> HUMM turns microphone recordings into music. Analysis and synthesis run on the device; no audio or
+> songs are uploaded. Tap the mic and hum for at least 10 seconds, choose an arrangement and tap Use
+> this. No account/sign-in is required or offered. The first three arrangements export free, including
+> their automatically assigned sounds. Unlimited saved songs and individual Part edits are free.
+> User-picked Pro sounds, More versions, Tracks edits, Fix and the voice effect require Pro to export.
+> MIDI and three-minute recordings are Pro. Free videos carry a visual Made with HUMM mark; WAV has
+> no spoken watermark. Share explains whether the original recording is included and lets users turn
+> it off. Pro is the humm_pro non-consumable, available from Settings or Share. Restore is provided.
+> Purchases use StoreKit through RevenueCat; use the sandbox purchase flow for review.
 
 Export compliance: `ITSAppUsesNonExemptEncryption` is already set to NO in Info.plist.
 
 ## Privacy policy
 
-*Effective 1 October 2026*
+*Draft updated 5 October 2026 — publish with your real support contact and public URL.*
 
-**HUMM does not collect personal data. Audio never leaves your device.**
+**Audio and songs are processed locally. Store services process purchase information.**
 
 - **Microphone.** HUMM uses the microphone only while you record, hum or run the calibration. The recording is analysed on your device and stored on your device inside the app, together with your songs. It is never uploaded.
 - **Imported files** are read on your device only.
-- **Sign in with Apple** is optional. If you use it, your Apple user ID (and, the first time, the name and email Apple shares) are stored only on your device, in its Keychain. They are not sent to us or anyone else. Settings → Sign out removes them.
-- **Your songs and settings** are stored locally in the app's own storage on your device. Uninstalling the app deletes them.
-- **No accounts, no ads, no analytics, no tracking.** HUMM makes no network requests except for purchases.
-- **Purchases.** If you buy HUMM Pro, the payment is handled by Apple (App Store) or Google (Play). HUMM uses RevenueCat to confirm the purchase. RevenueCat receives the purchase receipt and a random anonymous app user ID. It does not receive any audio or songs. See RevenueCat's privacy policy at https://www.revenuecat.com/privacy.
+- **Accounts.** This release has no account creation or sign-in. An identity saved by an earlier test
+  build is local only and can be removed in Settings; it does not sync songs.
+- **Storage and deletion.** Songs/settings are stored in app-local storage. Recently deleted songs
+  expire after 30 days and are purged the next time HUMM opens or lists that folder, or immediately
+  with Delete forever. Temporary share files expire during app use after a day and have a size budget.
+  Uninstall removes local songs/settings; backups may restore them. Keychain test identities and store
+  purchase records can survive reinstall. Shared copies are controlled by their destination.
+- **No ads or advertising tracking.** HUMM has no advertising identifiers or audio analytics. Store
+  purchase services use the network and provide purchase reporting.
+- **Purchases.** Apple/Google handles payment. RevenueCat processes purchase history, an anonymous
+  app user ID and technical purchase data to verify Pro and provide purchase reporting. It receives
+  no audio or songs. See [RevenueCat's policy](https://www.revenuecat.com/privacy).
 - **Sharing.** Videos and audio files are only shared when you choose to share them, using your phone's share sheet.
-- **Children.** HUMM is suitable for everyone and does not knowingly collect data from anyone.
-- **Contact.** Questions: *your-support-email@example.com* (replace before publishing).
+- **Children.** Audio remains local. Purchases follow the store's parental controls. Choose the age
+  rating/category and publish any territory-specific disclosures before release.
+- **Contact.** Add your real support email before publishing; the app uses `VITE_SUPPORT_EMAIL`.
 
 ## App Privacy (App Store "nutrition label")
 
-- **Purchases → Purchase History**: collected by RevenueCat for **App Functionality** (unlocking Pro); **not linked** to the user's identity; **not used for tracking**.
+- **Purchases → Purchase History**: collected by RevenueCat for **App Functionality and Analytics**
+  (verification and purchase reporting); **not linked** with the current anonymous setup;
+  **not used for advertising tracking**.
 - Everything else: **Data Not Collected** (audio stays on the device).
-- Check RevenueCat's current "Apple App Privacy" guide before submitting, in case its SDK's answers have changed.
+- Check [RevenueCat's current guide](https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy)
+  and the aggregate archive manifests before submitting. Custom identifiable user IDs or advertising
+  integrations would require different answers.
 
 ## Data safety form (Play Console)
 
-- Data collected: **None**. Audio is processed on the device only.
-- Data shared: **None**. Purchase history goes to the payment processor, which is exempt under Play's "service provider" rules.
-- Encryption in transit: yes (HTTPS for purchase verification).
-- Data deletion: all data lives on the device and is deleted when the app is uninstalled.
+Android is not certified by this iOS pass. Review the current Play form and RevenueCat setup before
+claiming no data collection/sharing. Audio is local; purchase data is processed externally. Check
+app-functionality/analytics purposes, provider sharing exceptions, HTTPS, retention and deletion
+against the exact Android build and current Play requirements.

@@ -107,6 +107,24 @@ export function newTrack(kind: TrackKind, preset = TRACK_META[kind].preset): Tra
   return t;
 }
 
+/** Keep the origin of a user-picked sound whenever that same sound survives a re-take. */
+export function inheritTrack(from: Track | undefined, to: Track): void {
+  if (!from) return;
+  to.volume = from.volume;
+  to.muted = from.muted;
+  to.solo = from.solo;
+  if (from.preset === to.preset) to.picked = from.picked;
+}
+
+/** iOS 15 supports IndexedDB cloning, but not the global structuredClone API. */
+export function cloneProject(p: Project, copyAudio = true): Project {
+  return { ...p, key: p.key && { ...p.key }, proTools: p.proTools?.slice(), tracks: p.tracks.map((t) => ({
+    ...t, hits: t.hits?.map((h) => ({ ...h })), notes: t.notes?.map((n) => ({ ...n })),
+    voice: t.voice && { ...t.voice }, anchors: t.anchors?.slice(), labels: t.labels?.slice(),
+    rawVoice: copyAudio ? t.rawVoice?.slice() : t.rawVoice,
+  })) };
+}
+
 export const totalSteps = (p: Pick<Project, 'bars'>): number => p.bars * STEPS_PER_BAR;
 export const stepDur = (bpm: number): number => 60 / bpm / 4;
 export const loopDuration = (p: Pick<Project, 'bars' | 'bpm'>): number => totalSteps(p) * stepDur(p.bpm);
@@ -123,6 +141,7 @@ export function trackById(p: Project, id: string): Track | undefined {
 
 /** A new recorded part goes next to the others of its kind: a second drum part is "Drums 2". */
 export function addTrack(p: Project, track: Track): void {
+  if (p.tracks.length >= MAX_TRACKS) throw new Error('This song already has 16 parts. Delete a part before recording another.');
   p.tracks.push(track);
   p.tracks.sort((a, b) => TRACK_ORDER.indexOf(a.kind) - TRACK_ORDER.indexOf(b.kind)); // stable: keeps recording order
 }
@@ -149,8 +168,7 @@ export function kindNumber(p: Project, t: Track): number {
 export function putTrack(p: Project, track: Track): Track | undefined {
   const i = p.tracks.findIndex((t) => t.kind === track.kind);
   if (i < 0) {
-    p.tracks.push(track);
-    p.tracks.sort((a, b) => TRACK_ORDER.indexOf(a.kind) - TRACK_ORDER.indexOf(b.kind));
+    addTrack(p, track);
     return undefined;
   }
   const old = p.tracks[i];

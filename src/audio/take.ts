@@ -25,12 +25,15 @@ export interface TakeOptions {
   /** Called once the count-in is scheduled — use it to start the band / animate the UI. */
   onPlan?: (plan: TakePlan, mic: MicRecorder) => void;
   signal?: AbortSignal;
+  maxSeconds?: number;
 }
 
 function waitForTime(ctx: BaseAudioContext, t: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    const deadline = performance.now() + Math.max(0, t - ctx.currentTime) * 1000 + 5000;
     const tick = (): void => {
-      if (signal?.aborted) reject(new DOMException('Recording cancelled', 'AbortError'));
+      if (signal?.aborted || document.visibilityState === 'hidden') reject(new DOMException('Recording cancelled', 'AbortError'));
+      else if (performance.now() > deadline) reject(new Error('Recording was interrupted. Please try again.'));
       else if (ctx.currentTime >= t) resolve();
       else setTimeout(tick, 25);
     };
@@ -53,9 +56,10 @@ export async function captureTake(o: TakeOptions): Promise<Take> {
   let mic: MicRecorder | null = null;
   const metro = new Metronome();
   try {
-    mic = await MicRecorder.open();
+    mic = await MicRecorder.open(o.signal);
     mic.start();
     const plan = planTake(ctx.currentTime, o.bpm, o.bars, 4, 0.3);
+    plan.recEnd = Math.min(plan.recEnd, plan.recStart + (o.maxSeconds ?? 180));
     metro.schedule(ctx, getMaster(), plan, o.clickDuringTake);
     o.onPlan?.(plan, mic);
     // What you hear is late by the output latency, and what you sing reaches us late by the

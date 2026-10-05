@@ -1,88 +1,119 @@
-# Releasing HUMM (App Store and Google Play)
+# Releasing HUMM on iOS
 
-Everything in the code is ready for review. These are the steps only you can do, in order.
+Updated 5 October 2026. All remediation remains local; nothing has been pushed or uploaded.
+See [AUDIT_REMEDIATION.md](AUDIT_REMEDIATION.md) for evidence and remaining acceptance checks.
+Compilation and automated QA do not replace a signed TestFlight purchase/device acceptance run.
 
-## 0. Join the paid Apple Developer Program
+## Owner configuration
 
-The project is signed with a free Personal Team today (`HYKLC6A296`). The App Store, TestFlight,
-in-app purchases and Sign in with Apple all need the paid program. After joining, pick the paid team in
-Xcode › App target › Signing & Capabilities.
+Copy `.env.example` to the ignored `.env.local` and supply real values for:
 
-## 1. Decide two things before the first upload (they can't change later)
+| Variable | Value needed |
+|---|---|
+| `VITE_DEV_PRO` | `false` |
+| `VITE_REVENUECAT_IOS_KEY` | Real App Store public SDK key, beginning `appl_` |
+| `VITE_PRO_ENTITLEMENT` | `pro`, or the configured entitlement |
+| `VITE_PRO_PRODUCT_ID` | `humm_pro`, or the configured non-consumable |
+| `VITE_PRIVACY_POLICY_URL` | Working public HTTPS policy page |
+| `VITE_SUPPORT_EMAIL` | Real support email |
+| `VITE_APP_STORE_URL` | App Store listing URL when available |
 
-- **Bundle ID / application ID.** It is `com.krishanthasandaruwan.humm` (hidden from users). Change it
-  before the first upload if you want something else; after that it is fixed forever.
-- **App name.** "HUMM: Hum to Song" must be free in App Store Connect and Play Console. Check it there first.
+`npm run release:check` and `npm run build:release` reject missing owner details, obvious placeholder
+keys and developer Pro flags. They validate configuration syntax; store setup, website availability
+and signing require separate checks. Regular development builds can run without live store setup.
+Xcode Archive also rejects assets not produced by a validated `release` build, so directly archiving
+a development/testing sync cannot bypass these configuration checks.
 
-## 1b. Sign in with Apple
+- Join/select a paid Apple Developer Program team in Xcode. Confirm bundle ID
+  `com.krishanthasandaruwan.humm` before the first submission.
+- Create the app in App Store Connect. Complete agreements, tax and banking as applicable.
+- Create non-consumable product `humm_pro`, with localized name, description, price and review image.
+  The intended US price is $0.99; confirm it in the store. The app displays the actual localized price.
+- In RevenueCat, attach that product to entitlement `pro` and a Lifetime package in the current
+  offering. Add required store credentials in the dashboard and the public SDK key to the app.
+- Confirm anonymous-user restore/transfer behavior for reinstall and a second device.
+- Publish a privacy-policy page and support contact; test over cellular while signed out. The app
+  links them from Settings once configured.
+- This release creates no account and offers no Apple sign-in. Do not enable that capability.
+  Reintroducing accounts requires a separate deletion/revocation design.
 
-- In the Apple Developer portal, enable **Sign in with Apple** for the App ID `com.krishanthasandaruwan.humm`.
-- The entitlement is already in `ios/App/App/App.entitlements`, used by the **Release** configuration
-  only (so free-team Debug builds still run). With the paid team you can also set
-  `CODE_SIGN_ENTITLEMENTS = App/App.entitlements` for Debug to test sign-in from Xcode.
-- Nothing is sent to a server: the Apple ID stays in the phone's Keychain, so App Privacy answers don't
-  change. The in-app "Sign out" (Settings › Account) forgets it on the phone.
+## Local checks and archive
 
-## 2. Purchases (RevenueCat)
+Use Node 24 for the release checker, which directly imports its shared TypeScript validator.
 
-1. App Store Connect: create the app, then a **Non-Consumable** in-app purchase `humm_pro`, $0.99.
-2. Play Console: create the app, then an in-app product `humm_pro`, $0.99.
-3. RevenueCat: entitlement `pro`, offering `default` with both products.
-4. Put the two public SDK keys in `.env.local` (`VITE_REVENUECAT_IOS_KEY`, `VITE_REVENUECAT_ANDROID_KEY`).
-   Details: `STORE_LISTING.md`.
+```bash
+npm ci
+npm run typecheck
+npm test
+npm audit
+npm run release:check
+npm run build:release
+npx cap sync ios
+```
 
-## 3. A privacy policy web address
+Apple currently requires Xcode 26 or later with the iOS 26 SDK or later for uploads. Installed
+Xcode/iOS SDK 27 satisfies that minimum. Recheck [Apple's requirements](https://developer.apple.com/news/upcoming-requirements/)
+on submission day. A current SDK can still target the project's minimum iOS 15.
 
-Both stores require a **public URL** for the privacy policy, even though HUMM shows the policy inside
-the app. The text is ready (Settings › Privacy, and `STORE_LISTING.md`). Put it on any public page you
-control (a free GitHub Pages site, Notion, Google Sites) and paste that link in both consoles.
+`npm run ios:release` validates effective configuration, builds release assets, syncs iOS and creates
+an archive using your paid signing team. **It does not upload by default.** Alternatively archive in
+Xcode after these checks. Raise the build number for every upload.
 
-## 4. Build and upload — iPhone and iPad
+Only when you intend to upload, run `npm run ios:release -- --upload` or use Xcode's upload action.
+No signed archive/upload was performed during this remediation.
 
-1. `npm run ios:sync` (store build: no test switches inside). Or `npm run ios:release`, which checks the
-   keys, archives and uploads in one go.
-2. `npm run ios:open`. In Xcode: the **App** target › Signing & Capabilities › your team (already set).
-3. Version 1.0, build 1 for the first upload; raise the build number for every new upload.
-4. Product › Archive › Distribute App › App Store Connect › Upload.
-5. In App Store Connect: test with **TestFlight** first (purchases use sandbox accounts there).
+## Required TestFlight acceptance on the exact candidate
 
-App Store Connect form:
-- **Screenshots**: iPhone 6.9" (1320 × 2868) **and iPad 13" (2064 × 2752)**, because HUMM now runs on iPad.
-- **App Privacy**: Purchase History, used for App Functionality, not linked to identity, no tracking.
-  Everything else: Data Not Collected. (Matches `ios/App/App/PrivacyInfo.xcprivacy`.)
-- **Age rating**: 4+. **Category**: Music.
-- **Export compliance**: already answered in the app (no non-exempt encryption).
-- **Review notes**: copy them from `STORE_LISTING.md`.
-- **Before submitting**, replace the placeholder support email in the privacy policy (`STORE_LISTING.md`).
+- Buy, cancel, error, Ask to Buy/pending, restore, restart, reinstall and second-device restore.
+- Correct lifetime product and localized price; missing offerings must show unavailable.
+- Verified paid access offline; never-paid offline stays free; failed verification cannot grant Pro.
+- Refund/revocation then foreground/restart. An open Share sheet and already rendered video must
+  obey refreshed permission. Offline refund visibility follows the store/SDK cache.
+- Free first three generated arrangements, including automatically assigned Pro sounds; unlimited
+  songs and free individual Part editing. MIDI and picked Pro sounds/Tracks/Fix/Effect require Pro.
+- 60-second free and 180-second paid capture/import limits, including Studio Record and Redo.
+- Microphone denial, delayed permission, rapid taps, navigation, lock/background, calls/Siri and
+  speaker/headset/Bluetooth routes; no capture indicator or surprise playback after leaving.
+- Corrupt/empty/large/multichannel imports, cancelled pickers and iCloud files; bounded memory and
+  no commit to another song. Start with WAV, M4A, MP3 and MOV/MP4.
+- Persistence after immediate background/termination, low storage, duplicate, trash, restore and Undo.
+- Native WAV/video share and Save to Files/Photos, iPad popovers and missing share destinations.
+- Light/Dark/System, theme after restart, large text, VoiceOver/Switch Control, keyboard grids/sheets,
+  iPad window resizing and both landscape directions.
 
-## 5. Build and upload — Android
+Use [PHONE_QA.csv](PHONE_QA.csv) to record model, OS, build/channel, expected/actual, screenshot/log
+and pass/fail. Minimum iOS support and real audio performance remain physical-device gates.
 
-1. `npm run android:sync`, then in Android Studio: Build › Generate Signed App Bundle (create an upload
-   key once and keep it safe — losing it means you can't update the app).
-2. Play Console: internal testing track first. Data safety: no data collected; purchases handled by Google.
-3. Target API 36 is already set (required for new apps from 31 August 2026).
+## App Store Connect submission
 
-## 6. Testing Pro on your own phone before release
+- Use current release-candidate screenshots. Accepted examples: iPhone 6.9-inch 1320×2868; iPad
+  13-inch 2064×2752 or 2048×2732; landscape equivalents are accepted. iPad shots are required because
+  the app supports iPad. Six shots are a marketing choice, not an Apple minimum. See
+  [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
+- Complete the current age-rating questionnaire and select Music. Decide Kids Category separately.
+- App Privacy: Purchase History for **App Functionality and Analytics**. With anonymous RevenueCat
+  IDs and no identifying integrations, not linked to identity and not used for advertising tracking.
+  Audio/songs stay on-device. Reconcile final aggregate manifests/dashboard integrations with
+  [RevenueCat's guide](https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy).
+- Complete EU trader/non-trader declarations and verified contacts where applicable.
+- Confirm commercial rights to artwork, fonts and icons; retaining files does not establish ownership.
+- Confirm `ITSAppUsesNonExemptEncryption=NO` still fits the final app.
+- Submit the first IAP with the app version; use notes from [STORE_LISTING.md](../STORE_LISTING.md).
+- Choose Family Sharing deliberately; if enabled, test family restore/revocation.
 
-- Any build without store keys: Settings › Pro › **Tester code**. The code unlocks Pro on that phone
-  only. It stops working automatically once the RevenueCat keys are in the build (step 2), so the store
-  version never accepts it.
+Apple's [review guidelines](https://developer.apple.com/app-store/review/guidelines/) require accurate
+metadata, working purchases and accessible privacy-policy links. Complete owner configuration,
+signing and device acceptance before treating this as an upload-ready candidate.
 
-- To see the free app's rules: a normal build, no tester code. The first 3 versions of a hum export
-  freely; anything with a lock (More versions, picked Pro sounds, Tracks edits, Fix, voice Effect) makes
-  export ask for Pro and lists why.
-- iPhone: `npm run ios:pro` (builds with Pro on, opens Xcode), then Run. Settings shows a "Test build:
-  Pro on" switch to flip between free and Pro. **Never upload this build**: run `npm run ios:sync`
-  before archiving.
-- Android: `npm run android:sync:pro`, then Run in Android Studio.
+## Development Pro testing
 
-## Security checklist (done in code)
+`npm run ios:pro` / `npm run ios:sync:pro` builds in explicit `testing` mode. Only development/testing
+builds accept tester/developer switches. Production ignores those flags even without store keys.
+Never upload a testing bundle; rebuild in `release` mode and sync before archiving. Release rejects
+`VITE_DEV_PRO=true`, including shell and dotenv overrides.
 
-- [x] No network use except the purchase check; no analytics, ads or server accounts (Sign in with Apple stays on the phone)
-- [x] Content-Security-Policy in production builds; no remote scripts, fonts or images
-- [x] No `eval` / `innerHTML`; user text only set as text; export file names cleaned
-- [x] Minified, no source maps; web inspection off in the apps
-- [x] Pro state comes from the store (RevenueCat), re-checked at launch and on every store change
-- [x] iOS privacy manifest; microphone and photo-library permission texts
-- [x] Android WebView debugging off; no cleartext traffic
-- [ ] Your upload keys and RevenueCat keys stay out of git (`.env.local` and keystores are ignored)
+## Android
+
+Shared TypeScript fixes apply to Android, but this remediation verifies iOS first. Android signing,
+Play billing/data-safety declarations, permissions and native QA require their own pass. iOS/browser
+evidence does not certify an Android release.

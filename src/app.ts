@@ -23,16 +23,22 @@ export function auditionNote(preset: string, midi: number): void {
 }
 
 let voice: AudioBufferSourceNode | null = null;
+export function stopVoice(): void {
+  const active = voice;
+  voice = null;
+  if (!active) return;
+  active.onended = null;
+  try { active.stop(); } catch { /* already ended */ }
+  active.disconnect();
+}
+window.addEventListener('humm:navigate', stopVoice);
+window.addEventListener('humm:project-change', stopVoice);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { stopVoice(); player.stop(); } });
 
 /** Play (or stop) the raw recording behind a track — the "what I recorded" half. Returns true if now playing. */
 export function toggleVoice(track: Track, onEnd?: () => void): boolean {
   if (voice) {
-    try {
-      voice.stop();
-    } catch {
-      /* already ended */
-    }
-    voice = null;
+    stopVoice();
     return false;
   }
   if (!track.rawVoice?.length || !track.rawRate) return false;
@@ -43,6 +49,7 @@ export function toggleVoice(track: Track, onEnd?: () => void): boolean {
   src.buffer = buf;
   src.connect(getMaster());
   src.onended = () => {
+    src.disconnect();
     if (voice === src) voice = null;
     onEnd?.();
   };

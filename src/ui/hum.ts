@@ -34,6 +34,8 @@ const HINT_MS = (i: number): number => (i === 0 ? 10_000 : 3400);
 
 export function mountHum(root: HTMLElement): () => void {
   let mic: MicRecorder | null = null;
+  let opening = false;
+  let operation = new AbortController();
   let startedAt = 0;
   let heard = 0;
   let quiet = 0;
@@ -97,16 +99,22 @@ export function mountHum(root: HTMLElement): () => void {
   }
 
   async function toggle(): Promise<void> {
-    if (stage.dataset.state === 'thinking') return;
+    if (opening || stage.dataset.state === 'thinking') return;
     if (mic) {
       if (getCtx().currentTime - startedAt < MIN_SECONDS) return void tooShort();
       return void finish();
     }
+    opening = true;
+    operation = new AbortController();
+    const job = operation;
+    micBtn.disabled = true;
     try {
       await unlockAudio();
+      if (!alive || job.signal.aborted) return;
       setAudioSession('play-and-record');
-      mic = await MicRecorder.open();
-      if (!alive) return void mic.close();
+      const opened = await MicRecorder.open(job.signal);
+      if (!alive || job.signal.aborted) { opened.close(); return; }
+      mic = opened;
       mic.start();
       startedAt = last = getCtx().currentTime;
       heard = quiet = 0;
@@ -114,11 +122,16 @@ export function mountHum(root: HTMLElement): () => void {
       show('listening');
       raf = requestAnimationFrame(frame);
     } catch (err) {
+      if (!alive || job.signal.aborted) return;
       const e = err as Error;
       mic = null;
       setAudioSession('playback');
       if (e.name === 'NotAllowedError') show('mic-off', 'Allow the microphone for HUMM in Settings. Import still works.');
       else show('error', e.message);
+    } finally {
+      opening = false;
+      micBtn.disabled = false;
+      if (!mic) setAudioSession('playback');
     }
   }
 
@@ -159,6 +172,7 @@ export function mountHum(root: HTMLElement): () => void {
   }
 
   async function finish(limited = false): Promise<void> {
+    const signal = operation.signal;
     const m = mic;
     if (!m) return;
     mic = null;
@@ -172,36 +186,41 @@ export function mountHum(root: HTMLElement): () => void {
     const audio = m.extract(startedAt, end);
     m.close();
     setAudioSession('playback');
+    if (!alive || signal.aborted) return;
     if (limited) await limitSheet();
-    await analyze(audio, getCtx().sampleRate);
+    if (alive && !signal.aborted) await analyze(audio, getCtx().sampleRate, signal);
   }
 
   async function importFile(): Promise<void> {
-    if (mic || stage.dataset.state === 'thinking') return;
-    const file = await chooseImport();
-    if (!file || !alive) return;
+    if (mic || opening || stage.dataset.state === 'thinking') return;
+    operation = new AbortController();
+    const signal = operation.signal;
+    show('thinking', 'Choose a recording…');
+    const file = await chooseImport(signal);
+    if (!alive || signal.aborted) return;
+    if (!file) { show('ready'); return; }
     show('thinking', 'Opening your recording…');
     try {
-      const { audio, sampleRate, seconds } = await decodeAudioFile(file, maxSeconds());
+      const { audio, sampleRate, seconds } = await decodeAudioFile(file, maxSeconds(), signal);
       if (seconds > maxSeconds() + 0.5 && !isPro()) await limitSheet();
-      await analyze(audio, sampleRate);
+      if (alive && !signal.aborted) await analyze(audio, sampleRate, signal);
     } catch (err) {
-      show('error', (err as Error).message);
+      if (alive && !signal.aborted) show('error', (err as Error).message);
     }
   }
 
-  async function analyze(heardAudio: Float32Array, sampleRate: number): Promise<void> {
+  async function analyze(heardAudio: Float32Array, sampleRate: number, signal: AbortSignal): Promise<void> {
     show('thinking');
     try {
       const audio = boostQuiet(heardAudio, sampleRate); // soft humming counts too
-      const job = runDsp('free', { audio, sampleRate, kind: 'lead' });
+      const job = runDsp('free', { audio, sampleRate, kind: 'lead' }, { signal });
       void sleep(1400).then(() => { if (alive && stage.dataset.state === 'thinking') status.textContent = 'Building your band…'; });
       let r = await job;
-      if (!alive) return;
+      if (!alive || signal.aborted) return;
       // Soft, breathy or far from the phone: listen again, more sensitively, before giving up.
       if (r.notes.length < 4 || !r.key) {
-        const again = await runDsp('free', { audio, sampleRate, kind: 'lead', sensitive: true });
-        if (!alive) return;
+        const again = await runDsp('free', { audio, sampleRate, kind: 'lead', sensitive: true }, { signal });
+        if (!alive || signal.aborted) return;
         if (again.notes.length > r.notes.length && again.key) r = again;
       }
       if (r.notes.length < 2 || !r.key) {
@@ -213,12 +232,25 @@ export function mountHum(root: HTMLElement): () => void {
       navigator.vibrate?.(10);
       navigate('choices');
     } catch (err) {
-      show('error', (err as Error).message);
+      if (alive && !signal.aborted) show('error', (err as Error).message);
     }
   }
 
+  const hidden = (): void => {
+    if (document.visibilityState !== 'hidden' || (!opening && !mic && stage.dataset.state !== 'thinking')) return;
+    operation.abort();
+    mic?.close();
+    mic = null;
+    cancelAnimationFrame(raf);
+    setAudioSession('playback');
+    show('error', 'Recording interrupted. Keep HUMM open and try again.');
+  };
+  document.addEventListener('visibilitychange', hidden);
+
   return () => {
     alive = false;
+    operation.abort();
+    document.removeEventListener('visibilitychange', hidden);
     clearTimeout(hintTimer);
     cancelAnimationFrame(raf);
     if (mic) {

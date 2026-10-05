@@ -19,7 +19,8 @@ export function lockedIn(p: Project): string[] {
     const sound = t.kind === 'drums' ? getKit(t.preset) : getInstrument(t.preset);
     if (sound.pro) out.add(sound.name);
   }
-  for (const tool of ['tracks', 'fix', 'fx'] as const) if (p.proTools?.includes(tool)) out.add(TOOL_NAMES[tool]);
+  for (const tool of ['tracks', 'fix'] as const) if (p.proTools?.includes(tool)) out.add(TOOL_NAMES[tool]);
+  if (p.proTools?.includes('fx') || p.tracks.some((t) => t.voice?.fx)) out.add(TOOL_NAMES.fx);
   return [...out];
 }
 
@@ -41,7 +42,7 @@ export function lockedItems(p: Project): LockedItem[] {
   }
   if (p.proTools?.includes('tracks')) out.push({ name: 'Tracks', why: 'Notes or beats changed on the Tracks screen' });
   if (p.proTools?.includes('fix')) out.push({ name: 'Fix', why: 'Fix used on a part' });
-  if (p.proTools?.includes('fx')) out.push({ name: 'Voice effect', why: 'The effect on My voice' });
+  if (p.proTools?.includes('fx') || p.tracks.some((t) => t.voice?.fx)) out.push({ name: 'Voice effect', why: 'The effect on My voice' });
   return out;
 }
 

@@ -70,6 +70,11 @@ function loadWorklet(ctx: AudioContext): Promise<void> {
 export class MicRecorder {
   private chunks: Chunk[] = [];
   private onDone: (() => void) | null = null;
+  private closed = false;
+  private frames = 0;
+  private watchdog = 0;
+  private releaseAbort: (() => void) | undefined;
+  private readonly hidden = (): void => { if (document.visibilityState === 'hidden') this.close(); };
 
   private constructor(
     readonly ctx: AudioContext,
@@ -85,12 +90,16 @@ export class MicRecorder {
         this.onDone?.();
         this.onDone = null;
       } else if (m.data && typeof m.frame === 'number') {
+        this.frames += m.data.length;
+        if (this.frames > this.ctx.sampleRate * 200) { this.close(); return; }
         this.chunks.push({ frame: m.frame, data: m.data });
       }
     };
+    document.addEventListener('visibilitychange', this.hidden);
   }
 
-  static async open(): Promise<MicRecorder> {
+  static async open(signal?: AbortSignal): Promise<MicRecorder> {
+    if (signal?.aborted) throw new DOMException('Recording cancelled', 'AbortError');
     const ctx = getCtx();
     if (!navigator.mediaDevices?.getUserMedia) {
       // Browsers hide the mic API on insecure pages; the iOS / Android apps always have it.
@@ -101,19 +110,31 @@ export class MicRecorder {
       // Voice processing OFF — AGC/noise suppression destroy beatbox transients.
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
     });
+    const connected: AudioNode[] = [];
     try {
+      if (signal?.aborted || document.hidden) throw new DOMException('Recording cancelled', 'AbortError');
       await loadWorklet(ctx);
+      if (signal?.aborted || document.hidden) throw new DOMException('Recording cancelled', 'AbortError');
       const source = ctx.createMediaStreamSource(stream);
+      connected.push(source);
       const node = new AudioWorkletNode(ctx, 'mb-recorder', { numberOfOutputs: 1, outputChannelCount: [1] });
+      connected.push(node);
       const analyser = ctx.createAnalyser();
+      connected.push(analyser);
       analyser.fftSize = 2048;
       const sink = ctx.createGain();
+      connected.push(sink);
       sink.gain.value = 0; // keep the worklet pulled by the graph without monitoring the mic
       source.connect(node);
       source.connect(analyser);
       node.connect(sink).connect(ctx.destination);
-      return new MicRecorder(ctx, stream, source, node, sink, analyser);
+      const recorder = new MicRecorder(ctx, stream, source, node, sink, analyser);
+      const close = (): void => recorder.close();
+      signal?.addEventListener('abort', close, { once: true });
+      recorder.releaseAbort = () => signal?.removeEventListener('abort', close);
+      return recorder;
     } catch (err) {
+      for (const node of connected) { try { node.disconnect(); } catch { /* setup never completed */ } }
       stream.getTracks().forEach((t) => t.stop());
       throw err;
     }
@@ -126,11 +147,16 @@ export class MicRecorder {
   }
 
   start(): void {
+    if (this.closed) throw new DOMException('Recording interrupted', 'AbortError');
     this.chunks = [];
+    this.frames = 0;
+    clearTimeout(this.watchdog);
+    this.watchdog = window.setTimeout(() => this.close(), 200_000);
     this.node.port.postMessage('start');
   }
 
   stop(): Promise<void> {
+    if (this.closed) return Promise.resolve();
     return new Promise((resolve) => {
       const timer = setTimeout(resolve, 600);
       this.onDone = () => {
@@ -148,6 +174,13 @@ export class MicRecorder {
   }
 
   close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    clearTimeout(this.watchdog);
+    this.releaseAbort?.();
+    document.removeEventListener('visibilitychange', this.hidden);
+    this.onDone?.();
+    this.onDone = null;
     this.stream.getTracks().forEach((t) => t.stop());
     try {
       this.source.disconnect();

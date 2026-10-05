@@ -4,7 +4,7 @@
 // free to export, the extra ones carry a lock (exporting them needs Pro, pro/exports.ts). A heart keeps
 // a version in My songs (a favorite).
 import { keyName } from '../dsp/key';
-import { prepareProject } from '../audio/prepare';
+import { prepareQuickly } from '../audio/prepare';
 import { unlockAudio } from '../audio/context';
 import { Player } from '../audio/scheduler';
 import { arrange, type HumTake } from '../model/autoArrange';
@@ -45,6 +45,9 @@ export function mountChoices(root: HTMLElement): () => void {
   const kept = new Set<number>(); // versions hearted (saved to My songs)
   let current = 0;
   let alive = true;
+  let playRequest = 0;
+  let saving = false;
+  let preparing = new AbortController();
   let voiceOn = true;
   let voiceLevel = 0.8; // your voice's volume, the same in every version
   let voiceFx = false; // the voice effect (Pro): only on your voice, never on the instruments
@@ -58,7 +61,6 @@ export function mountChoices(root: HTMLElement): () => void {
     t.voice ? h('i', { class: `voice${voiceOn ? ' on' : ''}` }) : null);
 
   function add(vs: Variant[]): Promise<void> {
-    const start = projects.length;
     for (const v of vs) {
       const style = v.lead ? { ...v.style, lead: { ...v.style.lead, preset: v.lead } } : v.style;
       const p = arrange({ ...t!, bpm: v.bpm }, style, v.style.name);
@@ -68,7 +70,7 @@ export function mountChoices(root: HTMLElement): () => void {
       applyLevels(p);
       const i = projects.length;
       if (i >= FREE_VERSIONS) p.proTools = ['more']; // an extra version: free to use, Pro to export
-      if (voiceFx && !isPro()) markTool(p, 'fx');
+      if (voiceFx) markTool(p, 'fx');
       variants.push(v);
       projects.push(p);
       const card = h('button', { type: 'button', class: 'card-bold choice', 'aria-current': 'false', onClick: () => play(i) },
@@ -82,7 +84,7 @@ export function mountChoices(root: HTMLElement): () => void {
       cards.push(card);
       list.append(h('div', { class: 'choice-wrap' }, card, heart));
     }
-    return Promise.all(projects.slice(start).map((p) => prepareProject(p).catch(() => undefined))).then(() => undefined);
+    return Promise.resolve();
   }
 
   const voiceChip = t.voice ? chip(PARTS.voice.label, () => {
@@ -127,7 +129,7 @@ export function mountChoices(root: HTMLElement): () => void {
     setPressed(fxChip as HTMLElement, on);
     eachVoice((voice, p) => {
       voice.fx = on;
-      if (on && !isPro()) markTool(p, 'fx');
+      if (on) markTool(p, 'fx');
       else unmarkTool(p, 'fx');
     });
   };
@@ -156,14 +158,20 @@ export function mountChoices(root: HTMLElement): () => void {
     h('div', { class: 'action' }, mix, bar.el)));
 
   function play(i: number): void {
+    preparing.abort();
+    preparing = new AbortController();
+    const signal = preparing.signal;
+    const request = ++playRequest;
+    player.stop();
     current = i;
     cards.forEach((c, k) => c.setAttribute('aria-current', String(k === i)));
-    void unlockAudio().then(() => {
-      if (!alive) return;
+    void unlockAudio().then(async () => {
+      await prepareQuickly(projects[i], 1500, signal);
+      if (!alive || request !== playRequest || document.hidden) return;
       player.start();
       status.replaceChildren();
       status.classList.remove('playing');
-    });
+    }).catch((error) => { if (alive && !signal.aborted) toast((error as Error).message || 'Couldn’t start playback. Please try again.'); });
   }
 
   async function more(): Promise<void> {
@@ -185,11 +193,14 @@ export function mountChoices(root: HTMLElement): () => void {
 
   /** Heart: keep this version in My songs (a favorite); un-heart moves it to Recently deleted. */
   async function toggleKeep(i: number, btn: HTMLButtonElement): Promise<void> {
+    if (btn.disabled || saving) return;
+    btn.disabled = true;
+    try {
     const p = projects[i];
     if (kept.has(i)) {
+      await trashProject(p.id);
       kept.delete(i);
       btn.setAttribute('aria-pressed', 'false');
-      await trashProject(p.id);
       p.id = uid(); // a later "Use this" makes a fresh song, not a clash with the deleted one
       return;
     }
@@ -200,16 +211,27 @@ export function mountChoices(root: HTMLElement): () => void {
     kept.add(i);
     btn.setAttribute('aria-pressed', 'true');
     navigator.vibrate?.(10);
+    } catch { toast('Couldn’t save this song. Free some space and try again.'); }
+    finally { if (alive) btn.disabled = false; }
   }
 
   async function use(): Promise<void> {
+    if (saving) return;
+    saving = true;
+    bar.main.disabled = true;
+    const selected = current;
+    try {
     player.stop();
     await flushSave();
-    if (!kept.has(current)) projects[current].name = await nextSongName();
-    setProject(projects[current]);
+    if (!kept.has(selected)) projects[selected].name = await nextSongName();
+    await saveProject(projects[selected]);
+    if (!alive) return;
+    setProject(projects[selected]);
     take = null;
     navigate('studio');
     toast('Saved to My songs');
+    } catch { if (alive) toast('Couldn’t save this song. Free some space and try again.'); }
+    finally { saving = false; if (alive) bar.main.disabled = false; }
   }
 
   void add(pickVariants(t.bpm, t.key, likes)).then(() => {
@@ -229,6 +251,7 @@ export function mountChoices(root: HTMLElement): () => void {
 
   return () => {
     alive = false;
+    preparing.abort();
     cancelAnimationFrame(raf);
     player.stop();
   };

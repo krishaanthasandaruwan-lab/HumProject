@@ -10,7 +10,7 @@
 .tracks-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 18px; }
 
 /* The rail never scrolls: tiles share its height (between 38 and 58 px each). */
-.rail { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 8px 2px; }
+.rail { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 8px 2px; }
 .rail-part { position: relative; flex: 1 1 0; min-height: 38px; max-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center;
   background: var(--white); border: var(--border); transition: box-shadow var(--t-ui) var(--ease), padding var(--t-ui) var(--ease); }
 .rail-part.rail-all { grid-template-columns: minmax(0, 1fr); border-style: solid; background: var(--paper); }
@@ -30,7 +30,7 @@
 .rail-mute[aria-pressed="true"] { background: transparent; color: var(--graphite); }
 .rail-part.muted .rail-txt b { color: var(--graphite); }
 .rail-part.muted .ico { background: var(--mist); border-color: var(--stone); color: var(--graphite); }
-.rail-part.solo .ico { background: var(--red); }
+.rail-part.solo .ico { background: var(--red); color: var(--accent-ink); }
 .rail-part.hit .ico { background: var(--ink); color: var(--white); }
 .rail-suggest { width: 100%; border: 2px dashed var(--stone); }
 .rail-suggest .ico { border-style: dashed; }
