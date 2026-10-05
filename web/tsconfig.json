@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": [], "noUnusedLocals": true },
+  "include": ["src", "../src/env.d.ts"]
+}

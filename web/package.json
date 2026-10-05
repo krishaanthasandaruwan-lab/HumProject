@@ -1,0 +1,12 @@
+{
+  "name": "humm-marketing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5180 --strictPort",
+    "build": "npm run typecheck && node ../node_modules/vite/bin/vite.js build",
+    "typecheck": "node ../node_modules/typescript/bin/tsc --project tsconfig.json --noEmit",
+    "preview": "node ../node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port 4180 --strictPort",
+    "test": "node tests/qa.mjs"
+  }
+}

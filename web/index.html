@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F4EF">
+  <meta name="description" content="The tune in your head. A whole band in your pocket. Hum, beatbox, or whistle with HUMM. Try a three-track song in your browser.">
+  <meta property="og:title" content="HUMM — Hum a melody. Make it a song.">
+  <meta property="og:description" content="Your mouth. The whole band. Try HUMM's three-track humming demo.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/barlow.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="/src/pages.css">
+  <title>HUMM — Hum a melody. Make it a song.</title>
+</head>
+<body>
+  <a href="#main" class="skip">Skip to main content</a>
+  <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="m7 4 14 8-14 8Z"/></symbol>
+      <symbol id="i-stop" viewBox="0 0 24 24"><path d="M5 5h14v14H5Z"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="m11 4-5 4H2v8h4l5 4ZM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><path d="m11 4-5 4H2v8h4l5 4ZM17 9l5 6m0-6-5 6"/></symbol>
+      <symbol id="i-drums" viewBox="0 0 24 24"><ellipse cx="12" cy="9" rx="8" ry="4"/><path d="M4 9v8c0 5 16 5 16 0V9M8 12v7m4-6v7m4-8v7M3 2l12 8M21 2 9 10"/></symbol>
+      <symbol id="i-bass" viewBox="0 0 24 24"><path d="m14 10 6-6m-5 7 6-6M17 3l4-1 1 4-4 1M8 9c-6-2-9 4-5 9s10 1 8-5l4-4-2-2Z"/><circle cx="7" cy="15" r="1.5"/></symbol>
+      <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="1"/><path d="M7 4v16m5-16v16m5-16v16M5 4v8h3V4m2 0v8h3V4m2 0v8h3V4"/></symbol>
+      <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 10v4m4-8v12m4-16v20m4-18v16m4-12v8m4-6v4"/></symbol>
+      <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 9 6-4v14l-6-4"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 3-6 6 6 6M2 9h13a6 6 0 0 1 0 12h-5"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M2 5h20M2 12h20M2 19h20"/><circle cx="7" cy="5" r="2"/><circle cx="17" cy="12" r="2"/><circle cx="10" cy="19" r="2"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M5 19 19 5"/></symbol>
+      <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M16.7 1.3c.1 1.5-.6 2.9-1.5 3.8-1 1-2.3 1.5-3.6 1.4-.2-1.4.6-2.9 1.5-3.8 1-1 2.5-1.6 3.6-1.4ZM20.5 17.1c-.5 1.2-.8 1.8-1.5 2.8-.9 1.3-2.1 2.9-3.6 2.9-1.3 0-1.6-.8-3.4-.8s-2.2.9-3.5.8c-1.5-.1-2.6-1.5-3.5-2.8C2.5 16.2 2 10.9 3.9 8.3c1.4-1.9 3.6-2.3 5.1-2.3 1.3 0 2.3.8 3.3.8.9 0 2.3-.9 3.9-.8 1.4.1 2.7.7 3.6 1.8-3.1 1.7-2.6 6.2.7 7.6Z"/></symbol>
+    </defs>
+  </svg>
+  <header class="site-header wrap">
+    <a class="brand" href="./index.html" aria-label="HUMM home"><img src="/icon-512.png" alt="" width="48" height="48"><span>HUMM</span></a>
+    <button id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true"></span></button>
+    <nav id="main-nav" aria-label="Main navigation"><a href="./features.html">The app</a><a href="./why-humm.html">Why HUMM</a><a href="./plans.html">Plans</a><button class="nav-cta" data-store>App Store <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title"><span>HUM A MELODY.</span><span><mark>MAKE IT A</mark></span><span>SONG.</span></h1>
+        <p class="hero-lede">The tune in your head. A whole band in your pocket.<br> Hum, beatbox, or whistle. HUMM takes it from there.</p>
+        <div class="actions"><a class="button primary" href="#try-now"><span>Try now</span><i><svg class="icon"><use href="#i-arrow"/></svg></i></a></div>
+        <p class="privacy-line">Your audio stays on your phone.</p>
+      </div>
+      <div class="hero-phones" aria-label="HUMM microphone and studio app previews">
+        <div class="phone phone-back"><img src="/screens/hum-current.png" alt="HUMM's Hum a melody screen with its red microphone" width="1206" height="2622" fetchpriority="high"></div>
+        <div class="sound-bridge" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="phone phone-front"><img src="/screens/studio.png" alt="HUMM Studio with drums, bass, melody, chords and your voice" width="660" height="1434" fetchpriority="high"></div>
+      </div>
+    </section>
+    <div class="manifesto wrap" aria-hidden="true"><span>HUM IT.</span><b>·</b><span>BUILD IT.</span><b>·</b><span>MAKE IT YOURS.</span></div>
+    <section id="the-app" class="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-heading reveal"><h2 id="features-title">YOUR MOUTH.<br><span>THE WHOLE BAND.</span></h2><a class="editorial-link" href="./features.html">Explore the app <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+        <div class="feature-showcase">
+          <article class="feature reveal">
+            <div class="phone feature-phone"><img src="/screens/hum-current.png" alt="The HUMM microphone screen" width="660" height="1434" loading="lazy"></div>
+            <h3>HUM A MELODY</h3><p>Hum, sing, or whistle. Build a band around the tune you bring.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="phone feature-phone" id="feature-screen"><img id="feature-image" src="/screens/studio.png" alt="HUMM Studio: choose sounds and mix your band" width="660" height="1434" loading="lazy"></div>
+            <h3>BUILD YOUR BAND</h3><p>Pick your sound. Beatbox drums. Edit notes and mix every part.</p>
+            <div class="screen-tabs" role="group" aria-label="Explore app screenshots"><button data-screen="studio" aria-pressed="true">Studio</button><button data-screen="choices" aria-pressed="false">Sounds</button><button data-screen="drums" aria-pressed="false">Drums</button><button data-screen="taste" aria-pressed="false">Taste</button></div>
+          </article>
+          <article class="feature reveal">
+            <div class="phone feature-phone"><img src="/screens/share.png" alt="HUMM's sharing screen for audio and before-and-after video" width="660" height="1434" loading="lazy"></div>
+            <h3>LET IT OUT</h3><p>Share audio or a before-and-after video. Take the notes further with Pro MIDI export.</p>
+          </article>
+        </div>
+        <ul class="feature-rail reveal"><li><svg class="icon"><use href="#i-wave"/></svg>Voice tuning &amp; effects</li><li><svg class="icon"><use href="#i-video"/></svg>Import audio &amp; video</li><li><svg class="icon"><use href="#i-undo"/></svg>Fix timing with Undo</li><li><svg class="icon"><use href="#i-sliders"/></svg>Edit in Tracks</li></ul>
+        <ul class="feature-details reveal"><li>20 music styles</li><li>37 instruments &amp; 16 drum kits</li><li>Up to 100 song versions</li><li>Auto-save &amp; song library</li></ul>
+        <p class="library-note reveal">In the app, keep your favorites, rename and duplicate songs, or recover recently deleted ideas.</p>
+      </div>
+    </section>
+    <section id="try-now" class="demo-section wrap" aria-labelledby="demo-title">
+      <div class="demo-copy reveal"><h2 id="demo-title">A LITTLE HUM.<br>A <mark>WHOLE SONG.</mark></h2><p>Have a tune in mind? Hum it here.<br>Build a little band. Hear what happens.</p><p class="label demo-note">Three tracks. Just for listening.</p></div>
+      <div class="demo-column reveal">
+        <div id="demo-studio" class="demo-studio" data-state="ready">
+          <div class="studio-heading"><h3>YOUR THREE-TRACK STUDIO</h3><span class="label" id="track-count">0 / 3</span></div>
+          <div class="mic-zone"><button id="demo-mic" class="mic-button" aria-label="Start humming"><svg class="icon"><use href="#i-mic"/></svg></button><p id="mic-label">Start humming</p><p id="demo-status" role="status">Hum for 10 seconds. Then tap to finish.</p><button id="demo-cancel" class="text-button" hidden>Cancel recording</button></div>
+          <canvas id="demo-scope" width="640" height="52" aria-hidden="true"></canvas>
+          <div class="track-list">
+            <div class="demo-track" data-kind="drums"><span class="track-icon"><svg class="icon"><use href="#i-drums"/></svg></span><div class="track-name"><label for="drums-sound">Drums</label><select id="drums-sound" disabled><option value="808">808</option><option value="boombap">Boom-Bap</option><option value="house">House</option></select></div><div class="track-pattern" aria-hidden="true"></div><button class="mute-button" aria-label="Mute drums" aria-pressed="false" disabled><svg class="icon"><use href="#i-volume"/></svg></button></div>
+            <div class="demo-track" data-kind="bass"><span class="track-icon"><svg class="icon"><use href="#i-bass"/></svg></span><div class="track-name"><label for="bass-sound">Bass</label><select id="bass-sound" disabled><option value="bass">Warm bass</option><option value="sub">Sub bass</option><option value="bass808">808 bass</option></select></div><div class="track-pattern" aria-hidden="true"></div><button class="mute-button" aria-label="Mute bass" aria-pressed="false" disabled><svg class="icon"><use href="#i-volume"/></svg></button></div>
+            <div class="demo-track" data-kind="lead"><span class="track-icon"><svg class="icon"><use href="#i-keys"/></svg></span><div class="track-name"><label for="lead-sound">Melody</label><select id="lead-sound" disabled><option value="keys">Keys</option><option value="piano">Piano</option><option value="flute">Flute</option><option value="pluck">Pluck</option></select></div><div class="track-pattern" aria-hidden="true"></div><button class="mute-button" aria-label="Mute melody" aria-pressed="false" disabled><svg class="icon"><use href="#i-volume"/></svg></button></div>
+          </div>
+          <div class="demo-transport"><button id="demo-play" class="button primary" disabled><span>Play your song</span><i><svg class="icon"><use href="#i-play"/></svg></i></button><button id="demo-reset" class="button outline" disabled>Start over</button><output id="demo-time" aria-label="Playback time">0:00</output></div>
+        </div>
+        <p class="demo-privacy">Your microphone is used only while recording. Nothing is saved or uploaded.</p>
+      </div>
+    </section>
+    <section class="benefits wrap" id="why-humm" aria-labelledby="benefits-title">
+      <div class="benefits-heading reveal"><h2 id="benefits-title">YOUR IDEA.<br>STILL <mark>YOURS.</mark></h2><svg class="melody-diagram" viewBox="0 0 660 200" aria-hidden="true"><g class="diagram-wave" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 97.0v6"/><path d="M19 94.0v12"/><path d="M26 91.0v18"/><path d="M33 95.0v10"/><path d="M40 86.0v28"/><path d="M47 78.0v44"/><path d="M54 60.0v80"/><path d="M61 40.0v120"/><path d="M68 25.0v150"/><path d="M75 34.0v132"/><path d="M82 58.0v84"/><path d="M89 44.0v112"/><path d="M96 69.0v62"/><path d="M103 81.0v38"/><path d="M110 77.0v46"/><path d="M117 90.0v20"/><path d="M124 94.0v12"/><path d="M131 91.0v18"/><path d="M138 88.0v24"/><path d="M145 94.0v12"/><path d="M152 83.0v34"/><path d="M159 75.0v50"/><path d="M166 84.0v32"/><path d="M173 92.0v16"/><path d="M180 94.0v12"/><path d="M187 90.0v20"/><path d="M194 87.0v26"/><path d="M201 78.0v44"/><path d="M208 88.0v24"/><path d="M215 92.0v16"/><path d="M222 94.0v12"/><path d="M229 96.0v8"/><path d="M236 95.0v10"/><path d="M243 97.0v6"/></g><path class="diagram-lines" d="M270 64h365m-365 44h340m-340 47h340M252 30v150"/><g class="diagram-notes"><rect x="290" y="56" width="20" height="9"/><rect x="324" y="69" width="18" height="9"/><rect x="364" y="43" width="20" height="9"/><rect x="404" y="61" width="16" height="9"/><rect x="448" y="44" width="24" height="9"/><rect x="482" y="58" width="20" height="9"/><rect x="514" y="70" width="46" height="9"/><rect x="288" y="106" width="24" height="9"/><rect x="350" y="92" width="24" height="9"/><rect x="390" y="85" width="26" height="9"/><rect x="428" y="107" width="22" height="9"/><rect x="480" y="106" width="18" height="9"/><rect x="516" y="92" width="18" height="9"/><rect x="544" y="108" width="26" height="9"/><rect x="288" y="152" width="28" height="9"/><rect x="328" y="143" width="30" height="9"/><rect x="376" y="160" width="20" height="9"/><rect x="420" y="158" width="24" height="9"/><rect x="464" y="150" width="30" height="9"/><rect x="504" y="162" width="22" height="9"/><rect x="540" y="155" width="34" height="9"/><rect x="584" y="164" width="24" height="9"/></g><path class="diagram-arrow" d="m630 59 10 5-10 5Z"/></svg></div>
+      <div class="benefit-columns">
+        <article class="reveal"><h3>START WITH<br>YOUR VOICE</h3><p>Hum a melody. Build drums, bass and chords around it.</p></article>
+        <article class="reveal"><h3>MAKE IT SOUND<br>LIKE YOU</h3><p>Keep your voice, choose sounds and shape each part.</p></article>
+        <article class="reveal"><h3>KEEP IT ON<br>YOUR PHONE</h3><p>Your recordings are processed locally. No account needed.</p></article>
+      </div>
+      <a class="editorial-link" href="./why-humm.html">Why HUMM <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </section>
+  </main>
+  <footer id="get-humm" class="footer">
+    <div class="wrap">
+      <div class="footer-cta reveal"><div><h2>YOUR NEXT SONG<br>STARTS WITH YOU.</h2><p>Keep creating with HUMM on iPhone.</p></div><div class="footer-wordmark" aria-hidden="true">HUMM</div></div>
+      <div class="footer-meta"><a class="footer-brand" href="#" aria-label="HUMM home">HUMM</a><p>Made for the melody in your head.</p><nav class="footer-links" aria-label="Footer navigation"><a href="./features.html">The app</a><a href="./plans.html">Plans</a><a href="./why-humm.html">Why HUMM</a><a id="contact-email" hidden></a></nav></div>
+      <div class="piano-caption"><h3>PLAY A LITTLE.</h3><div class="piano-tools"><button id="octave-down" aria-label="Piano octave down">−</button><output id="piano-octave" aria-label="Piano octave">C3–C6</output><button id="octave-up" aria-label="Piano octave up">+</button><button id="piano-mute" aria-label="Mute piano" aria-pressed="false"><svg class="icon"><use href="#i-volume"/></svg></button></div><p>Tap the keys. Or use A–K.</p></div>
+    </div>
+    <div id="piano" class="piano" role="group" aria-label="Playable piano keyboard. A S D F G H J K play white keys; W E T Y U play black keys."></div>
+    <p id="piano-status" class="sr-only" role="status"></p>
+  </footer>
+  <dialog id="store-dialog" aria-labelledby="store-title"><button class="dialog-close" aria-label="Close App Store message"><svg class="icon"><use href="#i-close"/></svg></button><h2 id="store-title">THE NEXT SONG<br>IS ALMOST HERE.</h2><p>The HUMM App Store link will be here soon.<br>Try the three-track studio while you’re here.</p><a class="button primary" href="#try-now" id="store-try"><span>Try now</span><i><svg class="icon"><use href="#i-arrow"/></svg></i></a></dialog>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

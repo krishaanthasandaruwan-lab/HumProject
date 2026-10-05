@@ -1,0 +1,405 @@
+{
+  "url": "http://127.0.0.1:4180/",
+  "checks": [
+    {
+      "name": "Site loads and fonts resolve",
+      "success": true
+    },
+    {
+      "name": "Hero copy matches the design brief",
+      "success": true,
+      "detail": [
+        "HUMM",
+        "The app",
+        "Try now",
+        "Get HUMM",
+        "HUM A MELODY.",
+        "MAKE IT A",
+        "SONG.",
+        "The tune in your head. A whole band in your pocket.",
+        "Hum, beatbox, or whistle. HUMM takes it from there.",
+        "Try now",
+        "App Store"
+      ]
+    },
+    {
+      "name": "Blank contact details and no guessed store link",
+      "success": true
+    },
+    {
+      "name": "Real app previews load",
+      "success": true
+    },
+    {
+      "name": "Connected iPhone screenshot is included",
+      "success": true,
+      "detail": 660
+    },
+    {
+      "name": "Feature preview changes to choices",
+      "success": true
+    },
+    {
+      "name": "Feature preview changes to drums",
+      "success": true
+    },
+    {
+      "name": "Feature preview changes to taste",
+      "success": true
+    },
+    {
+      "name": "Feature preview changes to studio",
+      "success": true
+    },
+    {
+      "name": "App Store placeholder has a clear message",
+      "success": true
+    },
+    {
+      "name": "App Store dialog dismisses with Escape",
+      "success": true
+    },
+    {
+      "name": "320×568 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 320,
+        "scroll": 320,
+        "clipped": []
+      }
+    },
+    {
+      "name": "320×568 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 320,
+        "scroll": 320,
+        "clipped": []
+      }
+    },
+    {
+      "name": "320×568 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 320,
+        "scroll": 320,
+        "clipped": []
+      }
+    },
+    {
+      "name": "320×568 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 320,
+        "scroll": 320,
+        "clipped": []
+      }
+    },
+    {
+      "name": "375×812 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 375,
+        "scroll": 375,
+        "clipped": []
+      }
+    },
+    {
+      "name": "375×812 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 375,
+        "scroll": 375,
+        "clipped": []
+      }
+    },
+    {
+      "name": "375×812 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 375,
+        "scroll": 375,
+        "clipped": []
+      }
+    },
+    {
+      "name": "375×812 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 375,
+        "scroll": 375,
+        "clipped": []
+      }
+    },
+    {
+      "name": "393×852 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 393,
+        "scroll": 393,
+        "clipped": []
+      }
+    },
+    {
+      "name": "393×852 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 393,
+        "scroll": 393,
+        "clipped": []
+      }
+    },
+    {
+      "name": "393×852 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 393,
+        "scroll": 393,
+        "clipped": []
+      }
+    },
+    {
+      "name": "393×852 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 393,
+        "scroll": 393,
+        "clipped": []
+      }
+    },
+    {
+      "name": "440×956 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 440,
+        "scroll": 440,
+        "clipped": []
+      }
+    },
+    {
+      "name": "440×956 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 440,
+        "scroll": 440,
+        "clipped": []
+      }
+    },
+    {
+      "name": "440×956 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 440,
+        "scroll": 440,
+        "clipped": []
+      }
+    },
+    {
+      "name": "440×956 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 440,
+        "scroll": 440,
+        "clipped": []
+      }
+    },
+    {
+      "name": "768×1024 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 768,
+        "scroll": 768,
+        "clipped": []
+      }
+    },
+    {
+      "name": "768×1024 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 768,
+        "scroll": 768,
+        "clipped": []
+      }
+    },
+    {
+      "name": "768×1024 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 768,
+        "scroll": 768,
+        "clipped": []
+      }
+    },
+    {
+      "name": "768×1024 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 768,
+        "scroll": 768,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1024×768 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1024,
+        "scroll": 1024,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1024×768 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1024,
+        "scroll": 1024,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1024×768 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1024,
+        "scroll": 1024,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1024×768 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1024,
+        "scroll": 1024,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1536×1024 main has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1536,
+        "scroll": 1536,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1536×1024 the-app has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1536,
+        "scroll": 1536,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1536×1024 try-now has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1536,
+        "scroll": 1536,
+        "clipped": []
+      }
+    },
+    {
+      "name": "1536×1024 get-humm has no horizontal overflow or clipped controls",
+      "success": true,
+      "detail": {
+        "width": 1536,
+        "scroll": 1536,
+        "clipped": []
+      }
+    },
+    {
+      "name": "Reduced-motion preference removes animations",
+      "success": true
+    },
+    {
+      "name": "Piano spans the viewport and black keys attach at the bottom",
+      "success": true,
+      "detail": {
+        "width": 1536,
+        "x": 0,
+        "upsideDown": true,
+        "white": 28,
+        "black": 20
+      }
+    },
+    {
+      "name": "Computer keyboard plays and highlights piano key",
+      "success": true
+    },
+    {
+      "name": "Piano key releases",
+      "success": true
+    },
+    {
+      "name": "Piano octave changes pitch labels",
+      "success": true
+    },
+    {
+      "name": "Piano mute updates its accessible state",
+      "success": true
+    },
+    {
+      "name": "Demo module is ready with exactly three empty rows",
+      "success": true
+    },
+    {
+      "name": "Denied microphone permission explains recovery",
+      "success": true
+    },
+    {
+      "name": "Cancel during permission request releases late microphone stream",
+      "success": true
+    },
+    {
+      "name": "Microphone captures actual audio frames",
+      "success": true
+    },
+    {
+      "name": "Recorded pitched melody becomes three real music tracks",
+      "success": true,
+      "detail": "Your band is ready · 91 BPM · E minor. Press Play."
+    },
+    {
+      "name": "Microphone is released after analysis",
+      "success": true
+    },
+    {
+      "name": "Every generated track has musical events",
+      "success": true
+    },
+    {
+      "name": "Playback uses a progressing audio clock",
+      "success": true
+    },
+    {
+      "name": "Playback timer advances",
+      "success": true
+    },
+    {
+      "name": "Track mute updates the actual playback controls",
+      "success": true
+    },
+    {
+      "name": "Playback stops and removes all moving cursors",
+      "success": true
+    },
+    {
+      "name": "Start over clears all three tracks and playback",
+      "success": true
+    },
+    {
+      "name": "Demo never offers saving or exporting",
+      "success": true
+    },
+    {
+      "name": "No uncaught browser errors",
+      "success": true,
+      "detail": []
+    }
+  ],
+  "errors": []
+}
