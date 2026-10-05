@@ -1,6 +1,6 @@
 // Microphone -> Float32Array via an AudioWorklet. Every chunk is stamped with the
 // audio-clock frame it was captured on, so takes can be cut exactly on the beat grid.
-import { getCtx } from './context';
+import { getCtx, resetAudioContext, setAudioSession, unlockAudio } from './context';
 
 /** Same code as public/recorder-worklet.js (a test keeps them identical); used if that file can't load. */
 export const WORKLET_SRC = `
@@ -74,6 +74,9 @@ export class MicRecorder {
   private frames = 0;
   private watchdog = 0;
   private releaseAbort: (() => void) | undefined;
+  private ready: (() => void) | null = null;
+  private failed: ((error: Error) => void) | null = null;
+  private lastInput = 0;
   private readonly hidden = (): void => { if (document.visibilityState === 'hidden') this.close(); };
 
   private constructor(
@@ -90,17 +93,23 @@ export class MicRecorder {
         this.onDone?.();
         this.onDone = null;
       } else if (m.data && typeof m.frame === 'number') {
+        this.lastInput = performance.now();
+        if (this.stream.getAudioTracks().some((t) => t.readyState === 'live' && !t.muted)) this.ready?.();
         this.frames += m.data.length;
         if (this.frames > this.ctx.sampleRate * 200) { this.close(); return; }
         this.chunks.push({ frame: m.frame, data: m.data });
       }
     };
+    node.onprocessorerror = () => this.close();
     document.addEventListener('visibilitychange', this.hidden);
   }
 
-  static async open(signal?: AbortSignal): Promise<MicRecorder> {
+  static async open(signal?: AbortSignal, retry = true): Promise<MicRecorder> {
     if (signal?.aborted) throw new DOMException('Recording cancelled', 'AbortError');
+    setAudioSession('play-and-record');
     const ctx = getCtx();
+    // Start the resume in the tap, then resume again after the mic changes the audio route.
+    void unlockAudio().catch(() => undefined);
     if (!navigator.mediaDevices?.getUserMedia) {
       // Browsers hide the mic API on insecure pages; the iOS / Android apps always have it.
       throw new Error(window.isSecureContext ? 'This browser cannot record audio.' : 'The microphone needs HTTPS. Open the https:// address.');
@@ -132,10 +141,19 @@ export class MicRecorder {
       const close = (): void => recorder.close();
       signal?.addEventListener('abort', close, { once: true });
       recorder.releaseAbort = () => signal?.removeEventListener('abort', close);
+      try {
+        await unlockAudio();
+        await recorder.start();
+        if (signal?.aborted || document.hidden) throw new DOMException('Recording cancelled', 'AbortError');
+      } catch (error) { recorder.close(); throw error; }
       return recorder;
     } catch (err) {
       for (const node of connected) { try { node.disconnect(); } catch { /* setup never completed */ } }
       stream.getTracks().forEach((t) => t.stop());
+      if (retry && !signal?.aborted && !document.hidden && (err as Error).name !== 'AbortError') {
+        resetAudioContext();
+        return MicRecorder.open(signal, false);
+      }
       throw err;
     }
   }
@@ -146,14 +164,25 @@ export class MicRecorder {
     return typeof s?.latency === 'number' && isFinite(s.latency) ? s.latency : 0;
   }
 
-  start(): void {
+  private start(): Promise<void> {
     if (this.closed) throw new DOMException('Recording interrupted', 'AbortError');
     this.chunks = [];
     this.frames = 0;
     clearTimeout(this.watchdog);
     this.watchdog = window.setTimeout(() => this.close(), 200_000);
-    this.node.port.postMessage('start');
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.ready = this.failed = null;
+        reject(new Error('The microphone isn’t receiving audio. Tap again to retry.'));
+      }, 2500);
+      this.ready = () => { clearTimeout(timer); this.ready = this.failed = null; resolve(); };
+      this.failed = (error) => { clearTimeout(timer); this.ready = this.failed = null; reject(error); };
+      this.node.port.postMessage('start');
+    });
   }
+
+  /** Silence still has frames. A stalled audio clock or disconnected mic does not. */
+  receiving(): boolean { return !this.closed && this.stream.getAudioTracks().some((t) => t.readyState === 'live' && !t.muted) && performance.now() - this.lastInput < 2500; }
 
   stop(): Promise<void> {
     if (this.closed) return Promise.resolve();
@@ -177,6 +206,7 @@ export class MicRecorder {
     if (this.closed) return;
     this.closed = true;
     clearTimeout(this.watchdog);
+    this.failed?.(new DOMException('Recording interrupted', 'AbortError'));
     this.releaseAbort?.();
     document.removeEventListener('visibilitychange', this.hidden);
     this.onDone?.();
@@ -191,5 +221,6 @@ export class MicRecorder {
       /* already disconnected */
     }
     this.node.port.onmessage = null;
+    this.node.onprocessorerror = null;
   }
 }

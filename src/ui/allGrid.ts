@@ -3,6 +3,7 @@
 // fill their notes, with the red edge where a note starts. Tap a row to open that part.
 import { STEPS_PER_BAR, type Project, type Track } from '../model/project';
 import { h } from './dom';
+import { gridPages } from './gridPages';
 import { icon } from './icons';
 import { PARTS, partLabel } from './parts';
 
@@ -14,10 +15,11 @@ export interface AllGridApi {
 
 const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.length ?? 0) > 0;
 
-export function allGrid(o: { project: () => Project; open: (id: string) => void }): AllGridApi {
+export function allGrid(o: { project: () => Project; open: (id: string) => void; page?: () => [number, number] }): AllGridApi {
   const el = h('div', { class: 'grid agrid', role: 'group', 'aria-label': 'All parts' });
   let cells: HTMLElement[][] = [];
   let head = -1;
+  const pages = gridPages(() => o.project().bars, render);
 
   function render(): void {
     el.replaceChildren();
@@ -25,7 +27,10 @@ export function allGrid(o: { project: () => Project; open: (id: string) => void 
     head = -1;
     const p = o.project();
     const parts = p.tracks.filter(hasContent);
-    for (let b = 0; b < p.bars; b++) {
+    const [first, last] = (o.page ?? pages.bounds)();
+    const controls = o.page ? null : pages.control();
+    if (controls) el.append(controls);
+    for (let b = first; b < last; b++) {
       const rows = parts.map((t, r) => {
         const name = partLabel(p, t);
         const row = h('div', { class: `grid-row${t.muted ? ' muted' : ''}`, 'data-id': t.id, title: name, role: 'group', 'aria-label': `${name}, bar ${b + 1}` },
@@ -67,6 +72,7 @@ export function allGrid(o: { project: () => Project; open: (id: string) => void 
   }
 
   function setPlayhead(step: number): void {
+    if (!o.page && pages.follow(step)) render();
     if (step === head) return;
     cells[head]?.forEach((c) => c.classList.remove('ph'));
     head = step;

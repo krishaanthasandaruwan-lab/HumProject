@@ -7,7 +7,7 @@ import { player } from '../app';
 import { unlockAudio } from '../audio/context';
 import { exportMidi, exportWav, prepareVideo, recordVideo } from '../audio/export';
 import { canExport, lockedItems } from '../pro/exports';
-import { isPro } from '../pro/pro';
+import { isPlus, isPro } from '../pro/pro';
 import { authorizeExport } from '../pro/authorize';
 import { cloneProject } from '../model/project';
 import { download, safeName, shareFile } from '../share';
@@ -26,7 +26,7 @@ export function openExport(): void {
   const p = cloneProject(getProject(), false);
   const name = safeName(p.name);
   const check = canExport(p);
-  const locked = (): void => { const now = canExport(p); openPaywall(now.ok ? undefined : now.reason); };
+  const locked = (): void => { const now = canExport(p); openPaywall(now.ok ? undefined : now.reason, now.ok ? 'pro' : now.tier); };
   let alive = true;
   let previewUrl: string | null = null;
   let includeRaw = true;
@@ -43,7 +43,7 @@ export function openExport(): void {
   const items = lockedItems(p);
   const note = check.ok
     ? null
-    : btn2(`Pro features in this song (${items.length})`, () => openLocked(), 'pro');
+    : btn2(`Paid features in this song (${items.length})`, () => openLocked(), 'pro');
 
   const content = h('div', { class: 'stack' },
     h('div', { class: 'video-wrap' }, canvas),
@@ -55,20 +55,20 @@ export function openExport(): void {
   sheet(content, () => { alive = false; abort?.abort(); if (previewUrl) URL.revokeObjectURL(previewUrl); }, 'Share');
 
   // Poster frame so the sheet never shows an empty box.
-  const poster = createScene(canvas, { project: p, bars: Math.min(p.bars, 4), rawDur: 0, wave: new Float32Array(0), sampleRate: 48000, events: [], watermark: !isPro() }, quality.scale);
+  const poster = createScene(canvas, { project: p, bars: Math.min(p.bars, 4), rawDur: 0, wave: new Float32Array(0), sampleRate: 48000, events: [], watermark: !isPlus() }, quality.scale);
   poster.draw(0.01);
   void loadSceneFonts().then(() => { if (alive) poster.draw(0.01); }).catch(() => undefined);
 
   /** What in this song is Pro, one by one, and how to export it anyway. */
   function openLocked(): void {
     const close = sheet(h('div', { class: 'stack' },
-      h('p', { class: 'body muted' }, 'Exporting this song needs Pro, because it uses:'),
+      h('p', { class: 'body muted' }, 'Exporting this song needs a paid membership, because it uses:'),
       h('div', { class: 'listbox' }, items.map((it) =>
-        listRow(it.name, h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 12)),
+        listRow(`${it.name} · ${it.tier === 'pro' ? 'Pro' : 'Plus'}`, h('span', { class: 'lockb', 'aria-label': it.tier }, icon('lock', 12)),
           { sub: it.track ? `${it.why} · ${partLabel(p, it.track)}` : it.why }))),
-      mainBtn('Unlock Pro', () => { close(); locked(); }, { icon: 'pro' }),
+      mainBtn('See plans', () => { close(); locked(); }, { icon: 'pro' }),
       h('p', { class: 'small muted' }, 'Or take them out of the song (Undo, another sound) to export it free.')),
-    undefined, 'Pro in this song');
+    undefined, 'Paid features in this song');
   }
 
   function busy(on: boolean): void {
@@ -83,7 +83,7 @@ export function openExport(): void {
     try {
       await authorizeExport(p);
       if (!alive) return;
-      if (!watermark && !isPro()) throw new Error('Your Pro access changed. Make the video again with the free watermark.');
+      if (!watermark && !isPlus()) throw new Error('Your membership changed. Make the video again with the free watermark.');
       report(await (save ? download : shareFile)(blob, file, p.name));
     } catch (error) { if (alive) fail(error); }
     finally { busy(false); }
@@ -103,7 +103,7 @@ export function openExport(): void {
     try {
       await authorizeExport(p);
       if (!alive) return;
-      const watermark = !isPro();
+      const watermark = !isPlus();
       await unlockAudio();
       await loadSceneFonts();
       status.textContent = 'Making video…';
@@ -120,7 +120,7 @@ export function openExport(): void {
       });
       await authorizeExport(p);
       if (!alive) return;
-      if (!watermark && !isPro()) throw new Error('Your Pro access changed. Make the video again to include the free watermark.');
+      if (!watermark && !isPlus()) throw new Error('Your membership changed. Make the video again to include the free watermark.');
       const url = URL.createObjectURL(blob);
       previewUrl = url;
       const file = `${name} - HUMM.${ext}`;

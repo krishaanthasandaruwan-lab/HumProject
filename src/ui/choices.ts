@@ -13,7 +13,7 @@ import { MAX_VARIANTS, moreVariants, pickVariants, type Variant } from '../model
 import { navigate } from '../router';
 import { settings } from '../settings';
 import { nextSongName } from '../songName';
-import { isPro } from '../pro/pro';
+import { isPlus } from '../pro/pro';
 import { FREE_VERSIONS, markTool, unmarkTool } from '../pro/exports';
 import { flushSave, setProject } from '../state';
 import { saveProject, trashProject } from '../storage';
@@ -48,6 +48,7 @@ export function mountChoices(root: HTMLElement): () => void {
   let playRequest = 0;
   let saving = false;
   let preparing = new AbortController();
+  let pending = false;
   let voiceOn = true;
   let voiceLevel = 0.8; // your voice's volume, the same in every version
   let voiceFx = false; // the voice effect (Pro): only on your voice, never on the instruments
@@ -63,7 +64,7 @@ export function mountChoices(root: HTMLElement): () => void {
   function add(vs: Variant[]): Promise<void> {
     for (const v of vs) {
       const style = v.lead ? { ...v.style, lead: { ...v.style.lead, preset: v.lead } } : v.style;
-      const p = arrange({ ...t!, bpm: v.bpm }, style, v.style.name);
+      const p = arrange({ ...t!, bpm: v.bpm }, style, v.style.name, v.feel === 'hummed');
       for (const tr of p.tracks) baseVolume.set(tr, tr.volume);
       const lead = p.tracks.find((x) => x.kind === 'lead');
       if (lead?.voice) lead.voice = { ...lead.voice, on: voiceOn, fx: voiceFx };
@@ -74,7 +75,7 @@ export function mountChoices(root: HTMLElement): () => void {
       variants.push(v);
       projects.push(p);
       const card = h('button', { type: 'button', class: 'card-bold choice', 'aria-current': 'false', onClick: () => play(i) },
-        h('span', { class: 'tile48' }, icon(styleIcon(v.style.id), 24), locked(i) ? h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 12)) : null),
+        h('span', { class: 'tile48' }, icon(styleIcon(v.style.id), 24), locked(i) ? h('span', { class: 'lockb', 'aria-label': 'Plus' }, icon('lock', 12)) : null),
         h('span', null,
           h('b', { class: 'h3' }, v.style.name),
           h('small', { class: 'label muted' }, [v.lead ? getInstrument(v.lead).name : '', FEEL[v.feel], `${v.bpm} BPM`].filter(Boolean).join(' · ')),
@@ -95,7 +96,7 @@ export function mountChoices(root: HTMLElement): () => void {
       if (lead?.voice) lead.voice.on = voiceOn;
     }
     cards.forEach((c) => c.querySelector('.partsq .voice')?.classList.toggle('on', voiceOn));
-    if (player.playing) play(current);
+    if (player.playing || pending) play(current, true);
   }, { icon: 'voice', pressed: true }) : null;
 
   /** Your voice in every version: its volume, and the voice effect. */
@@ -124,7 +125,14 @@ export function mountChoices(root: HTMLElement): () => void {
     bandLevel = v;
     projects.forEach(applyLevels);
   }, 'Instruments volume');
-  const setFx = (on: boolean): void => {
+  const fxText = h('span', null, 'Effect');
+  const setFx = async (on: boolean): Promise<void> => {
+    if (!fxChip || (fxChip as HTMLButtonElement).disabled) return;
+    (fxChip as HTMLButtonElement).disabled = true;
+    fxChip.setAttribute('aria-busy', 'true');
+    fxText.textContent = 'Applying…';
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    if (!alive) return;
     voiceFx = on;
     setPressed(fxChip as HTMLElement, on);
     eachVoice((voice, p) => {
@@ -132,12 +140,17 @@ export function mountChoices(root: HTMLElement): () => void {
       if (on) markTool(p, 'fx');
       else unmarkTool(p, 'fx');
     });
+    try { player.refreshMix(); }
+    catch { toast('Couldn’t apply the voice effect. Try playback again.'); }
+    finally {
+      fxText.textContent = 'Effect';
+      fxChip.removeAttribute('aria-busy');
+      (fxChip as HTMLButtonElement).disabled = false;
+    }
+    if (on && !isPlus()) proNotice('Voice effect is Plus · export needs Plus', () => void setFx(false));
   };
   const fxChip = t.voice
-    ? chip('Effect', () => {
-      setFx(!voiceFx);
-      if (voiceFx && !isPro()) proNotice('Voice effect is Pro · export needs Pro', () => setFx(false));
-    }, { icon: 'sparkles', pressed: false, lock: !isPro() })
+    ? chip(fxText, () => void setFx(!voiceFx), { icon: 'sparkles', pressed: false, lock: !isPlus() })
     : null;
   // Your voice and the instruments, balanced once here for every version (the Studio's Mix has the rest).
   const mix = h('div', { class: 'choice-mix' },
@@ -157,21 +170,33 @@ export function mountChoices(root: HTMLElement): () => void {
     h('div', { class: 'chips' }, voiceChip, moreChip, status),
     h('div', { class: 'action' }, mix, bar.el)));
 
-  function play(i: number): void {
+  function play(i: number, restart = false): void {
+    const stop = !restart && i === current && (player.playing || pending);
     preparing.abort();
     preparing = new AbortController();
     const signal = preparing.signal;
     const request = ++playRequest;
     player.stop();
+    pending = false;
+    status.replaceChildren();
+    status.classList.remove('playing');
+    status.removeAttribute('aria-busy');
+    if (stop) { status.textContent = 'Paused · tap to play'; return; }
+    pending = true;
     current = i;
     cards.forEach((c, k) => c.setAttribute('aria-current', String(k === i)));
+    status.textContent = 'Preparing your voice…';
+    status.setAttribute('aria-busy', 'true');
     void unlockAudio().then(async () => {
       await prepareQuickly(projects[i], 1500, signal);
       if (!alive || request !== playRequest || document.hidden) return;
       player.start();
       status.replaceChildren();
       status.classList.remove('playing');
-    }).catch((error) => { if (alive && !signal.aborted) toast((error as Error).message || 'Couldn’t start playback. Please try again.'); });
+    }).catch((error) => { if (alive && !signal.aborted) {
+      status.textContent = 'Tap to try playback again';
+      toast((error as Error).message || 'Couldn’t start playback. Please try again.');
+    } }).finally(() => { if (request === playRequest) { pending = false; status.removeAttribute('aria-busy'); } });
   }
 
   async function more(): Promise<void> {
@@ -189,7 +214,7 @@ export function mountChoices(root: HTMLElement): () => void {
   }
 
   /** Extra versions show a lock: free to pick, play and edit; exporting them needs Pro. */
-  const locked = (i: number): boolean => i >= FREE_VERSIONS && !isPro();
+  const locked = (i: number): boolean => i >= FREE_VERSIONS && !isPlus();
 
   /** Heart: keep this version in My songs (a favorite); un-heart moves it to Recently deleted. */
   async function toggleKeep(i: number, btn: HTMLButtonElement): Promise<void> {
@@ -221,6 +246,7 @@ export function mountChoices(root: HTMLElement): () => void {
     bar.main.disabled = true;
     const selected = current;
     try {
+    preparing.abort(); ++playRequest; pending = false;
     player.stop();
     await flushSave();
     if (!kept.has(selected)) projects[selected].name = await nextSongName();
@@ -242,9 +268,11 @@ export function mountChoices(root: HTMLElement): () => void {
   });
 
   let raf = 0;
+  let shown = '';
   const tick = (): void => {
     const on = player.playing;
-    cards.forEach((c, k) => c.classList.toggle('playing', on && k === current));
+    const state = `${on}:${current}:${cards.length}`;
+    if (state !== shown) { cards.forEach((c, k) => c.classList.toggle('playing', on && k === current)); shown = state; }
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);

@@ -36,7 +36,7 @@ export interface Track {
   generated?: boolean; // made by auto-chords rather than recorded
   labels?: string[]; // chord names per bar (chords track)
   /** Your own voice as a layer in the mix: beat-matched onto the grid, optionally auto-tuned. */
-  voice?: { on: boolean; tune: boolean; level: number; only?: boolean; /** The voice effect (Pro). */ fx?: boolean };
+  voice?: { on: boolean; tune: boolean; level: number; only?: boolean; /** Preserve the recording's pitch and timing when tune is off. */ original?: boolean; /** The voice effect (Pro). */ fx?: boolean };
   /** Flat [seconds into rawVoice, grid step] pairs: where each note was sung → where it belongs. */
   anchors?: number[];
   /** The person picked this sound themselves (a Pro sound picked this way needs Pro to export). */
@@ -56,8 +56,10 @@ export interface Project {
   id: string;
   name: string;
   bpm: number;
-  /** Song length: 2, 4 or 8 bars for a loop; a hummed song can be any multiple of 4 up to MAX_BARS. */
+  /** Recording loops use MAX_BARS; the Tracks editor can extend an arrangement to five minutes. */
   bars: number;
+  /** Tracks pages and appends in the selected loop size, even after the song gets longer. */
+  barSet?: 2 | 4 | 8;
   key?: Key;
   swing: number; // 0–0.3 of a 16th
   quantize: number; // strength 0..1 (1 = hard on the grid)

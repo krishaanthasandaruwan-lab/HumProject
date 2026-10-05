@@ -78,7 +78,7 @@ export function mountRecord(root: HTMLElement, params: Params): () => void {
       updateSettings({ lastBpm: getProject().bpm });
     }, 'BPM', 'Tempo');
     const bars = segmented<2 | 4 | 8>([{ value: 2, label: '2 bars' }, { value: 4, label: '4 bars' }, { value: 8, label: '8 bars' }], getProject().bars as 2 | 4 | 8, (v) => {
-      edit((p) => { p.bars = v; });
+      edit((p) => { p.bars = v; p.barSet = v; });
       updateSettings({ lastBars: v });
       bars.set(v);
     }, 'Loop length');

@@ -6,18 +6,20 @@
 import '../styles/tracks.css';
 import { player } from '../app';
 import { keyName } from '../dsp/key';
-import { totalSteps, trackById, type Project, type Track } from '../model/project';
+import { cloneProject, totalSteps, trackById, type Project, type Track } from '../model/project';
+import { appendBarSet, barSetSize, maxSongBars, removeBarSet } from '../model/songLength';
 import { holdLandscape } from '../native/orientation';
 import { navigate } from '../router';
 import { markTool, unmarkTool } from '../pro/exports';
 import { isPro } from '../pro/pro';
 import { edit, getProject, subscribe } from '../state';
-import { fill, h } from './dom';
+import { fill, h, toast } from './dom';
+import { gridPages } from './gridPages';
 import { proNotice } from './proNotice';
 import { allGrid } from './allGrid';
 import { canFix, fixChip } from './fix';
 import { icon } from './icons';
-import { backBtn, chip } from './kit';
+import { backBtn, chip, iconBtn } from './kit';
 import { partEditor, type PartEditor } from './partEditor';
 import { PARTS, partLabel } from './parts';
 import { openSounds, soundName } from './soundsSheet';
@@ -28,7 +30,7 @@ const hasContent = (t: Track): boolean => (t.hits?.length ?? 0) + (t.notes?.leng
 /** The part picked last time, so coming back opens on it. */
 let lastPicked = '';
 /** What the parts play (hits and notes): an edit here changes it. */
-const content = (p: Project): string => JSON.stringify(p.tracks.map((t) => [t.hits, t.notes]));
+const content = (p: Project): string => JSON.stringify([p.bars, p.tracks.map((t) => [t.hits, t.notes])]);
 
 export function mountTracks(root: HTMLElement): () => void {
   const p = getProject;
@@ -38,9 +40,10 @@ export function mountTracks(root: HTMLElement): () => void {
     return () => undefined;
   }
   let picked = ids().includes(lastPicked) ? lastPicked : ids()[0];
+  const pages = gridPages(() => p().bars, refreshPage, () => barSetSize(p()));
   const view = (id: string): PartEditor => {
-    if (id !== 'all') return partEditor(id);
-    const g = allGrid({ project: p, open: pick });
+    if (id !== 'all') return partEditor(id, pages.bounds);
+    const g = allGrid({ project: p, open: pick, page: pages.bounds });
     return { el: h('div', { class: 'part-editor' }, g.el, h('p', { class: 'small muted' }, 'Every part, bar by bar · tap a row to edit it')), rebuild: g.render, setPlayhead: g.setPlayhead };
   };
   let editor = view(picked);
@@ -50,6 +53,13 @@ export function mountTracks(root: HTMLElement): () => void {
   const meta = h('p', { class: 'label muted' });
   const chips = h('div', { class: 'chips tracks-chips' });
   const stage = h('section', { class: 'tracks-stage' }, editor.el);
+  const add = iconBtn('add', 'Add bar set', () => changeLength(false));
+  const remove = iconBtn('minus', 'Remove last bar set', () => changeLength(true));
+  const sets = h('div', { class: 'tracks-sets', 'aria-hidden': 'true' });
+  const cursor = h('span', { class: 'tracks-cursor', hidden: true, 'aria-hidden': 'true' });
+  const timeline = h('div', { class: 'tracks-timeline', role: 'img' }, sets, cursor);
+  const barTools = h('div', { class: 'tracks-bars' },
+    h('div', { class: 'tracks-bars-nav' }, pages.control(true), remove, add), timeline);
   const rail = trackRail({ selected: () => picked, select: pick, changed: () => renderHead() });
   const screen = h('div', { class: 'screen tracks fixed' },
     h('header', { class: 'top' },
@@ -57,9 +67,66 @@ export function mountTracks(root: HTMLElement): () => void {
       h('div', { class: 'tracks-title' }, h('h1', { class: 'h3' }, p().name), meta),
       chips,
       play.el),
-    h('div', { class: 'tracks-body' }, rail.el, stage));
+    h('div', { class: 'tracks-body' }, rail.el, h('div', { class: 'tracks-workspace' }, barTools, stage)));
+  // Keep editing gestures from magnifying the landscape app frame in iOS.
+  for (const gesture of ['gesturestart', 'gesturechange', 'gestureend']) screen.addEventListener(gesture, (e) => e.preventDefault(), { passive: false });
   root.append(screen);
   renderHead();
+
+  function refreshPage(): void {
+    editor.rebuild();
+    stage.scrollTop = 0;
+    lastStep = -2;
+    renderBars();
+  }
+
+  function renderBars(): void {
+    const s = p(), size = barSetSize(s);
+    pages.control(true);
+    add.disabled = s.bars + size > maxSongBars(s.bpm);
+    add.setAttribute('aria-label', `Add ${size}-bar set`);
+    add.title = add.disabled ? 'Five-minute limit reached' : `Add ${size} bars at the end`;
+    remove.disabled = s.bars <= size;
+    remove.title = 'Remove the last bar set';
+    const first = pages.bounds()[0];
+    sets.replaceChildren(...Array.from({ length: Math.ceil(s.bars / size) }, (_, i) =>
+      h('span', { class: `tracks-set${i * size === first ? ' sel' : ''}`, style: `flex-grow:${Math.min(size, s.bars - i * size)}` }, i + 1)));
+    timeline.setAttribute('aria-label', `${s.bars} bars in ${Math.ceil(s.bars / size)} sets of ${size}`);
+  }
+
+  function changeLength(deleting: boolean): void {
+    const saved = cloneProject(p(), false);
+    const savedPage = pages.bounds()[0];
+    const wasMarked = marked;
+    const oldBars = saved.bars;
+    edit((s) => deleting ? removeBarSet(s) : appendBarSet(s), saved.id);
+    pages.show(deleting ? pages.bounds()[0] : oldBars);
+    refreshPage();
+    if (!deleting) return;
+    const revision = p().updatedAt;
+    toast('Last bar set removed', { label: 'Undo', run: () => {
+      if (p().updatedAt !== revision) { toast('The song changed after deleting this set.'); return; }
+      restoring = true;
+      marked = wasMarked;
+      edit((s) => {
+        restoreMusic(s, saved);
+        if (!wasMarked) unmarkTool(s, 'tracks');
+      }, saved.id);
+      if (!wasMarked) { before = content(p()); snapshot = cloneProject(p(), false); }
+      restoring = false;
+      pages.show(savedPage);
+      refreshPage();
+    } });
+  }
+
+  function restoreMusic(song: Project, saved: Project): void {
+    song.bars = saved.bars;
+    song.barSet = saved.barSet;
+    for (const t of saved.tracks) {
+      const track = trackById(song, t.id);
+      if (track) { track.hits = t.hits?.map((x) => ({ ...x })); track.notes = t.notes?.map((x) => ({ ...x })); track.labels = t.labels?.slice(); }
+    }
+  }
 
   function pick(id: string): void {
     if (id === picked) return;
@@ -82,11 +149,12 @@ export function mountTracks(root: HTMLElement): () => void {
     fill(chips,
       t ? chip([soundName(t), icon('down', 14)], () => openSounds(t.id, () => { rail.refresh(); renderHead(); })) : null,
       t && canFix(t.id) ? fixChip(t.id, after) : null);
+    renderBars();
   }
 
   // Tracks is a Pro tool: the first change to notes or hits made here marks the song (with Undo).
   let before = content(p());
-  let snapshot = p().tracks.map((t) => ({ id: t.id, hits: t.hits?.map((x) => ({ ...x })), notes: t.notes?.map((x) => ({ ...x })) }));
+  let snapshot = cloneProject(p(), false);
   let marked = !!p().proTools?.includes('tracks');
   let restoring = false;
   const markOnce = (): void => {
@@ -97,17 +165,14 @@ export function mountTracks(root: HTMLElement): () => void {
     if (added && !isPro()) proNotice('Tracks is Pro · export needs Pro', () => {
       restoring = true;
       edit((pp) => {
-        for (const saved of snapshot) {
-          const track = trackById(pp, saved.id);
-          if (track) { track.hits = saved.hits?.map((x) => ({ ...x })); track.notes = saved.notes?.map((x) => ({ ...x })); }
-        }
+        restoreMusic(pp, snapshot);
         unmarkTool(pp, 'tracks');
       });
       marked = false;
       before = content(p());
-      snapshot = p().tracks.map((t) => ({ id: t.id, hits: t.hits?.map((x) => ({ ...x })), notes: t.notes?.map((x) => ({ ...x })) }));
+      snapshot = cloneProject(p(), false);
       restoring = false;
-      editor.rebuild();
+      refreshPage();
     });
   };
 
@@ -131,8 +196,11 @@ export function mountTracks(root: HTMLElement): () => void {
 
   const frame = (): void => {
     play.sync();
-    const now = player.currentStep();
-    const step = now < 0 ? -1 : now % totalSteps(p());
+    const now = player.currentPosition();
+    const step = now < 0 ? -1 : Math.floor(now) % totalSteps(p());
+    if (pages.follow(step)) refreshPage();
+    cursor.hidden = now < 0;
+    if (now >= 0) cursor.style.left = `${now / totalSteps(p()) * 100}%`;
     editor.setPlayhead(step);
     if (step !== lastStep) {
       lastStep = step;

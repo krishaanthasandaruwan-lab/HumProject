@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { setTier } from '../src/pro/pro';
 import { canExport, lockedIn, markTool, unmarkTool } from '../src/pro/exports';
 import { newProject, newTrack, type Project } from '../src/model/project';
 
@@ -12,20 +13,21 @@ function song(): Project {
   return p;
 }
 
+beforeEach(() => setTier('free'));
 describe('free exports', () => {
   it('exports one of the three free versions, Pro sounds that came with it included', () => {
     expect(canExport(song())).toEqual({ ok: true });
   });
 
-  it('needs Pro for an extra version from More', () => {
+  it('needs Plus for an extra version from More', () => {
     const p = song();
     p.proTools = ['more'];
     const r = canExport(p);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('a version from More');
+    if (!r.ok) { expect(r.reason).toContain('Extra version'); expect(r.tier).toBe('plus'); }
   });
 
-  it('needs Pro once the person picks a Pro sound, not for a free one they pick', () => {
+  it('needs Plus once the person picks a premium sound, not for a free one they pick', () => {
     const p = song();
     p.tracks[1].picked = true; // piano is free
     expect(canExport(p).ok).toBe(true);
@@ -46,4 +48,18 @@ describe('free exports', () => {
     unmarkTool(p, 'tracks');
     expect(canExport(p).ok).toBe(true);
   });
+});
+
+it('Plus covers creative exports but preserves Pro production locks, including after a downgrade', () => {
+  const p = song();
+  p.tracks[1].picked = true; p.tracks[1].preset = 'flute';
+  p.proTools = ['more', 'fx'];
+  setTier('plus');
+  expect(canExport(p)).toEqual({ ok: true });
+  markTool(p, 'tracks'); markTool(p, 'fix');
+  expect(canExport(p)).toMatchObject({ ok: false, tier: 'pro' });
+  setTier('pro'); expect(canExport(p)).toEqual({ ok: true });
+  setTier('plus'); expect(canExport(p)).toMatchObject({ ok: false, tier: 'pro' });
+  unmarkTool(p, 'tracks'); unmarkTool(p, 'fix');
+  setTier('free'); expect(canExport(p)).toMatchObject({ ok: false, tier: 'plus' });
 });

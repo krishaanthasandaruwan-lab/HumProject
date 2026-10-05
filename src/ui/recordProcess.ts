@@ -24,7 +24,7 @@ export async function processTake(heard: Take, k: TrackKind, preset?: string, si
     ? { ...heard, audio: await runDsp('declick', { audio: heard.audio, sampleRate: heard.sampleRate, tones: heard.clickTones }, { signal }) }
     : heard;
   // Soft humming counts too (beatbox keeps its own levels: loudness tells kick from hat).
-  const take = k === 'drums' ? clean : { ...clean, audio: boostQuiet(clean.audio, clean.sampleRate) };
+  const take = k === 'drums' ? clean : { ...clean, audio: boostQuiet(await runDsp('cleanVoice', { audio: clean.audio, sampleRate: clean.sampleRate }, { signal }), clean.sampleRate) };
   const common = { audio: take.audio, sampleRate: take.sampleRate, preroll: take.preroll, bpm: p.bpm, bars: p.bars, swing: p.swing };
   const track = newTrack(k, preset ?? getTrack(p, k)?.preset);
   inheritTrack(getTrack(p, k), track);

@@ -4,11 +4,13 @@
 import { NOTE_NAMES, scaleOf } from '../dsp/key';
 import { STEPS_PER_BAR, type Key, type Note } from '../model/project';
 import { h } from './dom';
+import { gridPages } from './gridPages';
 import { gridKeyboard } from './gridKeyboard';
 
 export interface NoteGridOptions {
   notes: () => Note[];
   bars: () => number;
+  page?: () => [number, number];
   keyOf: () => Key | undefined;
   edit: (fn: (notes: Note[]) => void) => void;
   audition: (midi: number) => void;
@@ -46,6 +48,7 @@ export function noteGrid(o: NoteGridOptions): NoteGridApi {
   let cells: HTMLElement[][] = []; // [step][row]
   let pitches: number[] = [];
   let head = -1;
+  const pages = gridPages(o.bars, render);
 
   function render(): void {
     el.replaceChildren();
@@ -54,12 +57,15 @@ export function noteGrid(o: NoteGridOptions): NoteGridApi {
     pitches = gridPitches(o.notes(), o.keyOf(), o.home);
     const bars = o.bars();
     const labels = o.labels?.() ?? [];
-    for (let b = 0; b < bars; b++) {
+    const [first, last] = (o.page ?? pages.bounds)();
+    const controls = o.page ? null : pages.control();
+    if (controls) el.append(controls);
+    for (let b = first; b < last; b++) {
       const rows = pitches.map((m, r) => {
         const row = h('div', { class: `grid-row${pcOf(m) === o.keyOf()?.tonic ? ' tonic' : ''}` }, h('span', { class: 'grid-lbl' }, noteName(m)));
         for (let s = 0; s < STEPS_PER_BAR; s++) {
           const step = b * STEPS_PER_BAR + s;
-          const c = h('button', { type: 'button', tabindex: step === 0 && r === 0 ? 0 : -1, class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'data-step': step, 'data-row': r, 'aria-label': `${noteName(m)}, bar ${b + 1}, step ${s + 1}`, 'aria-pressed': 'false' });
+          const c = h('button', { type: 'button', tabindex: step === first * 16 && r === 0 ? 0 : -1, class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'data-step': step, 'data-row': r, 'aria-label': `${noteName(m)}, bar ${b + 1}, step ${s + 1}`, 'aria-pressed': 'false' });
           row.appendChild(c);
           (cells[step] ??= [])[r] = c;
         }
@@ -73,7 +79,7 @@ export function noteGrid(o: NoteGridOptions): NoteGridApi {
   }
 
   function paint(): void {
-    for (const col of cells) for (const c of col) { c.classList.remove('on', 'start'); c.setAttribute('aria-pressed', 'false'); }
+    for (const col of cells) for (const c of col ?? []) { c.classList.remove('on', 'start'); c.setAttribute('aria-pressed', 'false'); }
     for (const n of o.notes()) {
       const r = pitches.indexOf(n.midi);
       if (r < 0) continue;
@@ -88,6 +94,7 @@ export function noteGrid(o: NoteGridOptions): NoteGridApi {
   }
 
   function setPlayhead(step: number): void {
+    if (!o.page && pages.follow(step)) render();
     if (step === head) return;
     cells[head]?.forEach((c) => c.classList.remove('ph'));
     head = step;

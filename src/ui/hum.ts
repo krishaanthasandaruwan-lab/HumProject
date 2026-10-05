@@ -1,7 +1,7 @@
 // 02 · Mic (home): hum, sing or whistle — no metronome, no setup. HUMM finds the beat and the key,
 // then offers three full arrangements (choices.ts).
 import '../styles/hum.css';
-import { getCtx, setAudioSession, unlockAudio } from '../audio/context';
+import { getCtx, setAudioSession } from '../audio/context';
 import { decodeAudioFile, sliceSeconds } from '../audio/importAudio';
 import { MicRecorder } from '../audio/recorder';
 import { runDsp } from '../dsp/client';
@@ -17,6 +17,7 @@ import { clock, limitSheet, maxSeconds } from './limits';
 import { drawScope } from './waveform';
 
 const MIN_SECONDS = 10; // a hum is at least this long: neither the mic button nor the quiet stops it sooner
+const MAX_SECONDS = 60; // home mic stays one minute; five-minute songs are arranged in Tracks
 const QUIET_STOP = 4; // after that, stops by itself after this much silence
 const TOO_SHORT = `Hum at least ${MIN_SECONDS} seconds`;
 
@@ -108,15 +109,13 @@ export function mountHum(root: HTMLElement): () => void {
     operation = new AbortController();
     const job = operation;
     micBtn.disabled = true;
+    micBtn.setAttribute('aria-busy', 'true');
+    status.textContent = 'Starting microphone…';
     try {
-      await unlockAudio();
-      if (!alive || job.signal.aborted) return;
-      setAudioSession('play-and-record');
       const opened = await MicRecorder.open(job.signal);
       if (!alive || job.signal.aborted) { opened.close(); return; }
       mic = opened;
-      mic.start();
-      startedAt = last = getCtx().currentTime;
+      startedAt = last = opened.ctx.currentTime;
       heard = quiet = 0;
       gate = new LevelGate();
       show('listening');
@@ -131,13 +130,21 @@ export function mountHum(root: HTMLElement): () => void {
     } finally {
       opening = false;
       micBtn.disabled = false;
+      micBtn.removeAttribute('aria-busy');
       if (!mic) setAudioSession('playback');
     }
   }
 
   function frame(): void {
     if (!mic) return;
-    const now = getCtx().currentTime;
+    if (!mic.receiving()) {
+      mic.close(); mic = null;
+      micBtn.style.removeProperty('--level'); timer.textContent = '';
+      setAudioSession('playback');
+      show('error', 'The microphone was interrupted. Tap Try again to reconnect.');
+      return;
+    }
+    const now = mic.ctx.currentTime;
     const dt = now - last;
     last = now;
     mic.analyser.getFloatTimeDomainData(scope);
@@ -152,9 +159,9 @@ export function mountHum(root: HTMLElement): () => void {
       quiet = 0;
     } else quiet += dt;
     const t = now - startedAt;
-    const max = maxSeconds();
-    timer.textContent = isPro() ? clock(t) : `${clock(t)} / ${clock(max)}`;
-    if (t >= max) return void finish(!isPro());
+    const max = MAX_SECONDS;
+    timer.textContent = `${clock(t)} / ${clock(max)}`;
+    if (t >= max) return void finish();
     if (t >= MIN_SECONDS && status.textContent === TOO_SHORT) {
       status.textContent = 'Tap when done';
       micBtn.setAttribute('aria-label', 'Done');
@@ -171,7 +178,7 @@ export function mountHum(root: HTMLElement): () => void {
     status.classList.add('nudge');
   }
 
-  async function finish(limited = false): Promise<void> {
+  async function finish(): Promise<void> {
     const signal = operation.signal;
     const m = mic;
     if (!m) return;
@@ -187,7 +194,6 @@ export function mountHum(root: HTMLElement): () => void {
     m.close();
     setAudioSession('playback');
     if (!alive || signal.aborted) return;
-    if (limited) await limitSheet();
     if (alive && !signal.aborted) await analyze(audio, getCtx().sampleRate, signal);
   }
 
@@ -212,7 +218,8 @@ export function mountHum(root: HTMLElement): () => void {
   async function analyze(heardAudio: Float32Array, sampleRate: number, signal: AbortSignal): Promise<void> {
     show('thinking');
     try {
-      const audio = boostQuiet(heardAudio, sampleRate); // soft humming counts too
+      const cleaned = await runDsp('cleanVoice', { audio: heardAudio, sampleRate }, { signal });
+      const audio = boostQuiet(cleaned, sampleRate); // soft humming counts too
       const job = runDsp('free', { audio, sampleRate, kind: 'lead' }, { signal });
       void sleep(1400).then(() => { if (alive && stage.dataset.state === 'thinking') status.textContent = 'Building your band…'; });
       let r = await job;

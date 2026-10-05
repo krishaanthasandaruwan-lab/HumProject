@@ -1,3 +1,5 @@
+> Historical audit/checkpoint: billing and tier details were superseded by the owner on 5 October 2026. Current release setup is in RELEASE.md; the separate App Store submission document contains the final listing and pending owner actions.
+
 # HUMM remediation and iOS release readiness — 5 October 2026
 
 The authorized local code remediation and dark-mode work are completed and verified within the limits below. **Hold App Store submission** until owner configuration, paid signing and physical/TestFlight acceptance are completed. Nothing was pushed to GitHub, committed, uploaded or published during this remediation.

@@ -67,6 +67,11 @@ export function processVoice(i: VoiceFxInput): Float32Array<ArrayBuffer> {
   const sr = i.sampleRate;
   const hop = 256;
   const fwd = anchorPairs(i.anchors);
+  if (i.amount === 0 && fwd.every(([a, b]) => Math.abs(a - b) < 1e-6)) {
+    const unchanged = new Float32Array(i.length);
+    unchanged.set(x.subarray(0, i.length));
+    return unchanged;
+  }
   const back = fwd.map(([a, b]) => [b, a] as [number, number]);
   const frames = fixOctaves(medianSmooth(trackPitch(x, sr, { hop, maxHz: 1100 })));
 
@@ -132,6 +137,8 @@ export function processVoice(i: VoiceFxInput): Float32Array<ArrayBuffer> {
   let out = 0;
   while (out < i.length && marks.length) {
     const tin = warp(back, out / sr) * sr;
+    if (tin >= x.length) break; // padding is silence, not the last grain repeating as a buzz
+    if (tin < 0) { out += unvoiced; continue; }
     while (j + 1 < marks.length && Math.abs(marks[j + 1].pos - tin) <= Math.abs(marks[j].pos - tin)) j++;
     while (j > 0 && Math.abs(marks[j - 1].pos - tin) < Math.abs(marks[j].pos - tin)) j--;
     const m = marks[j];

@@ -9,7 +9,7 @@ Docs:
 - [docs/HISTORY.md](docs/HISTORY.md) — everything that was built and decided, in order, and how to continue. **Start here if you are new to the project (person or AI).**
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code fits together.
 - [docs/RELEASE.md](docs/RELEASE.md) — the store release steps.
-- [STORE_LISTING.md](STORE_LISTING.md) — store texts, privacy policy, purchase setup.
+- [STORE_LISTING.md](STORE_LISTING.md) — historical listing draft; superseded by the separate current App Store submission document.
 - [BUILD_PLAN.md](BUILD_PLAN.md) — the original "MouthBand" spec the app started from (historical).
 - [design/DESIGN_SPEC.md](design/DESIGN_SPEC.md) — screens, look and images.
 
@@ -46,26 +46,27 @@ Open the `Network:` URL on a phone on the same Wi-Fi, accept the certificate war
 9. **Share.** Audio (WAV), the before → after video in 1080 × 1920, and MIDI (Pro). A song that uses something locked shows "Pro features in this song" with the exact list.
 10. **My songs.** Rename, duplicate, heart, delete; Recently deleted keeps songs 30 days and has **Delete all**.
 
-## Free vs Pro
+## Free, Plus and Pro
 
-Everything can be **used** for free. What decides Pro is **exporting**.
+First-release plans: **Plus $1.99/month** and **Pro $4.99/month** (US base prices).
+Pro has a **3-month Apple introductory free trial for eligible subscribers**. The app shows the store's localized price and checks eligibility; there is no $9.99 offer or one-time purchase.
 
-| | Free | Pro ($0.99 once) |
-|---|---|---|
-| Hum → song, beat match, auto-tune, import, record parts, edit | ✓ | ✓ |
-| Versions per hum | up to 100; the first 3 free to export, the rest locked | all exportable |
-| Saved songs | unlimited | unlimited |
-| Pro sounds (14 kits, 25 instruments), Tracks, Fix, voice Effect | usable, shown with a lock | ✓ |
-| Export (audio, 1080p video) | ✓ if the song uses nothing locked | ✓ always |
-| MIDI export | — | ✓ |
-| Video watermark | "Made with HUMM" | none |
-| Hum or import length | 1 minute | 3 minutes |
+| Feature | Free | Plus | Pro |
+|---|---|---|---|
+| Home microphone | 10–60 seconds | 10–60 seconds | 10–60 seconds |
+| Saved songs | Unlimited | Unlimited | Unlimited |
+| First three versions per hum | Audio / watermarked 1080p video | Audio / unmarked video | Audio / unmarked video |
+| Extra versions, picked premium sounds, voice effect | Preview; paid export | Export | Export |
+| Tracks and Fix edits | Preview; Pro export | Preview; Pro export | Export |
+| MIDI | — | — | Export |
+| Studio recordings / imports | 60 seconds | 90 seconds | 180 seconds |
+| Tracks arrangement | Up to five minutes in every tier; export depends on edits | Same | Same |
 
-A song needs Pro to export when it is an extra version from More, or the person **added** a locked thing while editing: picked a Pro sound themselves, changed notes in Tracks, used Fix, or turned on the voice Effect. Pro sounds that came with a generated version don't count. Using a locked thing shows "… is Pro · export needs Pro" with Undo and "Don't show again". Rules live in `src/pro/exports.ts`.
+Automatically assigned premium sounds in the first three generated versions stay free to export. Tracks uses 2/4/8-bar sets, arrow navigation, + to append a set and − to remove the last set with Undo. Editing and playback remain available to preview before subscribing. Export checks run again before delivery; Plus never grants Pro production exports. Rules live in `src/pro/exports.ts`.
 
-- **Test builds.** `VITE_DEV_PRO=true` (e.g. `npm run ios:pro`) builds with Pro on and a Pro switch in Settings — never upload one. The dev server has the same switch.
-- **Tester code.** Until RevenueCat keys are in the build, Settings › Tester code unlocks Pro on one phone.
-- **Purchases** only exist in the apps, through RevenueCat.
+- Test switches/codes work only in development or explicit `testing` builds; production ignores local unlock flags. Never submit a testing build.
+- StoreKit purchases use RevenueCat signed entitlement verification. Restore and Manage subscriptions are in Settings and the paywall.
+- Paid subscription products, real SDK configuration, a public policy and a support mailbox must be set up before `npm run build:release` and archiving. The developer account and these owner details are pending as of 5 October 2026.
 
 ## iPhone (Capacitor 8)
 
@@ -89,10 +90,10 @@ xcrun devicectl device process launch --terminate-existing --device <DEVICE-ID> 
 ```
 
 - **Free Personal Team limits:** at most 3 apps installed this way per phone, and they stop opening after 7 days (run again).
-- **Sign in with Apple** is in the Release entitlements only (`ios/App/App/App.entitlements`); in Debug builds the button reports it couldn't sign in — Skip works.
-- **Native code:** `ios/App/App/HummNative.swift` (Sign in with Apple, Keychain), registered by `MainViewController` in `SceneDelegate.swift`.
-- **Microphone, audio session, sharing, icons, privacy manifest:** as before — `NSMicrophoneUsageDescription`, `.playback` session in `AppDelegate`, share sheet, `ios/App/App/PrivacyInfo.xcprivacy`. App icons: the "Hm" mark in Ink on Stage Red, from `design/icon/hm-reference.jpg` — `node scripts/make-icon-mark.mjs && node scripts/make-icons.mjs` (web, iOS, Android). There is no splash screen: the app opens on plain paper, then the mic.
-- **Release:** `npm run ios:release` or Xcode › Archive. Steps: [docs/RELEASE.md](docs/RELEASE.md).
+- **Accounts:** optional sign-in is skipped for the first release. App.entitlements has no Sign in with Apple capability. Earlier local test identities can be removed in Settings.
+- **Native code:** `ios/App/App/HummNative.swift` (appearance and legacy Keychain identity cleanup), registered by `MainViewController` in `SceneDelegate.swift`.
+- **Microphone, audio session, sharing, icons, privacy manifest:** as before — `NSMicrophoneUsageDescription`, recording/playback audio-session handling, share sheet, `ios/App/App/PrivacyInfo.xcprivacy`. App icons: the "Hm" mark in Ink on Stage Red, from `design/icon/hm-reference.jpg` — `node scripts/make-icon-mark.mjs && node scripts/make-icons.mjs` (web, iOS, Android). There is no splash screen: the app opens on plain paper, then the mic.
+- **Release:** `HUMM_BUILD_NUMBER=1 npm run ios:release` or Xcode › Archive. Steps: [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Android (Capacitor 8)
 
@@ -125,7 +126,7 @@ npm run android:apk   # -> android/app/build/outputs/apk/debug/app-debug.apk
 | Synth | `src/synth/*` | 16 kits, 37 instruments, all synthesized. |
 | Playback | `scheduler.ts`, `engine.ts` | 25 ms lookahead, 100 ms ahead on the audio clock. |
 | Export | `render.ts`, `export.ts`, `wav.ts`, `midi.ts`, `ui/videoScene.ts` | Offline render to WAV; SMF format 1; canvas + MediaRecorder video at 1080 × 1920, 8 Mbps. |
-| Free / Pro | `pro/pro.ts`, `pro/exports.ts`, `pro/billing.ts` | Who may export what; RevenueCat. |
+| Free / Plus / Pro | `pro/pro.ts`, `pro/exports.ts`, `pro/billing.ts` | Who may export what; RevenueCat. |
 | Account | `account.ts`, `native/humm.ts` | Sign in with Apple, kept in the Keychain on the phone. |
 
 Heavy DSP runs in a Web Worker (`dsp/worker.ts`).

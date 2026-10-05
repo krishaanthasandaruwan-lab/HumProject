@@ -19,9 +19,12 @@ export async function prepareProject(p: Project, signal?: AbortSignal): Promise<
   await Promise.all([prepareSounds(projectSounds(p), getCtx().sampleRate, signal), prepareVoices(p, signal)]);
 }
 
-/** Wait for the sounds, but never longer than `ms` — stand-in voices cover anything still missing. */
+/** Instruments have stand-ins. The recording must be ready before the first loop starts. */
 export async function prepareQuickly(p: Project, ms = 1500, signal?: AbortSignal): Promise<void> {
   let timer = 0;
-  try { await Promise.race([prepareProject(p, signal), new Promise<void>((r) => { timer = window.setTimeout(r, ms); })]); }
+  try { await Promise.all([prepareVoices(p, signal), Promise.race([
+    prepareSounds(projectSounds(p), getCtx().sampleRate, signal),
+    new Promise<void>((r) => { timer = window.setTimeout(r, ms); }),
+  ])]); }
   finally { clearTimeout(timer); }
 }

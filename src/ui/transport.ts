@@ -33,13 +33,15 @@ export async function togglePlay(): Promise<void> {
 /** Red 64 square; ink with a red stop icon while playing. Call sync() every frame. */
 export function playSquare(): { el: HTMLButtonElement; sync: () => void } {
   const el = h('button', { type: 'button', class: 'playsq', 'aria-label': 'Play', 'aria-pressed': 'false', onClick: togglePlay }, icon('play', 28));
-  let shown: boolean | null = null;
+  let shown = '';
   const sync = (): void => {
-    if (shown === player.playing) return;
-    shown = player.playing;
-    el.setAttribute('aria-pressed', String(shown));
-    el.setAttribute('aria-label', shown ? 'Stop' : 'Play');
-    el.replaceChildren(icon(shown ? 'stop' : 'play', 28));
+    const state = pending ? 'preparing' : player.playing ? 'playing' : 'stopped';
+    if (shown === state) return;
+    shown = state;
+    el.setAttribute('aria-pressed', String(player.playing));
+    el.setAttribute('aria-busy', String(pending));
+    el.setAttribute('aria-label', pending ? 'Cancel audio preparation' : player.playing ? 'Stop' : 'Play');
+    el.replaceChildren(pending ? h('span', { class: 'spinner', 'aria-hidden': 'true' }) : icon(player.playing ? 'stop' : 'play', 28));
   };
   return { el, sync };
 }

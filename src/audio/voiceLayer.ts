@@ -26,7 +26,9 @@ function trimCache(): void {
 export const voiceOn = (t: Track): boolean => !!(t.voice?.on && t.rawVoice?.length && t.rawRate && t.anchors?.length);
 
 function signature(p: Project, t: Track): string {
-  return JSON.stringify([p.bpm, p.bars, p.swing, p.key, t.voice?.tune, t.anchors, t.rawVoice?.length,
+  if (t.voice?.original && !t.voice.tune) return JSON.stringify(['original', t.rawRate, t.rawVoice?.length,
+    Math.min(t.rawVoice!.length, Math.round(loopDuration(p) * t.rawRate!))]);
+  return JSON.stringify([p.bpm, p.bars, p.swing, p.key, t.voice?.tune, t.voice?.original, t.rawRate, t.anchors, t.rawVoice?.length,
     (t.notes ?? []).map((n) => [n.start, n.length, n.midi])]);
 }
 
@@ -47,6 +49,7 @@ export function voiceBuffer(p: Project, t: Track): AudioBuffer | null {
 export function prepareVoice(p: Project, t: Track, signal?: AbortSignal): Promise<void> {
   if (!voiceOn(t)) return Promise.resolve();
   const sig = signature(p, t);
+  if (signal?.aborted) return Promise.reject(new DOMException('Audio processing cancelled', 'AbortError'));
   const old = cache.get(t.id);
   if (old?.sig === sig) { cache.delete(t.id); cache.set(t.id, old); return old.job ?? Promise.resolve(); }
   const sd = stepDur(p.bpm);
@@ -56,10 +59,16 @@ export function prepareVoice(p: Project, t: Track, signal?: AbortSignal): Promis
   for (let i = 0; i + 1 < src.length; i += 2) anchors.push(src[i], at(src[i + 1]));
   const targets = (t.notes ?? []).map((n) => ({ start: at(n.start), end: at(n.start) + n.length * sd, midi: n.midi }));
   const rate = t.rawRate as number;
-  const length = Math.round(loopDuration(p) * rate);
+  const original = t.voice?.original && !t.voice.tune;
+  const length = original ? Math.min(t.rawVoice!.length, Math.round(loopDuration(p) * rate)) : Math.round(loopDuration(p) * rate);
   if (length * 4 > MAX_CACHE_BYTES) return Promise.reject(new Error('This voice layer is too long. Shorten the song or increase its tempo.'));
   const entry: Entry = { sig, buffer: null, job: null };
   cache.set(t.id, entry);
+  if (original) {
+    entry.buffer = monoBuffer(t.rawVoice!.subarray(0, length), rate);
+    trimCache();
+    return Promise.resolve();
+  }
   entry.job = runDsp('voice', {
     audio: t.rawVoice as Float32Array, sampleRate: rate, targets, key: p.key, anchors,
     length, amount: t.voice?.tune ? 1 : 0, glide: 0.05,
@@ -80,7 +89,7 @@ export function prepareVoice(p: Project, t: Track, signal?: AbortSignal): Promis
 
 export async function prepareVoices(p: Project, signal?: AbortSignal): Promise<void> {
   const tracks = p.tracks.filter(voiceOn);
-  if (tracks.length > 8 || tracks.reduce((bytes, t) => bytes + loopDuration(p) * (t.rawRate ?? 48000) * 4, 0) > MAX_CACHE_BYTES) {
+  if (tracks.length > 8 || tracks.reduce((bytes, t) => bytes + (t.voice?.original && !t.voice.tune ? Math.min(t.rawVoice!.length, loopDuration(p) * t.rawRate!) : loopDuration(p) * (t.rawRate ?? 48000)) * 4, 0) > MAX_CACHE_BYTES) {
     throw new Error('The voice layers need too much memory. Shorten the song or turn off some voice layers.');
   }
   for (const track of tracks) await prepareVoice(p, track, signal);

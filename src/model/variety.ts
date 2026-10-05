@@ -62,7 +62,7 @@ export function moreVariants(bpm: number, key: Key | undefined, likes: readonly 
     tempos.forEach(([feel, tempo], ti) => {
       if (ti > 0 && tempoFit(style, tempo) < 0.35) return; // keep each style where it sounds right
       leads.forEach((lead, li) => {
-        const v: Variant = { style, bpm: tempo, feel, lead };
+        const v: Variant = { style, bpm: tempo, feel: feel === 'more' && tempo === clampBpm(bpm) ? 'hummed' : feel, lead };
         if (!seen.has(variantKey(v))) cands.push({ v, s: score(style, tempo, key, likes, feel) - 0.4 * ti - 0.9 * li });
       });
     });
@@ -77,6 +77,7 @@ export function moreVariants(bpm: number, key: Key | undefined, likes: readonly 
       if (s > bestScore) { bestScore = s; best = i; }
     });
     const [pick] = cands.splice(best, 1);
+    for (let k = cands.length - 1; k >= 0; k--) if (variantKey(cands[k].v) === variantKey(pick.v)) cands.splice(k, 1);
     out.push(pick.v);
     seenStyles.add(pick.v.style.id);
   }

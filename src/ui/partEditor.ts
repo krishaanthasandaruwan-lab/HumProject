@@ -17,7 +17,7 @@ export interface PartEditor {
 }
 
 /** `id`: a track id, or 'voice'. */
-export function partEditor(id: string): PartEditor {
+export function partEditor(id: string, page?: () => [number, number]): PartEditor {
   const el = h('div', { class: 'part-editor' });
   const p = getProject;
   const track = (): Track | undefined => (id === 'voice' ? undefined : trackById(p(), id));
@@ -38,6 +38,7 @@ export function partEditor(id: string): PartEditor {
       const grid = drumGrid({
         hits: () => track()?.hits ?? [],
         bars: () => p().bars,
+        page,
         edit: (fn) => edit(() => fn((track()!.hits ??= []))),
         audition: (type, v) => auditionDrum(type, track()?.preset ?? '808', v),
       });
@@ -48,6 +49,7 @@ export function partEditor(id: string): PartEditor {
     const grid = noteGrid({
       notes: () => track()?.notes ?? [],
       bars: () => p().bars,
+      page,
       keyOf: () => p().key,
       edit: (fn) => edit(() => fn((track()!.notes ??= []))),
       audition: (m) => auditionNote(track()?.preset ?? TRACK_META[kind].preset, m),

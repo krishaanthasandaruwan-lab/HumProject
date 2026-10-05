@@ -1,7 +1,7 @@
 // Offline rendering: the full-band mix (OfflineAudioContext) and the raw-voice mix.
 import { STEPS_PER_BAR, stepDur, totalSteps, trackGain, type Project } from '../model/project';
 import { MASTER_GAIN, makeLimiter } from './context';
-import { createBus, scheduleStep, type TrackBus } from './engine';
+import { createBus, indexEvents, scheduleStep, type TrackBus } from './engine';
 import { prepareProject } from './prepare';
 
 export interface RenderOptions {
@@ -32,7 +32,8 @@ export async function renderMix(p: Project, o: RenderOptions = {}): Promise<Audi
   const buses = new Map<string, TrackBus>();
   for (const t of p.tracks) buses.set(t.id, createBus(ctx, t, master, trackGain(p, t)));
   const loopSteps = totalSteps(p);
-  for (let n = 0; n < loops * steps; n++) scheduleStep(ctx, p, buses, n % loopSteps, n * sd);
+  const events = indexEvents(p);
+  for (let n = 0; n < loops * steps; n++) scheduleStep(ctx, p, buses, n % loopSteps, n * sd, events);
   return ctx.startRendering();
 }
 

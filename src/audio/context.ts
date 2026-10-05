@@ -25,7 +25,8 @@ export function isIOS(): boolean {
 }
 
 export function getCtx(): AudioContext {
-  if (!ctx) {
+  if (!ctx || ctx.state === 'closed') {
+    streamDest = undefined;
     const Ctor =
       window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const opts: AudioContextOptions = { latencyHint: 'interactive' };
@@ -39,13 +40,18 @@ export function getCtx(): AudioContext {
     master.gain.value = MASTER_GAIN;
     limiter = makeLimiter(ctx);
     master.connect(limiter).connect(ctx.destination);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') {
-        ctx.resume().catch(() => undefined);
-      }
-    });
   }
   return ctx;
+}
+
+/** A failed capture can leave Safari's context interrupted even after resume(). */
+export function resetAudioContext(): void {
+  const old = ctx;
+  ctx = undefined;
+  master = undefined;
+  limiter = undefined;
+  streamDest = undefined;
+  if (old && old.state !== 'closed') void old.close().catch(() => undefined);
 }
 
 /** Everything audible goes through here (then a limiter, then the speakers). */
@@ -103,12 +109,15 @@ export async function unlockAudio(): Promise<AudioContext> {
   const s = c.createBufferSource();
   s.buffer = b;
   s.connect(c.destination);
+  s.onended = () => s.disconnect();
   s.start(0);
+  let timer = 0;
   try {
-    await resumed;
-  } catch {
-    /* will retry on next tap */
-  }
+    await Promise.race([resumed, new Promise<never>((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error('Audio was interrupted. Tap again to retry.')), 2000);
+    })]);
+    if (c.state !== 'running') throw new Error('Audio was interrupted. Tap again to retry.');
+  } finally { clearTimeout(timer); }
   return c;
 }
 
@@ -116,9 +125,10 @@ export async function unlockAudio(): Promise<AudioContext> {
 export function installUnlock(): void {
   const events = ['pointerdown', 'touchend', 'keydown'] as const;
   const handler = (): void => {
-    unlockAudio().then((c) => {
-      if (c.state === 'running') events.forEach((e) => document.removeEventListener(e, handler, true));
-    });
+    if (!ctx || ctx.state !== 'running') void unlockAudio().catch(() => undefined);
   };
   events.forEach((e) => document.addEventListener(e, handler, true));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && ctx && ctx.state !== 'running') void unlockAudio().catch(() => undefined);
+  });
 }

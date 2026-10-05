@@ -1,7 +1,5 @@
-// Free vs Pro. Everything can be used for free, and any number of songs kept; locked things (extra
-// versions of a hum, Pro sounds, Tracks, Fix, the voice effect) make a song need Pro to export
-// (pro/exports.ts). Free hums last up to a minute, and free videos carry the "Made with HUMM" mark.
-// Pro ($0.99 once): exports every song (no mark), MIDI files, 3-minute hums.
+// Free keeps the first three arrangements. Plus adds creative exports; Pro adds production tools.
+// Paid tiers come only from verified store entitlements. The Home mic stays at 10–60 seconds.
 import { del } from 'idb-keyval';
 import { getInstrument, getKit } from '../synth/kits';
 
@@ -63,7 +61,9 @@ export function endTesterPro(): void {
   listeners.forEach((f) => f());
 }
 
-let owned = false;
+export type Tier = 'free' | 'plus' | 'pro';
+export type PaidTier = Exclude<Tier, 'free'>;
+let owned: Tier = 'free';
 const listeners = new Set<() => void>();
 
 function devToggle(): boolean {
@@ -77,17 +77,25 @@ function devToggle(): boolean {
 }
 
 export function isPro(): boolean {
-  return owned || devToggle() || testerUnlocked();
+  return currentTier() === 'pro';
 }
+
+export const currentTier = (): Tier => devToggle() || testerUnlocked() ? 'pro' : owned;
+export const isPlus = (): boolean => currentTier() !== 'free';
+export const hasTier = (tier: PaidTier): boolean => tier === 'pro' ? isPro() : isPlus();
 
 export async function loadPro(): Promise<void> {
   // The native SDK caches signed CustomerInfo for offline access. A writable boolean is not a receipt.
-  owned = false;
+  owned = 'free';
   await del('pro-owned').catch(() => undefined);
 }
 
 /** Called by billing with the store's answer (the store is the source of truth). */
 export function setOwned(value: boolean): void {
+  setTier(value ? 'pro' : 'free');
+}
+
+export function setTier(value: Tier): void {
   if (owned === value) return;
   owned = value;
   listeners.forEach((f) => f());
@@ -108,5 +116,5 @@ export function onProChange(f: () => void): () => void {
   return () => listeners.delete(f);
 }
 
-export const kitLocked = (id: string): boolean => !isPro() && getKit(id).pro;
-export const instrumentLocked = (id: string): boolean => !isPro() && getInstrument(id).pro;
+export const kitLocked = (id: string): boolean => !isPlus() && getKit(id).pro;
+export const instrumentLocked = (id: string): boolean => !isPlus() && getInstrument(id).pro;

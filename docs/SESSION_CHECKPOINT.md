@@ -1,3 +1,5 @@
+> Historical audit/checkpoint: billing and tier details were superseded by the owner on 5 October 2026. Current release setup is in RELEASE.md; the separate App Store submission document contains the final listing and pending owner actions.
+
 # HUMM remediation handoff — 5 October 2026
 
 The owner resumed the paused session and authorized finishing the fixes and dark mode. Local

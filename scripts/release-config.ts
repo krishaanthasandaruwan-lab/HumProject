@@ -11,7 +11,12 @@ export function releaseProblems(env: Record<string, string | undefined>): string
   } catch { problems.push('Set a public HTTPS privacy-policy URL.'); }
   const email = env.VITE_SUPPORT_EMAIL ?? '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || /@example\.(com|org|net)$/.test(email)) problems.push('Set the real support email.');
-  if (!/^[A-Za-z0-9._-]+$/.test(env.VITE_PRO_ENTITLEMENT || 'pro')) problems.push('The Pro entitlement identifier is invalid.');
-  if (!/^[A-Za-z0-9._-]+$/.test(env.VITE_PRO_PRODUCT_ID || 'humm_pro')) problems.push('The Pro product identifier is invalid.');
+  const plans = { plus: { entitlement: env.VITE_PLUS_ENTITLEMENT || 'plus', product: env.VITE_PLUS_PRODUCT_ID || 'humm_plus_monthly' },
+    pro: { entitlement: env.VITE_PRO_ENTITLEMENT || 'pro', product: env.VITE_PRO_PRODUCT_ID || 'humm_pro_monthly' } };
+  for (const [tier, plan] of Object.entries(plans)) {
+    if (!/^[A-Za-z0-9._-]+$/.test(plan.entitlement)) problems.push(`The ${tier} entitlement identifier is invalid.`);
+    if (!/^[A-Za-z0-9._-]+$/.test(plan.product)) problems.push(`The ${tier} product identifier is invalid.`);
+  }
+  if (plans.plus.entitlement === plans.pro.entitlement || plans.plus.product === plans.pro.product) problems.push('Plus and Pro must have separate entitlement and product identifiers.');
   return problems;
 }

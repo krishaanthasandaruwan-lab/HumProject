@@ -39,7 +39,7 @@ export async function importRecording(k: ImportKind, progress: (busy: boolean, t
   try {
     const decoded = await decodeAudioFile(file, maxSeconds(), signal);
     const { sampleRate } = decoded;
-    const audio = k === 'drums' ? decoded.audio : boostQuiet(decoded.audio, sampleRate); // soft humming counts too
+    const audio = k === 'drums' ? decoded.audio : boostQuiet(await runDsp('cleanVoice', { audio: decoded.audio, sampleRate }, { signal }), sampleRate); // soft humming counts too
     progress(true, 'Finding the beat…');
     if (getProject().id !== p.id) return null;
     const others = p.tracks.some((t) => t.id !== replaceId && hasContent(t));

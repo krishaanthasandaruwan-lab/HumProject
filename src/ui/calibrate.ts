@@ -1,7 +1,7 @@
 // "Learns your mouth": say B ×5 → K ×5 → ts ×5, with live per-hit feedback and a
 // leave-one-out confidence meter. The 15 feature vectors become the personal k-NN profile.
 import '../styles/calibrate.css';
-import { setAudioSession, unlockAudio } from '../audio/context';
+import { setAudioSession } from '../audio/context';
 import { MicRecorder } from '../audio/recorder';
 import { runDsp } from '../dsp/client';
 import { buildProfile, looAccuracy, type Labeled, type Profile } from '../dsp/drumClassifier';
@@ -26,6 +26,7 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
   let samples: Labeled[] = [];
   let stage = 0;
   let alive = true;
+  const lifetime = new AbortController();
   let mic: MicRecorder | null = null;
   let raf = 0;
   let testTimer = 0;
@@ -84,10 +85,8 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
     const got: Labeled[] = [];
     startBtn.disabled = true;
     try {
-      const ctx = await unlockAudio();
-      setAudioSession('play-and-record');
-      mic = await MicRecorder.open();
-      mic.start();
+      mic = await MicRecorder.open(lifetime.signal);
+      const ctx = mic.ctx;
       const m = mic;
       const t0 = ctx.currentTime;
       const cues = Array.from({ length: CUES }, (_, i) => t0 + LEAD_IN + i * GAP);
@@ -176,10 +175,8 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
 
   async function startTester(profile: Profile, pads: HTMLElement[], status: HTMLElement): Promise<void> {
     try {
-      const ctx = await unlockAudio();
-      setAudioSession('play-and-record');
-      mic = await MicRecorder.open();
-      mic.start();
+      mic = await MicRecorder.open(lifetime.signal);
+      const ctx = mic.ctx;
       const m = mic;
       let last = 0;
       let busy = false;
@@ -209,6 +206,7 @@ export function mountCalibrate(root: HTMLElement, params: Params): () => void {
 
   return () => {
     alive = false;
+    lifetime.abort();
     cancelAnimationFrame(raf);
     clearInterval(testTimer);
     mic?.close();

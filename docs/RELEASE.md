@@ -13,7 +13,9 @@ Copy `.env.example` to the ignored `.env.local` and supply real values for:
 | `VITE_DEV_PRO` | `false` |
 | `VITE_REVENUECAT_IOS_KEY` | Real App Store public SDK key, beginning `appl_` |
 | `VITE_PRO_ENTITLEMENT` | `pro`, or the configured entitlement |
-| `VITE_PRO_PRODUCT_ID` | `humm_pro`, or the configured non-consumable |
+| `VITE_PLUS_ENTITLEMENT` | `plus` |
+| `VITE_PLUS_PRODUCT_ID` | `humm_plus_monthly` |
+| `VITE_PRO_PRODUCT_ID` | `humm_pro_monthly` |
 | `VITE_PRIVACY_POLICY_URL` | Working public HTTPS policy page |
 | `VITE_SUPPORT_EMAIL` | Real support email |
 | `VITE_APP_STORE_URL` | App Store listing URL when available |
@@ -27,10 +29,9 @@ a development/testing sync cannot bypass these configuration checks.
 - Join/select a paid Apple Developer Program team in Xcode. Confirm bundle ID
   `com.krishanthasandaruwan.humm` before the first submission.
 - Create the app in App Store Connect. Complete agreements, tax and banking as applicable.
-- Create non-consumable product `humm_pro`, with localized name, description, price and review image.
-  The intended US price is $0.99; confirm it in the store. The app displays the actual localized price.
-- In RevenueCat, attach that product to entitlement `pro` and a Lifetime package in the current
-  offering. Add required store credentials in the dashboard and the public SDK key to the app.
+- Create one subscription group, HUMM Membership, with Pro at level 1 and Plus at level 2.
+- Create monthly products `humm_plus_monthly` ($1.99 US base price) and `humm_pro_monthly` ($4.99 US base price). Give Pro a 3-month free introductory offer; Plus has no introductory offer. Eligibility is governed by Apple, once per subscription group.
+- In RevenueCat attach Plus to entitlement `plus` and Pro to `pro`. Pro inherits Plus in app code. Put both exact monthly products in the current offering as separate custom packages (`plus_monthly` and `pro_monthly`); do not use the old Lifetime package. Supply real store credentials in the dashboard and the iOS public SDK key in `.env.local`.
 - Confirm anonymous-user restore/transfer behavior for reinstall and a second device.
 - Publish a privacy-policy page and support contact; test over cellular while signed out. The app
   links them from Settings once configured.
@@ -55,23 +56,23 @@ Apple currently requires Xcode 26 or later with the iOS 26 SDK or later for uplo
 Xcode/iOS SDK 27 satisfies that minimum. Recheck [Apple's requirements](https://developer.apple.com/news/upcoming-requirements/)
 on submission day. A current SDK can still target the project's minimum iOS 15.
 
-`npm run ios:release` validates effective configuration, builds release assets, syncs iOS and creates
-an archive using your paid signing team. **It does not upload by default.** Alternatively archive in
+`HUMM_BUILD_NUMBER=1 npm run ios:release` validates effective configuration, builds release assets, syncs iOS and creates
+an archive and local signed IPA using your paid signing team. **It does not upload by default.** Alternatively archive in
 Xcode after these checks. Raise the build number for every upload.
 
-Only when you intend to upload, run `npm run ios:release -- --upload` or use Xcode's upload action.
+Only when you intend to upload, run `HUMM_BUILD_NUMBER=2 npm run ios:release -- --upload` or use Xcode's upload action.
 No signed archive/upload was performed during this remediation.
 
 ## Required TestFlight acceptance on the exact candidate
 
 - Buy, cancel, error, Ask to Buy/pending, restore, restart, reinstall and second-device restore.
-- Correct lifetime product and localized price; missing offerings must show unavailable.
+- Correct monthly product, eligible 3-month Pro trial, renewal disclosure, upgrades/downgrades, expiry and localized price; missing offerings must show unavailable.
 - Verified paid access offline; never-paid offline stays free; failed verification cannot grant Pro.
 - Refund/revocation then foreground/restart. An open Share sheet and already rendered video must
   obey refreshed permission. Offline refund visibility follows the store/SDK cache.
 - Free first three generated arrangements, including automatically assigned Pro sounds; unlimited
-  songs and free individual Part editing. MIDI and picked Pro sounds/Tracks/Fix/Effect require Pro.
-- 60-second free and 180-second paid capture/import limits, including Studio Record and Redo.
+  songs and free individual Part editing. Plus exports More/picked premium sounds/Effect; Pro exports Tracks/Fix and MIDI.
+- 60-second Free, 90-second Plus and 180-second Pro Studio/import limits; Home stays 10–60 seconds, including Studio Record and Redo.
 - Microphone denial, delayed permission, rapid taps, navigation, lock/background, calls/Siri and
   speaker/headset/Bluetooth routes; no capture indicator or surprise playback after leaving.
 - Corrupt/empty/large/multichannel imports, cancelled pickers and iCloud files; bounded memory and
@@ -98,7 +99,7 @@ and pass/fail. Minimum iOS support and real audio performance remain physical-de
 - Complete EU trader/non-trader declarations and verified contacts where applicable.
 - Confirm commercial rights to artwork, fonts and icons; retaining files does not establish ownership.
 - Confirm `ITSAppUsesNonExemptEncryption=NO` still fits the final app.
-- Submit the first IAP with the app version; use notes from [STORE_LISTING.md](../STORE_LISTING.md).
+- Submit the first IAP with the app version; use the separate current App Store submission document. STORE_LISTING.md is historical.
 - Choose Family Sharing deliberately; if enabled, test family restore/revocation.
 
 Apple's [review guidelines](https://developer.apple.com/app-store/review/guidelines/) require accurate

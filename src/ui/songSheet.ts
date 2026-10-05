@@ -21,7 +21,7 @@ export function openSongSheet(onChange: () => void): void {
     lengths.map((n) => ({ value: n, label: `${n} bars` })),
     p().bars,
     (v) => {
-      edit((pp) => { pp.bars = v; });
+      edit((pp) => { pp.bars = v; if (v === 2 || v === 4 || v === 8) pp.barSet = v; });
       if (v === 2 || v === 4 || v === 8) updateSettings({ lastBars: v });
       loop.set(v);
       onChange();

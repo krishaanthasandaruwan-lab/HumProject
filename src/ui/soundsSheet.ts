@@ -36,7 +36,7 @@ export function openSounds(id: string, onChange?: () => void): void {
   const tiles = items.map((it) =>
     h('button', { type: 'button', class: 'snd', 'aria-pressed': String(it.id === current()), onClick: () => pick(it.id, it.locked, it.name) },
       h('span', null, it.name),
-      it.locked ? h('span', { class: 'lockb', 'aria-label': 'Pro' }, icon('lock', 12)) : null));
+      it.locked ? h('span', { class: 'lockb', 'aria-label': 'Plus' }, icon('lock', 12)) : null));
   const sync = (): void => tiles.forEach((t, i) => t.setAttribute('aria-pressed', String(items[i].id === current())));
 
   /** Any sound can be used; a locked (Pro) one makes the song need Pro to export (pro/exports.ts). */
@@ -53,7 +53,7 @@ export function openSounds(id: string, onChange?: () => void): void {
     onChange?.();
     if (!drums) void prepareProject(getProject()).catch(() => undefined);
     if (locked) {
-      proNotice(`${name} is Pro · export needs Pro`, () => {
+      proNotice(`${name} is Plus · export needs Plus`, () => {
         edit(() => {
           t.preset = before.preset;
           t.picked = before.picked;

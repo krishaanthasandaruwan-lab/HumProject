@@ -10,8 +10,8 @@
 .songmap .blk { flex: 1 1 0; min-width: 0; height: 32px; display: grid; place-items: center; border: var(--border); background: var(--white);
   font: 700 .75rem/1 var(--font-label); letter-spacing: .06em; transition: background 80ms linear; }
 .songmap .blk.now { background: var(--red); }
-.songmap .playhead { position: absolute; top: -6px; bottom: -4px; width: 3px; margin-left: -1.5px; background: var(--ink); pointer-events: none; display: none; }
-.songmap .playhead::before { content: ""; position: absolute; top: 0; left: -2.5px; width: 8px; height: 8px; background: var(--red); border: 1.5px solid var(--ink); }
+.songmap .playhead { position: absolute; left: 0; top: -6px; bottom: -4px; width: 3px; background: var(--ink); pointer-events: none; display: none; will-change: transform; }
+.songmap .playhead::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: var(--red); border: 1.5px solid var(--ink); }
 
 .parts { background: var(--white); border: var(--border-soft); border-radius: var(--r-card); overflow: hidden; }
 .partrow { display: grid; grid-template-columns: 40px 1fr auto auto; grid-template-areas: "ico name fix mute" "ico sub fix mute";

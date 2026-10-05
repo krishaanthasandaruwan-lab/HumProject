@@ -1,5 +1,5 @@
 // Shared by the live scheduler and the offline renderer: per-track buses + per-step event scheduling.
-import { stepDur, swingOffset, trackGain, type Project, type Track, type TrackKind } from '../model/project';
+import { stepDur, swingOffset, trackGain, type DrumHit, type Note, type Project, type Track, type TrackKind } from '../model/project';
 import { crushCurve, reverbIR } from '../synth/fx';
 import { playNote } from '../synth/instruments';
 import { getInstrument, getKit, playDrum } from '../synth/kits';
@@ -16,6 +16,7 @@ export interface TrackBus {
   fx: boolean;
   out: GainNode;
   gain: number;
+  setFx(on: boolean, at: number): void;
   dispose(): void;
 }
 
@@ -58,10 +59,13 @@ export function createBus(ctx: BaseAudioContext, track: Track, dest: AudioNode, 
   out.gain.value = gain;
   const voice = ctx.createGain();
   voice.gain.value = track.voice?.level ?? 0.8;
-  const fx = !!track.voice?.fx;
-  const nodes: AudioNode[] = [input, out, voice];
-  if (fx) voiceSweetener(ctx, voice, input, out, nodes);
-  else voice.connect(input);
+  const dry = ctx.createGain();
+  const wet = ctx.createGain();
+  dry.gain.value = 1;
+  wet.gain.value = 0;
+  voice.connect(dry).connect(out);
+  const nodes: AudioNode[] = [input, out, voice, dry, wet];
+  let builtFx = false;
   if (track.kind === 'drums') {
     const kit = getKit(track.preset);
     if (kit.lofi) {
@@ -88,14 +92,42 @@ export function createBus(ctx: BaseAudioContext, track: Track, dest: AudioNode, 
     }
   }
   out.connect(dest);
-  return {
-    trackId: track.id, kind: track.kind, preset: track.preset, input, voice, fx, out, gain,
+  const bus: TrackBus = {
+    trackId: track.id, kind: track.kind, preset: track.preset, input, voice, fx: false, out, gain,
+    setFx(on, at) {
+      if (on && !builtFx) {
+        voice.connect(wet);
+        voiceSweetener(ctx, wet, out, out, nodes);
+        builtFx = true;
+      }
+      bus.fx = on;
+      dry.gain.setTargetAtTime(on ? 0 : 1, at, 0.02);
+      wet.gain.setTargetAtTime(on ? 1 : 0, at, 0.02);
+    },
     dispose: () => nodes.forEach((n) => n.disconnect()),
   };
+  if (track.voice?.fx) bus.setFx(true, ctx.currentTime);
+  return bus;
+}
+
+export type StepEvents = Map<string, Map<number, { hits: DrumHit[]; notes: Note[] }>>;
+/** Index once per edit, rather than scanning an entire five-minute song every sixteenth. */
+export function indexEvents(p: Project): StepEvents {
+  return new Map(p.tracks.map((track) => {
+    const steps = new Map<number, { hits: DrumHit[]; notes: Note[] }>();
+    const at = (step: number): { hits: DrumHit[]; notes: Note[] } => {
+      let events = steps.get(step);
+      if (!events) { events = { hits: [], notes: [] }; steps.set(step, events); }
+      return events;
+    };
+    for (const hit of track.hits ?? []) at(hit.step).hits.push(hit);
+    for (const note of track.notes ?? []) at(note.start).notes.push(note);
+    return [track.id, steps];
+  }));
 }
 
 /** Schedule everything that starts on `step` (loop-relative) at audio time `t` (the grid time of that step). */
-export function scheduleStep(ctx: BaseAudioContext, p: Project, buses: Map<string, TrackBus>, step: number, t: number): void {
+export function scheduleStep(ctx: BaseAudioContext, p: Project, buses: Map<string, TrackBus>, step: number, t: number, events?: StepEvents): void {
   const sd = stepDur(p.bpm);
   const loose = 1 - p.quantize;
   const tStep = t + swingOffset(step, p.swing) * sd;
@@ -104,7 +136,7 @@ export function scheduleStep(ctx: BaseAudioContext, p: Project, buses: Map<strin
     if (!bus || trackGain(p, track) <= 0) continue;
     if (track.kind === 'drums') {
       const kit = getKit(track.preset);
-      for (const hit of track.hits ?? []) {
+      for (const hit of (events ? events.get(track.id)?.get(step)?.hits : track.hits) ?? []) {
         if (hit.step !== step) continue;
         playDrum(ctx, bus.input, hit.type, kit, Math.max(0, tStep + (hit.offset ?? 0) * loose * sd), hit.velocity);
       }
@@ -120,7 +152,7 @@ export function scheduleStep(ctx: BaseAudioContext, p: Project, buses: Map<strin
         }
         if (track.voice.only) continue; // the voice replaces the instrument
       }
-      for (const n of track.notes ?? []) {
+      for (const n of (events ? events.get(track.id)?.get(step)?.notes : track.notes) ?? []) {
         if (n.start !== step) continue;
         const start = Math.max(0, tStep + (n.offset ?? 0) * loose * sd);
         playNote(ctx, bus.input, track.preset, n.midi, start, n.length * sd * 0.97, n.velocity);

@@ -3,6 +3,7 @@ import { mtof } from '../synth/fx';
 import { RENDERED } from '../synth/rendered';
 import { analyzeBeatbox, analyzeCalibration, analyzeMelody } from './analyze';
 import { declick } from './declick';
+import { cleanVoice } from './cleanVoice';
 import { analyzeFree } from './free';
 import { processVoice } from './voice';
 
@@ -12,6 +13,7 @@ function renderNotes(i: { items: { id: string; midi: number }[]; sampleRate: num
 }
 
 export const DSP = {
+  cleanVoice,
   beatbox: analyzeBeatbox,
   calibration: analyzeCalibration,
   declick,

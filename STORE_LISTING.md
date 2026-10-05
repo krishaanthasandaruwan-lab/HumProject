@@ -1,3 +1,5 @@
+> Historical listing draft — superseded 5 October 2026. Do not submit its one-time Pro pricing, old review notes, or old screenshots. Use the separate HUMM App Store submission document delivered outside the project ZIP, and docs/RELEASE.md for current subscription setup.
+
 # HUMM — Store listing
 
 Copy-paste material for the App Store (iPhone) and Google Play.

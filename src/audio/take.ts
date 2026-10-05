@@ -1,5 +1,5 @@
 // One recording pass: count-in, click, capture, latency compensation.
-import { getMaster, outputLatency, setAudioSession, unlockAudio } from './context';
+import { getMaster, outputLatency, setAudioSession } from './context';
 import { CLICK_HZ, Metronome, planTake, type TakePlan } from './metronome';
 import { MicRecorder } from './recorder';
 
@@ -49,7 +49,6 @@ export function loopAudio(take: Take): Float32Array<ArrayBuffer> {
 }
 
 export async function captureTake(o: TakeOptions): Promise<Take> {
-  const ctx = await unlockAudio();
   const preroll = o.prerollSec ?? 0.15;
   const tail = o.tailSec ?? 0.2;
   setAudioSession('play-and-record');
@@ -57,7 +56,7 @@ export async function captureTake(o: TakeOptions): Promise<Take> {
   const metro = new Metronome();
   try {
     mic = await MicRecorder.open(o.signal);
-    mic.start();
+    const ctx = mic.ctx;
     const plan = planTake(ctx.currentTime, o.bpm, o.bars, 4, 0.3);
     plan.recEnd = Math.min(plan.recEnd, plan.recStart + (o.maxSeconds ?? 180));
     metro.schedule(ctx, getMaster(), plan, o.clickDuringTake);

@@ -2,6 +2,7 @@
 // kick → snare → hat → empty (fixes misheard beatbox hits). Long-press deletes.
 import { DRUM_TYPES, type DrumHit, type DrumType } from '../model/project';
 import { h } from './dom';
+import { gridPages } from './gridPages';
 import { gridKeyboard } from './gridKeyboard';
 
 const CYCLE: (DrumType | null)[] = ['kick', 'snare', 'hat', null];
@@ -11,6 +12,7 @@ const NAMES: Record<DrumType, string> = { kick: 'Kick', snare: 'Snare', hat: 'Ha
 export interface GridOptions {
   hits: () => DrumHit[];
   bars: () => number;
+  page?: () => [number, number];
   edit: (fn: (hits: DrumHit[]) => void) => void;
   audition: (type: DrumType, velocity: number) => void;
 }
@@ -27,6 +29,7 @@ export function drumGrid(o: GridOptions): GridApi {
   gridKeyboard(el);
   let cells: HTMLElement[][] = []; // [step][row]
   let head = -1;
+  const pages = gridPages(o.bars, render);
   let pressTimer = 0;
   let longPressed = false;
 
@@ -35,12 +38,15 @@ export function drumGrid(o: GridOptions): GridApi {
     cells = [];
     head = -1;
     const bars = o.bars();
-    for (let b = 0; b < bars; b++) {
+    const [first, last] = (o.page ?? pages.bounds)();
+    const controls = o.page ? null : pages.control();
+    if (controls) el.append(controls);
+    for (let b = first; b < last; b++) {
       const rows = DRUM_TYPES.map((type, r) => {
         const row = h('div', { class: 'grid-row' }, h('span', { class: 'grid-lbl', title: NAMES[type] }, LABELS[type]));
         for (let s = 0; s < 16; s++) {
           const step = b * 16 + s;
-          const c = h('button', { type: 'button', tabindex: step === 0 && r === 0 ? 0 : -1, class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'data-step': step, 'data-row': r, 'aria-label': `${NAMES[type]}, bar ${b + 1}, step ${s + 1}`, 'aria-pressed': 'false' });
+          const c = h('button', { type: 'button', tabindex: step === first * 16 && r === 0 ? 0 : -1, class: `cell${s % 4 === 0 ? ' beat' : ''}`, 'data-step': step, 'data-row': r, 'aria-label': `${NAMES[type]}, bar ${b + 1}, step ${s + 1}`, 'aria-pressed': 'false' });
           row.appendChild(c);
           (cells[step] ??= [])[r] = c;
         }
@@ -52,7 +58,7 @@ export function drumGrid(o: GridOptions): GridApi {
   }
 
   function paint(): void {
-    for (const col of cells) for (const c of col) {
+    for (const col of cells) for (const c of col ?? []) {
       c.classList.remove('on', 'kick', 'snare', 'hat');
       c.style.removeProperty('--v');
       c.setAttribute('aria-pressed', 'false');
@@ -67,6 +73,7 @@ export function drumGrid(o: GridOptions): GridApi {
   }
 
   function setPlayhead(step: number): void {
+    if (!o.page && pages.follow(step)) render();
     if (step === head) return;
     cells[head]?.forEach((c) => c.classList.remove('ph'));
     head = step;

@@ -1,3 +1,5 @@
+> Current plan — 5 October 2026: the owner changed the first-release billing plan to Free, Plus ($1.99/month) and Pro ($4.99/month), with a 3-month Pro introductory free trial for eligible Apple subscribers. Earlier one-time-price descriptions below are historical. See README.md and RELEASE.md for current rules. Home recording remains 10–60 seconds; five-minute arrangements are only in Tracks. Account, store products and website are pending. No upload or GitHub push has occurred in this packaging task.
+
 # HUMM — project history and handover
 
 Read this first if you are picking the project up (person or AI). It records what was built, in what

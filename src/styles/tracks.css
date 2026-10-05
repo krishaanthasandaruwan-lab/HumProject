@@ -1,7 +1,7 @@
 /* The Tracks screen (landscape): the parts rail on the left, the picked part's editor filling the rest.
    Rail tiles use the app's card language — white, 2px ink border — and the picked one gets the hard
    shadow and red strip of the playing song on Pick your sound. A part's icon goes ink on its notes. */
-.tracks { gap: 10px; }
+.tracks { gap: 10px; touch-action: pan-y; }
 .tracks .top { gap: 12px; min-height: 48px; }
 .tracks-title { flex: 1; min-width: 0; }
 .tracks-title .h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -10,7 +10,7 @@
 .tracks-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 18px; }
 
 /* The rail never scrolls: tiles share its height (between 38 and 58 px each). */
-.rail { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 8px 2px; }
+.rail { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 8px 2px; }
 .rail-part { position: relative; flex: 1 1 0; min-height: 38px; max-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center;
   background: var(--white); border: var(--border); transition: box-shadow var(--t-ui) var(--ease), padding var(--t-ui) var(--ease); }
 .rail-part.rail-all { grid-template-columns: minmax(0, 1fr); border-style: solid; background: var(--paper); }
@@ -35,7 +35,20 @@
 .rail-suggest { width: 100%; border: 2px dashed var(--stone); }
 .rail-suggest .ico { border-style: dashed; }
 
-.tracks-stage { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 2px 2px 12px; }
+.tracks-workspace { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.tracks-bars { flex: none; display: flex; flex-direction: column; gap: 8px; }
+.tracks-bars-nav { display: flex; align-items: center; gap: 8px; }
+.tracks-bars-nav .grid-pages { flex: 1; min-width: 0; position: static; gap: 8px; padding: 0; }
+.tracks-bars-nav .icon-btn { width: 44px; height: 44px; flex: none; }
+.tracks-bars-nav .icon-btn:disabled { opacity: .35; }
+.tracks-timeline { position: relative; height: 24px; border: var(--border); background: var(--white); }
+.tracks-sets { display: flex; height: 100%; overflow: hidden; }
+.tracks-set { flex-basis: 0; min-width: 0; display: grid; place-items: center; font: 700 .6875rem/1 var(--font-label); border-right: 1px solid var(--stone); color: var(--graphite); overflow: hidden; }
+.tracks-set:last-child { border-right: 0; }
+.tracks-set.sel { background: var(--ink); color: var(--white); }
+.tracks-cursor { position: absolute; top: -5px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--red); pointer-events: none; }
+.tracks-cursor::before { content: ''; position: absolute; top: 0; left: 50%; width: 7px; height: 7px; background: var(--red); transform: translateX(-50%); }
+.tracks-stage { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; padding: 2px 2px 12px; }
 .tracks-stage .part-editor { gap: 10px; }
 
 /* On a phone held upright (and only where the app can't turn the screen itself) the whole page is

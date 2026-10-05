@@ -85,9 +85,10 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
   }
 
   function renderMap(): void {
+    map.dataset.block = '';
     const bars = p().bars;
     // Long songs: one block per 4 bars, so the map stays readable.
-    const per = bars > 16 ? 4 : 1;
+    const per = bars > 16 ? Math.max(4, Math.ceil(bars / 16)) : 1;
     map.replaceChildren(...Array.from({ length: Math.ceil(bars / per) }, (_, i) => h('span', { class: 'blk' }, String(i * per + 1))), playhead);
     map.dataset.per = String(per);
   }
@@ -112,11 +113,14 @@ export function mountStudio(root: HTMLElement, params: Params): () => void {
 
   function frame(): void {
     play.sync();
-    const step = player.currentStep();
+    const step = player.currentPosition();
     playhead.style.display = step < 0 ? 'none' : 'block';
-    if (step >= 0) playhead.style.left = `${(step / totalSteps(p())) * 100}%`;
+    if (step >= 0) playhead.style.transform = `translateX(${(step / totalSteps(p())) * map.clientWidth - 1.5}px)`;
     const block = step < 0 ? -1 : Math.floor(step / STEPS_PER_BAR / Number(map.dataset.per ?? 1));
-    map.querySelectorAll('.blk').forEach((b, i) => b.classList.toggle('now', i === block));
+    if (map.dataset.block !== String(block)) {
+      map.dataset.block = String(block);
+      map.querySelectorAll('.blk').forEach((b, i) => b.classList.toggle('now', i === block));
+    }
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);

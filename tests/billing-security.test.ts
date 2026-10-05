@@ -31,6 +31,11 @@ describe('release configuration', () => {
     expect(releaseProblems({ ...env, VITE_PRIVACY_POLICY_URL: 'http://hummmusic.app/privacy' })).not.toEqual([]);
     expect(releaseProblems({ ...env, VITE_PRIVACY_POLICY_URL: 'https://localhost/privacy' })).not.toEqual([]);
   });
+  it('rejects invalid or overlapping subscription identifiers', () => {
+    expect(releaseProblems({ ...env, VITE_PLUS_PRODUCT_ID: 'humm_pro_monthly' })).toContain('Plus and Pro must have separate entitlement and product identifiers.');
+    expect(releaseProblems({ ...env, VITE_PLUS_ENTITLEMENT: 'pro' })).toContain('Plus and Pro must have separate entitlement and product identifiers.');
+    expect(releaseProblems({ ...env, VITE_PLUS_PRODUCT_ID: 'bad product' })).toContain('The plus product identifier is invalid.');
+  });
 });
 describe('production local unlocks', () => {
   beforeEach(() => { vi.resetModules(); vi.stubEnv('DEV', false); vi.stubEnv('MODE', 'production'); });

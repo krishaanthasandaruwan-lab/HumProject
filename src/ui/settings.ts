@@ -4,8 +4,8 @@ import { account, signOut } from '../account';
 import { outputLatency } from '../audio/context';
 import { refreshKey } from '../model/music';
 import { edit } from '../state';
-import { canBuy, restorePro, restoreMessage } from '../pro/billing';
-import { endTesterPro, isPro, redeemTesterCode, setDevPro, STORE_READY, TESTER_BUILD, testerPro } from '../pro/pro';
+import { MANAGE_URL, restorePro, restoreMessage } from '../pro/billing';
+import { currentTier, endTesterPro, isPro, redeemTesterCode, setDevPro, STORE_READY, TESTER_BUILD, testerPro } from '../pro/pro';
 import { openPaywall } from './paywall';
 import { navigate, type Params } from '../router';
 import { settings, updateSettings, type Settings } from '../settings';
@@ -43,11 +43,12 @@ export function mountSettings(root: HTMLElement, params: Params): () => void {
   const pro = h('div');
   const renderPro = (): void => {
     const dev = TESTER_BUILD ? toggle(isPro(), (on) => { setDevPro(on); renderPro(); }, 'Test build: Pro on') : null;
-    pro.replaceChildren(group('Pro',
-      isPro()
-        ? listRow('Pro is on', h('span', { class: 'pro' }, 'PRO'), { sub: testerPro() ? 'Tester code.' : TESTER_BUILD ? 'Test build.' : 'Thank you!' })
-        : listRow('Unlock Pro', icon('open', 20), { sub: 'One time. No subscription.', onClick: () => openPaywall() }),
-      canBuy() && !isPro() ? listRow('Restore purchase', icon('open', 20), { onClick: async () => { toast(restoreMessage(await restorePro())); renderPro(); } }) : null,
+    const tier = currentTier();
+    pro.replaceChildren(group('Membership',
+      listRow(tier === 'free' ? 'Free membership' : `${tier === 'plus' ? 'Plus' : 'Pro'} is on`, icon('open', 20),
+        { sub: 'Compare Plus and Pro subscriptions', onClick: () => openPaywall(undefined, tier === 'plus' ? 'plus' : 'pro') }),
+      listRow('Restore purchases', icon('open', 20), { onClick: async () => { toast(restoreMessage(await restorePro())); renderPro(); } }),
+      h('a', { class: 'lrow', href: MANAGE_URL, target: '_blank', rel: 'noopener noreferrer' }, h('b', null, 'Manage subscriptions'), icon('open', 20)),
       dev ? listRow('Test build: Pro on', dev, { sub: 'Only in test builds. Switch off to see the free app.' }) : null,
       // Until store purchases are set up, a tester code unlocks Pro on this phone.
       TESTER_BUILD && !STORE_READY && !isPro() ? listRow('Tester code', icon('open', 20), { sub: 'Unlock Pro on this phone for testing', onClick: () => void enterCode() }) : null,

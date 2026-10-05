@@ -100,7 +100,7 @@ export function placeMelody(notes: Note[], center: number): Note[] {
   return notes.map((n) => ({ ...n, midi: n.midi + shift, raw: n.raw === undefined ? undefined : n.raw + shift }));
 }
 
-export function arrange(take: HumTake, style: Style, name: string): Project {
+export function arrange(take: HumTake, style: Style, name: string, original = false): Project {
   const p = newProject(name, take.bpm, take.bars);
   p.key = take.key;
   p.swing = style.swing;
@@ -123,13 +123,13 @@ export function arrange(take: HumTake, style: Style, name: string): Project {
   pad.volume = style.mix.chords;
 
   const lead = newTrack('lead', style.lead.preset);
-  lead.notes = placeMelody(take.notes, style.lead.center);
+  lead.notes = original ? take.notes.map((n) => ({ ...n, midi: Math.round(n.raw ?? n.midi) })) : placeMelody(take.notes, style.lead.center);
   lead.volume = style.mix.lead;
   if (take.voice) {
     lead.rawVoice = take.voice.audio;
     lead.rawRate = take.voice.rate;
     lead.anchors = take.voice.anchors;
-    lead.voice = { on: true, tune: true, level: 0.8 };
+    lead.voice = { on: true, tune: !original, level: 0.8, ...(original ? { original: true } : {}) };
   }
   p.tracks = [drums, bass, lead, pad];
   return p;
